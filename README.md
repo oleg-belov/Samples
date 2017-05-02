@@ -3,6 +3,8 @@ Java, Java Script Examples
 
 This repository is my samples [examples]
 
+The project structure(maven/idea) is under construction.
+
 Software Links
 ==============
 
