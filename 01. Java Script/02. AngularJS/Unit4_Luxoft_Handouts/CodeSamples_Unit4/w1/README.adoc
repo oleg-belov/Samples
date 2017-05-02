@@ -1,0 +1,416 @@
+= Unit 4. Walkthrough 1.
+© 2014 Farata Systems LLC. <training@faratasystems.com>
+:icons: font
+:last-update-label!:
+:sectanchors:
+:idprefix:
+:numbered!:
+:source-highlighter: coderay
+
+
+== Summary
+
+In this walkthrough you will implement the search form directive with one custom reusable component - price range component.
+
+== Steps
+
+=== Part 1: Search Form
+
+. Use `walkthroughs/w1` directory from the provided handouts as the starting point for the walkthrough.
+
+. Open `bower.json` file. Add `"bootstrap-datepicker": "^1.3.0"` dependency to the `dependencies` section.
+
+. Run `bower install` and `grunt wiredep` in the console to install newly added dependency to the app.
+
+. Create `app/scripts/directive/SearchFormDirective.js` file, and open it.
+[style="upperalpha"]
+.. Define self-executable anonymous function:
++
+[source,js]
+----
+(function () {
+
+}());
+----
+
+.. Inside the function declare `use strict` directive:
++
+[source,js]
+----
+(function () {
+  'use strict';
+}());
+----
+
+.. Right after `'use strict';` declare a factory function that we will use to create the directive. Name it `searchFormDirectiveFactory`:
++
+[source,js]
+----
+var searchFormDirectiveFactory = function () {};
+----
+
+.. Return a JavaScript object literal from `searchFormDirectiveFactory` function with following properties initialized: `scope`, `restrict` and `templateUrl`:
++
+[source,js]
+----
+var searchFormDirectiveFactory = function () {
+  return {
+    scope: false,
+    restrict: 'E',
+    templateUrl: 'views/partial/SearchFormDirective.html'
+  };
+};
+----
+
+.. Register the directive inside AngularJS DI container invoking `directive()` method available on the application nodule:
++
+[source,js]
+----
+angular.module('auction').directive('auctionSearchForm', searchFormDirectiveFactory);
+----
+
+. Create `app/views/partial/SearchFormDirective.html` file and open it.
+[style="upperalpha"]
+.. Add HTML markup for the search form:
++
+[source,html]
+----
+<div>
+  <div class="col-xs-12 col-md-4">
+    <div class="row form-group">
+      <div class="col-xs-12 col-sm-6 col-md-12">
+        <label class="control-label">Product</label>
+        <input type="text" class="form-control" placeholder="Product title">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-12">
+        <label class="control-label">&nbsp;</label>
+        <select class="form-control">
+          <option>Category</option>
+          <option>Category 1</option>
+          <option>Category 2</option>
+          <option>Category 3</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="col-xs-12 col-md-8">
+    <div class="row">
+      <div class="col-xs-12 col-sm-6">
+        <!-- PLACEHOLDER FOR PRICE RANGE COMPONENT -->
+      </div>
+      <div class="col-xs-12 col-sm-6">
+        <div class="row">
+          <div class="col-xs-12">
+            <label class="control-label">Max Auction Close Day</label>
+
+            <div class="input-group">
+              <!-- THE INPUT BELOW WILL BECOME A CALENDAR ONCE WE IMPLEMENT DATEPICKER DIRECTIVE -->
+              <input data-date-format="mm/dd/yyyy" class="form-control" value="08/17/2014">
+              <span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>
+            </div>
+          </div>
+          <div class="col-xs-12">
+            <label class="control-label">&nbsp;</label><br>
+
+            <form class="form-horizontal" role="form">
+              <div class="form-group">
+                <div class="col-xs-8">
+                  <label class="control-label">Number of Bids</label>
+                </div>
+                <div class="col-xs-4">
+                  <input type="number" class="form-control" value="3">
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xs-12 col-md-4 col-md-offset-4">
+    <br>
+    <button class="btn btn-default btn-block btn-primary">Find more</button>
+  </div>
+</div>
+----
+
+. Open `app/index.html` file. Scroll at the bottom of the file. Add `<script>` tag for the directive's JavaScript file:
++
+[source,html]
+----
+<script src="scripts/directive/SearchFormDirective.js"></script>
+----
+
+. Open `app/views/search.html` file and add `<auction-search-form>` element at the very top of the file,
+right after opening top-level `<div>` tag:
++
+[source,html]
+----
+<div>
+  <div class="row well">
+    <auction-search-form></auction-search-form>
+  </div>
+  <!-- Rest of the page below -->
+----
+
+. Open `app/views/product.html` file and add `<auction-search-form>` right after `Find more` and close buttons are defined. Add `ng-show="ctrl.isSearchFormVisible"` directive to show/hide the form when user clicks the button:
++
+[source,html]
+----
+<auction-search-form ng-show="ctrl.isSearchFormVisible"></auction-search-form>
+----
+
+
+=== Part 2: Datepicker Directive
+
+. Create `app/scripts/directive/DatepickerDirective.js` file, and open it.
+[style="upperalpha"]
+.. Define self-executable anonymous function:
++
+[source,js]
+----
+(function () {
+
+}());
+----
+
+.. Inside the function declare `use strict` directive:
++
+[source,js]
+----
+(function () {
+  'use strict';
+}());
+----
+
+.. Right after `'use strict';` declare a factory function that we will use to create the directive. Name it `datepickerDirectiveFactory`:
++
+[source,js]
+----
+var datepickerDirectiveFactory = function () {};
+----
+
+.. Return a JavaScript object literal from `datepickerDirectiveFactory` function with following properties initialized: `scope`, `restrict` and `link`:
++
+[source,js]
+----
+var datepickerDirectiveFactory = function () {
+  return {
+    scope: false,
+    restrict: 'A', <1>
+    link: function (scope, element) {
+      element.datepicker(); <2>
+    }
+  };
+};
+----
+<1> Notice we allow to use the directive only as an attribute
+<2> Inside link function we initialize the component using `datepicker()` method added by `bootstrap-datepicker` package.
+
+.. Register the directive inside AngularJS DI container invoking `directive()` method available on the application nodule:
++
+[source,js]
+----
+angular.module('auction').directive('auctionDatepicker', datepickerDirectiveFactory);
+----
+
+. Open `app/views/partial/SearchFormDirective.html` file and add `auction-datepicker` attribute for the `input` element that is supposed to be a datepicker:
++
+[source,html]
+----
+<input auction-datepicker data-date-format="mm/dd/yyyy" class="form-control" value="08/17/2014">
+----
+
+. Open `app/index.html` file. Scroll at the bottom of the file. Add `<script>` tag for the directive's JavaScript file:
++
+[source,html]
+----
+<script src="scripts/directive/DatepickerDirective.js"></script>
+----
+
+
+
+=== Part 3: Price Range Directive
+
+
+. Open `bower.json` file. Add `"seiyria-bootstrap-slider": "^3.1.0"` dependency to the `dependencies` section.
+
+. Run `bower install` and `grunt wiredep` in the console to install newly added dependency to the app.
+
+. Create `app/scripts/directive/PriceRangeDirective.js` file, and open it.
+[style="upperalpha"]
+.. Define self-executable anonymous function:
++
+[source,js]
+----
+(function () {
+
+}());
+----
+
+.. Inside the function declare `use strict` directive:
++
+[source,js]
+----
+(function () {
+  'use strict';
+}());
+----
+
+.. Right after `'use strict';` declare a factory function that we will use to create the directive. Name it `priceRangeDirectiveFactory`:
++
+[source,js]
+----
+var priceRangeDirectiveFactory = function () {};
+----
+
+.. Return a JavaScript object literal from `priceRangeDirectiveFactory` function with following `scope` property defined:
++
+[source,js]
+----
+var priceRangeDirectiveFactory = function () {
+  return {
+    scope: {
+      minPrice : '@', <1>
+      maxPrice : '@', <2>
+      lowPrice : '=', <3>
+      highPrice: '='  <4>
+    }
+  };
+};
+----
+<1> Lower bound of the range input field. Passed as value.
+<2> Upper bound of the range input field. Passed as value.
+<3> Current low price selected. Passed as two-way data binding.
+<4> Current high price selected. Passed as two-way data binding.
+
+.. To the returned object add `restrict` and `templateUrl` properties:
++
+[source,js]
+----
+restrict: 'E',
+templateUrl: 'views/partial/PriceRangeDirective.html'
+----
+
+.. Imlplement `link()` method for the directive, it should accept only two first parameters:
++
+[source,js]
+----
+link: function (scope, element) {
+}
+----
+
+.. Inside `link()` method get reference to the input element that will internally save slider's value. Declare `min` and `max` variables and initialize them with default values:
++
+[source,js]
+----
+var slider = angular.element(element).find('input[type=text]'),
+    min = scope.minPrice || 0,
+    max = scope.maxPrice || 500;
+----
+
+.. Initialize `lowPrice` and `highPrice` values in case they are not provided:
++
+[source,js]
+----
+scope.lowPrice  = scope.lowPrice  || min;
+scope.highPrice = scope.highPrice || max;
+----
+
+.. Initialize slider component using API provided by `seiyria-bootstrap-slider` library:
++
+[source,js]
+----
+slider.slider({
+  min: min,
+  max: max,
+  value: [
+    scope.lowPrice,
+    scope.highPrice
+  ]
+});
+----
+
+.. Implement data binding from slider to the numeric fields, so the fields are automatically updated when users stop dragging slider's tracks:
++
+[source,js]
+----
+slider.on('slideStop', function (event) {
+  scope.$apply(function () {
+    if (scope.lowPrice  !== event.value[0]) { scope.lowPrice  = event.value[0]; }
+    if (scope.highPrice !== event.value[1]) { scope.highPrice = event.value[1]; }
+  });
+});
+----
+
+.. Implement data binding from the numeric fields to the sliders, so the slider's tracks are automatically moved when users update numeric fields' values:
++
+[source,js]
+----
+var currentVal = function () { return slider.slider('getValue'); };
+var setSlider = function (low, high) { slider.slider('setValue', [low, high]); };
+
+scope.$watch('lowPrice',  function (newVal) { setSlider(newVal || min, currentVal()[1]); });
+scope.$watch('highPrice', function (newVal) { setSlider(currentVal()[0], newVal || max); });
+----
+
+.. Register the directive inside AngularJS DI container invoking `directive()` method available on the application nodule:
++
+[source,js]
+----
+angular.module('auction').directive('auctionPriceRange', priceRangeDirectiveFactory);
+----
+
+. Create `app/views/partial/PriceRangeDirective.html` file and open it.
+[style="upperalpha"]
+.. Add HTML markup for the search form:
++
+[source,html]
+----
+<div class="row form-group">
+  <div class="col-xs-12">
+    <label class="control-label">Current Price</label><br>
+
+    <div class="row">
+      <div class="col-xs-6">
+        <div class="input-group">
+          <span class="input-group-addon">$</span>
+          <input type="number" class="form-control" ng-model="lowPrice" <1>
+                 min="{{ minPrice }}" max="{{ highPrice }}"> <2>
+        </div>
+      </div>
+      <div class="col-xs-6">
+        <div class="input-group">
+          <span class="input-group-addon">$</span>
+          <input type="number" class="form-control" ng-model="highPrice" <3>
+                 min="{{ lowPrice }}" max="{{ maxPrice }}"> <4>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xs-12">
+    <label class="control-label">&nbsp;</label><br>
+    <input type="text" class="form-control"/>
+  </div>
+</div>
+----
+<1> `lowPrice` is automatically updated once users stop draggin slider's low track.
+<2> Set lower and upper limits for `lowPrice` numeric fields.
+<3> `highPrice` is automatically updated once users stop draggin slider's high track.
+<4> Set lower and upper limits for `highPrice` numeric fields.
+
+. Open `app/views/partial/SearchFormDirective.html` file and replace Price Range Directive placeholder with the custom element:
++
+[source,html]
+----
+<auction-price-range low-price="ctrl.lowPrice"
+                     high-price="ctrl.highPrice">
+</auction-price-range>
+----
+
+. Open `app/index.html` file. Scroll at the bottom of the file. Add `<script>` tag for the directive's JavaScript file:
++
+[source,html]
+----
+<script src="scripts/directive/PriceRangeDirective.js"></script>
+----

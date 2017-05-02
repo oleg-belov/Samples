@@ -1,0 +1,20 @@
+The following software must be installed before the class:
+
+1. Node.js. Installers for various platforms can be found here - http://nodejs.org/download/. For those who prefer package managers there is an official instruction - https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager.
+npm.
+
+2. Make sure npm (node package manager) has been installed along with Node.js and both tools correctly installed and available on your PATH in the command-line. For node.js execute following command (you should be able to see version number):
+
+    $ node --version
+    v0.10.26
+
+Similar for npm:
+
+    $ npm --version
+    1.4.4
+
+If you are able to see version numbers and no error messages are printed, then everything is OK.
+
+3. AngularJS plugin for IntelliJ Idea. To install the plugin, launch IntelliJ Idea, click IntelliJ Idea -> Preferences in the main menu (File -> Settings on Windows), in the opened Preferences window choose Plugins item on the left panel, click Browse repositories. Find the AngularJS plugin in the list, and click green Install plugin button. After installing the plugin you should be able to see it in the list of installed plugin. Make sure the plugin is enabled (see here - http://take.ms/5ihh4).
+
+4. AngularJS Batarang extension for Chrome. In order to install it, open this link - https://chrome.google.com/webstore/detail/angularjs-batarang/ighdmehidhipcmcojjgiloacoafjmpfk in Google Chrome browser and click +FREE button.

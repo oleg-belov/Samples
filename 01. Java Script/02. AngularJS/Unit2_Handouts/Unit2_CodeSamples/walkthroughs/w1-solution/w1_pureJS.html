@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html >
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Unit 2. Walkthrough 1. Old fashioned way</title>
+</head>
+<body>
+
+    <p>Type here: <input id="inputField" type="text"/></p>
+
+    <p>Should appear: <span id="spanArea"></span></p>
+
+\<script>
+    var inputField = document.getElementById('inputField');
+    var spanArea = document.getElementById('spanArea');
+
+    inputField.addEventListener('keyup', function(){
+
+        spanArea.innerHTML = inputField.value;
+    });
+</script>
+
+</body>
+</html>
