@@ -15,5 +15,7 @@
         <module>03-IoC-Annotation-Constructor-based-DI</module>
         <module>03-IoC-XML-Constructor-based-DI</module>
         <module>04-IoC-XML-Setter-based-DI</module>
+        <module>05-IoC-Annotation-Collection</module>
+        <module>05-IoC-XML-Collection</module>
 	</modules>
 </project>
