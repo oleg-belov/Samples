@@ -18,5 +18,6 @@
         <module>05-IoC-Annotation-Collection</module>
         <module>05-IoC-XML-Collection</module>
         <module>06-IoC-XML-Lazy-init</module>
+        <module>07-IoC-XML-Autowire</module>
 	</modules>
 </project>
