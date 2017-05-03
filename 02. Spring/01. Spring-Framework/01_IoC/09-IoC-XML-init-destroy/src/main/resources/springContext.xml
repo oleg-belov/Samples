@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	default-init-method="someDefaultInitMethod"
+	default-destroy-method="someDefaultDestroyMethod"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+    <!--Specify Init and Destroy method-->
+    <bean class="com.oleg.belov.spring_framework.ioc.init.destroy.beans.MethodInitBean" init-method="someInitMethod" destroy-method="someDestroyMethod"/>
+
+    <!--Init and Destroy methods specified by using Spring interfaces-->
+    <bean class="com.oleg.belov.spring_framework.ioc.init.destroy.beans.SpringInterfaceInitBean"/>
+
+    <!--Init and Destroy methods specified by global attributes-->
+    <bean class="com.oleg.belov.spring_framework.ioc.init.destroy.beans.DefaultMethodInitBean"/>
+
+    <!--Init and Destroy methods specified by specification's annotations-->
+    <context:annotation-config />
+    <bean class="com.oleg.belov.spring_framework.ioc.init.destroy.beans.AnnotationsInitBean"/>
+
+</beans>
