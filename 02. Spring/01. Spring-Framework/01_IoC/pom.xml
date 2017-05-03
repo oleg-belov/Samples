@@ -17,5 +17,6 @@
         <module>04-IoC-XML-Setter-based-DI</module>
         <module>05-IoC-Annotation-Collection</module>
         <module>05-IoC-XML-Collection</module>
+        <module>06-IoC-XML-Lazy-init</module>
 	</modules>
 </project>
