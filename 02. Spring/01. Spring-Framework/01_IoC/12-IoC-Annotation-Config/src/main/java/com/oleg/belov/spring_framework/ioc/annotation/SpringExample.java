@@ -1,4 +1,4 @@
-package com.oleg.belov.spring_framework.ioc.bean.inheritance;
+package com.oleg.belov.spring_framework.ioc.annotation;
 
 import static com.oleg.belov.spring_framework.ioc.annotation.utils.ClassNameUtil.getCurrentClassName;
 
