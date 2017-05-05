@@ -24,5 +24,6 @@
         <module>10-IoC-XML-PostConstructor-PreDestroy</module>
         <module>11-IoC-XML-Bean-Inheritance</module>
         <module>13-IoC-Annotation-JSR-330</module>
+        <module>14-IoC-XML-Lookup-Method-Injection</module>
 	</modules>
 </project>
