@@ -23,5 +23,6 @@
         <module>09-IoC-XML-init-destroy</module>
         <module>10-IoC-XML-PostConstructor-PreDestroy</module>
         <module>11-IoC-XML-Bean-Inheritance</module>
+        <module>12-IoC-Annotation-Config</module>
 	</modules>
 </project>
