@@ -1,4 +1,4 @@
-package com.oleg.belov.spring_framework.ioc.method.injection.utils;
+package com.oleg.belov.spring_framework.ioc.java_config.utils;
 
 public class ClassNameUtil {
 

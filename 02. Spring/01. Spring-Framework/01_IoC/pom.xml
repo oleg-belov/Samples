@@ -25,5 +25,6 @@
         <module>11-IoC-XML-Bean-Inheritance</module>
         <module>13-IoC-Annotation-JSR-330</module>
         <module>14-IoC-XML-Lookup-Method-Injection</module>
+        <module>15-IoC-Java-config</module>
 	</modules>
 </project>

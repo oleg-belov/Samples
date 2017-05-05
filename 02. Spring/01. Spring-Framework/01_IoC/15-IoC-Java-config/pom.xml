@@ -9,17 +9,21 @@
         <relativePath>../../../../</relativePath>
     </parent>
 
-    <groupId>com.oleg.belov.spring_framework.ioc.method.injection</groupId>
-    <artifactId>14-IoC-XML-Lookup-Method-Injection</artifactId>
+    <groupId>com.oleg.belov.spring_framework.ioc.java_config</groupId>
+    <artifactId>15-IoC-Java-config</artifactId>
     <packaging>jar</packaging>
 
-    <name>14-IoC-XML-Lookup-Method-Injection</name>
+    <name>15-IoC-Java-config</name>
 
     <dependencies>
           <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
         </dependency>
+		 <dependency>
+			  <groupId>org.springframework</groupId>
+			  <artifactId>spring-tx</artifactId>
+		  </dependency>
 		
         <dependency>
             <groupId>org.slf4j</groupId>
