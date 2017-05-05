@@ -21,5 +21,7 @@
         <module>07-IoC-XML-Autowire</module>
         <module>08-IoC-XML-Scope</module>
         <module>09-IoC-XML-init-destroy</module>
+        <module>10-IoC-XML-PostConstructor-PreDestroy</module>
+        <module>11-IoC-XML-Bean-Inheritance</module>
 	</modules>
 </project>

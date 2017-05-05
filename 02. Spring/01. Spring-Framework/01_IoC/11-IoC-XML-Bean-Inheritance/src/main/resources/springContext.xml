@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	default-init-method="someDefaultInitMethod"
+	default-destroy-method="someDefaultDestroyMethod"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+	<bean id="BaseCustomerMalaysia" abstract="true">
+		<property name="country" value="Malaysia" />
+	</bean>
+
+	<bean id="CustomerBean" parent="BaseCustomerMalaysia" class="com.oleg.belov.spring_framework.ioc.bean.inheritance.Customer">
+		<property name="action" value="buy" />
+		<property name="type" value="1" />
+	</bean>
+
+</beans>
