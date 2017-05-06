@@ -30,6 +30,7 @@
         <module>17-IoC-XML-Profiles</module>
         <module>18-IoC-XML-Property-Placeholder</module>
         <module>19-IoC-XML-Property-Editors</module>
+        <module>20-IoC-XML-Custom-Property-Editor</module>
 	</modules>
 </project>
 

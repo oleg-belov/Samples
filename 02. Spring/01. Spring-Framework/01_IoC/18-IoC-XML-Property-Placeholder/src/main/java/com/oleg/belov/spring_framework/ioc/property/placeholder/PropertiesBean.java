@@ -1,9 +1,5 @@
 package com.oleg.belov.spring_framework.ioc.property.placeholder;
 
-/**
- * Author: Georgy Gobozov
- * Date: 18.07.13
- */
 public class PropertiesBean {
 
     private String url;
