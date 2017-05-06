@@ -29,6 +29,7 @@
         <module>16-IoC-XML-Environment</module>
         <module>17-IoC-XML-Profiles</module>
         <module>18-IoC-XML-Property-Placeholder</module>
+        <module>19-IoC-XML-Property-Editors</module>
 	</modules>
 </project>
 
