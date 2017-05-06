@@ -34,6 +34,7 @@
         <module>210-IoC-XML-Scanning-Using-Exclude-Filter</module>
         <module>220-IoC-XML-Scanning-Using-Include-Filter</module>
         <module>230-IoC-XML-Resource</module>
+        <module>240-IoC-XML-Message-Source</module>
 	</modules>
 </project>
 
