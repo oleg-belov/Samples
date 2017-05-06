@@ -37,6 +37,7 @@
         <module>240-IoC-XML-Message-Source</module>
         <module>250-IoC-XML-Application-Event</module>
         <module>260-IoC-XML-Validation</module>
+        <module>270-IoC-XML-Bean-Validation</module>
 	</modules>
 </project>
 

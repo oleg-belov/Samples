@@ -29,6 +29,7 @@
 		<mojarra-version>2.2.10</mojarra-version>
 		<primefaces-version>6.0</primefaces-version>
 		<hibernate.version>4.3.11.Final</hibernate.version>
+		<hibernate.validation.version>4.3.2.Final</hibernate.validation.version>
 		<jpa.version>1.0.2</jpa.version>
 		<postgresql.version>9.4.1212.jre7</postgresql.version>	
         <ee.version>7.0</ee.version>
@@ -131,7 +132,18 @@
 			<dependency>
 				<groupId>org.hibernate</groupId>
 				<artifactId>hibernate-core</artifactId>
+				<exclusions>
+					<exclusion>
+						<groupId>org.hibernate</groupId>
+						<artifactId>hibernate-validator</artifactId>
+					</exclusion>
+				</exclusions>
 				<version>${hibernate.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate</groupId>
+				<artifactId>hibernate-validator</artifactId>
+				<version>${hibernate.validation.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.hibernate</groupId>
