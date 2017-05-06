@@ -10,29 +10,29 @@
     <name>Spring IoC</name>
 
     <modules>
-        <module>01-IoC-XML-Inheritance</module>
-        <module>02-IoC-XML-Factory-bean-and-factory-method-attributes</module>
-        <module>03-IoC-Annotation-Constructor-based-DI</module>
-        <module>03-IoC-XML-Constructor-based-DI</module>
-        <module>04-IoC-XML-Setter-based-DI</module>
-        <module>05-IoC-Annotation-Collection</module>
-        <module>05-IoC-XML-Collection</module>
-        <module>06-IoC-XML-Lazy-init</module>
-        <module>07-IoC-XML-Autowire</module>
-        <module>08-IoC-XML-Scope</module>
-        <module>09-IoC-XML-init-destroy</module>
-        <module>10-IoC-XML-PostConstructor-PreDestroy</module>
-        <module>11-IoC-XML-Bean-Inheritance</module>
-        <module>13-IoC-Annotation-JSR-330</module>
-        <module>14-IoC-XML-Lookup-Method-Injection</module>
-        <module>15-IoC-Java-config</module>
-        <module>16-IoC-XML-Environment</module>
-        <module>17-IoC-XML-Profiles</module>
-        <module>18-IoC-XML-Property-Placeholder</module>
-        <module>19-IoC-XML-Property-Editors</module>
-        <module>20-IoC-XML-Custom-Property-Editor</module>
-        <module>21-IoC-XML-Scanning-Using-Exclude-Filter</module>
-        <module>22-IoC-XML-Scanning-Using-Include-Filter</module>
+        <module>010-IoC-XML-Inheritance</module>
+        <module>020-IoC-XML-Factory-bean-and-factory-method-attributes</module>
+        <module>030-IoC-Annotation-Constructor-based-DI</module>
+        <module>030-IoC-XML-Constructor-based-DI</module>
+        <module>040-IoC-XML-Setter-based-DI</module>
+        <module>050-IoC-Annotation-Collection</module>
+        <module>050-IoC-XML-Collection</module>
+        <module>060-IoC-XML-Lazy-init</module>
+        <module>070-IoC-XML-Autowire</module>
+        <module>080-IoC-XML-Scope</module>
+        <module>090-IoC-XML-init-destroy</module>
+        <module>100-IoC-XML-PostConstructor-PreDestroy</module>
+        <module>110-IoC-XML-Bean-Inheritance</module>
+        <module>130-IoC-Annotation-JSR-330</module>
+        <module>140-IoC-XML-Lookup-Method-Injection</module>
+        <module>150-IoC-Java-config</module>
+        <module>160-IoC-XML-Environment</module>
+        <module>170-IoC-XML-Profiles</module>
+        <module>180-IoC-XML-Property-Placeholder</module>
+        <module>190-IoC-XML-Property-Editors</module>
+        <module>200-IoC-XML-Custom-Property-Editor</module>
+        <module>210-IoC-XML-Scanning-Using-Exclude-Filter</module>
+        <module>220-IoC-XML-Scanning-Using-Include-Filter</module>
 	</modules>
 </project>
 
