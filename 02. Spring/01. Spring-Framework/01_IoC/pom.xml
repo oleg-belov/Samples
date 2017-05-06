@@ -31,6 +31,8 @@
         <module>18-IoC-XML-Property-Placeholder</module>
         <module>19-IoC-XML-Property-Editors</module>
         <module>20-IoC-XML-Custom-Property-Editor</module>
+        <module>21-IoC-XML-Scanning-Using-Exclude-Filter</module>
+        <module>22-IoC-XML-Scanning-Using-Include-Filter</module>
 	</modules>
 </project>
 
