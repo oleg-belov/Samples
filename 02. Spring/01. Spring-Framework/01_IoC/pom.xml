@@ -28,6 +28,7 @@
         <module>15-IoC-Java-config</module>
         <module>16-IoC-XML-Environment</module>
         <module>17-IoC-XML-Profiles</module>
+        <module>18-IoC-XML-Property-Placeholder</module>
 	</modules>
 </project>
 
