@@ -11,6 +11,7 @@
 
     <modules>
         <module>01_IoC</module>
+        <module>02_SpEL</module>
     </modules>
 	
 </project>
