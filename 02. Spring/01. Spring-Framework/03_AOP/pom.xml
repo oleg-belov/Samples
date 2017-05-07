@@ -12,6 +12,7 @@
     <modules>
         <module>010-AOP-Java-Before-Advice</module>
         <module>020-AOP-Java-After-Returning-Advice</module>
+        <module>030-AOP-Java-Around-Advice</module>
 	</modules>
 </project>
 
