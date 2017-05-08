@@ -15,6 +15,13 @@
         <module>020-AOP-Java-After-Returning-Advice</module>
         <module>030-AOP-Java-Around-Advice</module>
         <module>040-AOP-Java-Throws-Advice</module>
+        <module>050-AOP-XML-Adviser</module>
+        <module>060-AOP-XML-Static-Pointcut</module>
+        <module>070-AOP-XML-Dinamic-Pointcut</module>
+        <module>080-AOP-XML-Name-Match-Method-Pointcut</module>
+        <module>090-AOP-XML-Regex-Pointcup</module>
+        <module>100-AOP-XML-AspectJ</module>
+        <module>110-AOP-XML-AspectJ-Pointcut_XML</module>
 	</modules>
 </project>
 

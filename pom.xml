@@ -44,6 +44,8 @@
 		<directwebremoting.version>2.0.10</directwebremoting.version>
 		<struts.version>2.3.16.3</struts.version>
 		<cglib.version>2.2</cglib.version>
+		<aspectj.version>1.7.2</aspectj.version>
+		<aspectjlib.version>1.6.2</aspectjlib.version>
 	</properties>
   
 	<repositories>
@@ -304,6 +306,21 @@
 				<artifactId>cglib</artifactId>
 				<version>${cglib.version}</version>
 			</dependency>
+			<dependency>
+	          <groupId>org.aspectj</groupId>
+	          <artifactId>aspectjrt</artifactId>
+	          <version>${aspectj.version}</version>
+	      </dependency>
+	      <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjlib</artifactId>
+            <version>${aspectjlib.version}</version>
+        </dependency>
+	      <dependency>
+	          <groupId>org.aspectj</groupId>
+	          <artifactId>aspectjweaver</artifactId>
+	          <version>${aspectj.version}</version>
+	      </dependency>
         </dependencies>	
     </dependencyManagement>
 	
