@@ -2,16 +2,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.oleg.belov.spring</groupId>
+    <groupId>com.oleg.belov.spring-dao</groupId>
     <artifactId>Spring</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Spring</name>
+    <name>Spring Data Access</name>
 
     <modules>
-        <module>01. Spring-Framework</module>
-        <module>02. Data Access</module>
+        <module>01_JDBC</module>
     </modules>
 	
 </project>
