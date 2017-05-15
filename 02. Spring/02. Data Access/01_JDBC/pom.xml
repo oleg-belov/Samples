@@ -10,7 +10,7 @@
     <name>Spring Data Access(JDBC)</name>
 
     <modules>
-        <module>010-</module>
+        <module>000-JDBC-XML-jdbcTemplate-querying-</module>
 	</modules>
 </project>
 
