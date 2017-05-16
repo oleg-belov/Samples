@@ -10,7 +10,8 @@
     <name>Spring Data Access(JDBC)</name>
 
     <modules>
-        <module>000-JDBC-XML-jdbcTemplate-querying-</module>
+        <module>000-JDBC-XML-jdbcTemplate-querying</module>
+        <module>010-JDBC-XML-NamedParameterJdbcTemplate</module>
 	</modules>
 </project>
 
