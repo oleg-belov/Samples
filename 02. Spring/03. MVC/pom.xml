@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.oleg.belov.spring-mvc</groupId>
+    <groupId>com.oleg.belov.spring.mvc</groupId>
     <artifactId>Spring</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -10,7 +10,12 @@
     <name>Spring MVC</name>
 
     <modules>
-        <module>01_JDBC</module>
+        <module>010_SpringMvcStartProject</module>
+        <module>020_ServingStaticResources</module>
+        <module>030_Controllers</module>
+        <module>040_@RequestMapping</module>
+        <module>050_ModelBasics</module>
+        <module>060_AutowiringControllerServices</module>
     </modules>
 	
 </project>
