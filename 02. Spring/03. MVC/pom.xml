@@ -16,6 +16,38 @@
         <module>040_@RequestMapping</module>
         <module>050_ModelBasics</module>
         <module>060_AutowiringControllerServices</module>
+        <module>070_URITemplates</module>
+        <module>080_MethodArguments</module>
+        <module>090_DataBinding</module>
+        <module>100_URLTag</module>
+        <module>110_FormTag</module>
+        <module>120_InputTag</module>
+        <module>130_SelectTag</module>
+        <module>140_CheckboxesAndRadioButtonsTags</module>
+        <module>150_TextareaTag</module>
+        <module>160_DatabindingCompositeObjects</module>
+        <module>170_DatabindingLists</module>
+        <module>180_@ModelAttribute</module>
+        <module>190_SessionAttributes</module>
+        <module>200_SessionStatus</module>
+        <module>210_ResponseBody</module>
+        <module>220_RequestBody</module>
+        <module>230_Validators</module>
+        <module>240_BeanValidation</module>
+        <module>250_ErrorsTag</module>
+        <module>260_@ExceptionHandler</module>
+        <module>270_HandlerExceptionResolver</module>
+        <module>280_ChainingViewResolvers</module>
+        <module>290_ContentNegotiatingViewResolver</module>
+        <module>300_Redirects</module>
+        <module>310_RedirectAttributes</module>
+        <module>320_FlashAttributes</module>
+        <module>330_HandlerInterceptor</module>
+        <module>340_BeanScopes</module>
+        <module>350_JacksonSupport</module>
+        <module>360_ControllerAdvice</module>
+        <module>370_Converters</module>
+        <module>380_FileUpload</module>
     </modules>
 	
 </project>

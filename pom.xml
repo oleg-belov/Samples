@@ -29,6 +29,7 @@
 		<mojarra-version>2.2.10</mojarra-version>
 		<primefaces-version>6.0</primefaces-version>
 		<hibernate.version>4.3.11.Final</hibernate.version>
+		<javax.validation.version>1.1.0.Final</javax.validation.version>
 		<hibernate.validation.version>4.3.2.Final</hibernate.validation.version>
 		<jpa.version>1.0.2</jpa.version>
 		<postgresql.version>9.4.1212.jre7</postgresql.version>	
@@ -46,6 +47,7 @@
 		<cglib.version>2.2</cglib.version>
 		<aspectj.version>1.7.2</aspectj.version>
 		<aspectjlib.version>1.6.2</aspectjlib.version>
+		<jackson.version>2.5.4</jackson.version>
 	</properties>
   
 	<repositories>
@@ -124,6 +126,11 @@
 				<version>${servlet.version}</version>
 				<scope>provided</scope>
 			</dependency>
+			<dependency>
+		  		<groupId>com.fasterxml.jackson.core</groupId>
+		  		<artifactId>jackson-databind</artifactId>
+		  		<version>%{jackson.version}</version>
+		  	</dependency>
 
 			<!-- Databases -->
 			<dependency>
@@ -168,6 +175,12 @@
 				<version>${jpa.version}</version>
 				<scope>provided</scope>
 			</dependency>
+			<dependency>
+                <groupId>javax.validation</groupId>
+                <artifactId>validation-api</artifactId>
+                <version>${javax.validation.version}</version>
+       		 </dependency>
+			
 			<dependency>
 				<groupId>javassist</groupId>
 				<artifactId>javassist</artifactId>

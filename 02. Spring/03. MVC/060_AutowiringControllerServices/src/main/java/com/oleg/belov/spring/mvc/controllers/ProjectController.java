@@ -6,7 +6,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import com.infiniteskills.mvc.data.services.ProjectService;
+import com.oleg.belov.spring.mvc.data.services.ProjectService;
 
 @Controller
 @RequestMapping("/project")
