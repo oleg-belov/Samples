@@ -11,6 +11,7 @@
 
     <modules>
         <module>02. Spring</module>
+	<module>04. MongoDB</module>
     </modules>
 	
 	<properties>
@@ -33,6 +34,7 @@
 		<hibernate.validation.version>4.3.2.Final</hibernate.validation.version>
 		<jpa.version>1.0.2</jpa.version>
 		<postgresql.version>9.4.1212.jre7</postgresql.version>	
+		<mongodb.version>3.4.2</mongodb.version>
         <ee.version>7.0</ee.version>
         <zk.version>7.0.3</zk.version> 
 		<javax.portlet.version>2.0</javax.portlet.version>
@@ -138,6 +140,12 @@
 				<artifactId>postgresql</artifactId>
 				<version>${postgresql.version}</version>
 			</dependency>
+			<dependency>
+            	<groupId>org.mongodb</groupId>
+            	<artifactId>mongo-java-driver</artifactId>
+            	<version>${mongodb.version}</version>
+        	</dependency>
+        
 			<dependency>
 				<groupId>org.hibernate</groupId>
 				<artifactId>hibernate-core</artifactId>
