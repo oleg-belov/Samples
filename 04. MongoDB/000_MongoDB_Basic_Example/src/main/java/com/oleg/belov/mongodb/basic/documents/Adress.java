@@ -11,6 +11,14 @@ public class Adress {
 	public Adress() {
 	}
 	
+	public Adress(int building, List<Double> coord, String street, int zipCode) {
+		super();
+		this.building = building;
+		this.coord = coord;
+		this.street = street;
+		this.zipCode = zipCode;
+	}
+
 	public int getBuilding() {
 		return building;
 	}
@@ -36,5 +44,11 @@ public class Adress {
 
 	public void setZipCode(int zipCode) {
 		this.zipCode = zipCode;
+	}
+
+	@Override
+	public String toString() {
+		return "Adress [building=" + building + ", coord=" + coord + ", street=" + street + ", zipCode=" + zipCode
+				+ "]";
 	}
 }

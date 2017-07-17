@@ -2,10 +2,10 @@ package com.oleg.belov.mongodb.basic.service;
 
 import java.util.List;
 
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.mongodb.DBObject;
 import com.oleg.belov.mongodb.basic.documents.Restaurant;
 import com.oleg.belov.mongodb.basic.repository.RestaurantRepository;
 
@@ -20,17 +20,17 @@ public class RestaurantServiceImpl implements RestaurantService<Restaurant> {
 	}
 
 	@Override
-	public void insertRestaurantDBObject(DBObject doc) {
+	public void insertRestaurantDBObject(Document doc) {
 		restaurantRepository.insertRestaurantDBObject(doc);
 	}
 
 	@Override
-	public List<DBObject> findFirstRestaurants(int count) {
+	public List<Document> findFirstRestaurants(int count) {
 		return restaurantRepository.findFirstRestaurants(count);
 	}
 
 	@Override
-	public List<DBObject> findByName(String name) {
+	public List<Document> findByName(String name) {
 		return restaurantRepository.findByName(name);
 	}
 
@@ -40,14 +40,19 @@ public class RestaurantServiceImpl implements RestaurantService<Restaurant> {
 	}
 
 	@Override
-	public void updateRestauranById(Long restaurantId, DBObject doc) {
+	public void updateRestauranById(Long restaurantId, Document doc) {
 		restaurantRepository.updateRestauranById(restaurantId, doc);
 		
 	}
 
 	@Override
-	public void deleteById(Long restaurantId) {
-		restaurantRepository.deleteById(restaurantId);
+	public void deleteByRestaurantId(Long restaurantId) {
+		restaurantRepository.deleteByRestaurantId(restaurantId);
 		
+	}
+
+	@Override
+	public Restaurant findbyRestaurantId(Long restaurantId) {
+		return restaurantRepository.findbyRestaurantId(restaurantId);
 	}
 }

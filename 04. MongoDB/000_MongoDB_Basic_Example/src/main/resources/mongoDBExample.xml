@@ -8,7 +8,7 @@
 	<context:component-scan base-package="com.oleg.belov.mongodb.basic" />
 	<!-- <context:annotation-config/> -->
 	
-	<bean id="dbCollection" class="com.oleg.belov.mongodb.basic.repository.DataBaseCollection">
+	<bean id="dbCollection" class="com.oleg.belov.mongodb.basic.repository.MongoDBCollection">
 		<constructor-arg name="host" value="${host}"/>
 		<constructor-arg name="port" value="${port}"/>
 		<constructor-arg name="database" value="${database}"/>

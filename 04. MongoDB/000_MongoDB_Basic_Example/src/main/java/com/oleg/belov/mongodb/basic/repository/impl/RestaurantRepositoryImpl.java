@@ -4,50 +4,51 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.oleg.belov.mongodb.basic.repository.DataBaseCollection;
+import com.google.gson.Gson;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.oleg.belov.mongodb.basic.documents.Restaurant;
+import com.oleg.belov.mongodb.basic.repository.MongoDBCollection;
 import com.oleg.belov.mongodb.basic.repository.RestaurantRepository;
 
 @Repository
 public class RestaurantRepositoryImpl implements RestaurantRepository {
-private DBCollection collection;
+private MongoCollection<Document> collection;
 	
 	@Autowired
-	public void setCollection(DataBaseCollection dataBaseCollection) throws IOException {
+	public void setCollection(MongoDBCollection dataBaseCollection) throws IOException {
 		this.collection = dataBaseCollection.getCollection();
 	}
 
 	@Override
-	public void insertRestaurantDBObject(DBObject doc) {
-		collection.insert(doc);
+	public void insertRestaurantDBObject(Document doc) {
+		collection.insertOne(doc);
 	}
 
 	@Override
-	public List<DBObject> findFirstRestaurants(int count) {
-		DBCursor cursor = collection.find().limit(count);
-		List<DBObject> docs = new ArrayList<>();
+	public List<Document> findFirstRestaurants(int count) {
+		MongoCursor<Document>  cursor = collection.find().limit(count).iterator();
+		List<Document> docs = new ArrayList<>();
 		
 		while(cursor.hasNext()) {
-			DBObject doc = cursor.next();
+			Document doc = cursor.next();
 			docs.add(doc);
 		}
 		return docs;
 	}
 
 	@Override
-	public List<DBObject> findByName(String name) {
-		DBObject query = new BasicDBObject("name", name);
-		DBCursor cursor = collection.find(query);
-		List<DBObject> docs = new ArrayList<>();
+	public List<Document> findByName(String name) {
+		Document query = new Document("name", name);
+		MongoCursor<Document> cursor = collection.find(query).iterator();
+		List<Document> docs = new ArrayList<>();
 		
 		while(cursor.hasNext()) {
-			DBObject doc = cursor.next();
+			Document doc = cursor.next();
 			docs.add(doc);
 		}
 		return docs;
@@ -55,27 +56,36 @@ private DBCollection collection;
 
 	@Override
 	public void updateNameByRestaurantId(Long restaurantId, String newRestaurantName) {
-		DBObject newDocument = new BasicDBObject();
+		Document newDocument = new Document();
 		newDocument.put("name", newRestaurantName);
 		
-		DBObject searchQuery = new BasicDBObject().append("restaurant_id", restaurantId);
-		collection.update(searchQuery, newDocument);
+		Document searchQuery = new Document().append("restaurant_id", restaurantId);
+		collection.updateOne(searchQuery, newDocument);
 	}
 
 	@Override
-	public void updateRestauranById(Long restaurantId, DBObject doc) {
-		DBObject newDocument = new BasicDBObject();
+	public void updateRestauranById(Long restaurantId, Document doc) {
+		Document newDocument = new Document();
 		newDocument.put("$set", doc);
 		
-		DBObject searchQuery = new BasicDBObject().append("restaurant_id", restaurantId);
-		collection.update(searchQuery, newDocument);
+		Document searchQuery = new Document().append("restaurant_id", restaurantId);
+		collection.updateOne(searchQuery, newDocument);
 	}
 
 	@Override
-	public void deleteById(Long restaurantId) {
-		DBObject doc = new BasicDBObject();
+	public void deleteByRestaurantId(Long restaurantId) {
+		Document doc = new Document();
 		doc.put("restaurant_id", restaurantId);
 		
-		collection.remove(doc);
+		collection.deleteOne(doc);
+	}
+
+	@Override
+	public Restaurant findbyRestaurantId(Long restaurantId) {
+		Gson gson = new Gson();
+		Document doc = collection.find(new Document("restaurant_id", restaurantId)).first();
+		Restaurant restaurant = gson.fromJson(doc.toJson(), Restaurant.class);
+		
+		return restaurant;
 	}
 }

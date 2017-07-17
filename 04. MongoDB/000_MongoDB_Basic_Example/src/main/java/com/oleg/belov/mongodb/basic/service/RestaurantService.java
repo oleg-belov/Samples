@@ -2,18 +2,22 @@ package com.oleg.belov.mongodb.basic.service;
 
 import java.util.List;
 
-import com.mongodb.DBObject;
+import org.bson.Document;
+
+import com.oleg.belov.mongodb.basic.documents.Restaurant;
 
 public interface RestaurantService<T> {
-	public void insertRestaurantDBObject(DBObject doc);
+	public void insertRestaurantDBObject(Document doc);
 
-	public List<DBObject> findFirstRestaurants(int count);
+	public List<Document> findFirstRestaurants(int count);
 
-	public List<DBObject> findByName(String name);
+	public List<Document> findByName(String name);
 
 	public void updateNameByRestaurantId(Long restaurantId, String newRestaurantName);
 
-	public void updateRestauranById(Long restaurantId, DBObject doc);
+	public void updateRestauranById(Long restaurantId, Document doc);
 
-	public void deleteById(Long restaurantId);
+	public void deleteByRestaurantId(Long restaurantId);
+
+	public Restaurant findbyRestaurantId(Long restaurantId);
 }

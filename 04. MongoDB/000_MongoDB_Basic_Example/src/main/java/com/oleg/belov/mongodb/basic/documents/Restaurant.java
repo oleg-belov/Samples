@@ -3,7 +3,7 @@ package com.oleg.belov.mongodb.basic.documents;
 import java.util.List;
 
 public class Restaurant {
-	private String objectId;
+	private Object _id;
 	private Adress adress;
 	private String borough;
 	private String cuisine;
@@ -14,9 +14,9 @@ public class Restaurant {
 	public Restaurant() {
 	}
 
-	public Restaurant(String objectId, Adress adress, String borough, String cuisine, List<Grade> grades, String name,
+	public Restaurant(Object _id, Adress adress, String borough, String cuisine, List<Grade> grades, String name,
 			Long restaurantId) {
-		this.objectId = objectId;
+		this._id = _id;
 		this.adress = adress;
 		this.borough = borough;
 		this.cuisine = cuisine;
@@ -25,12 +25,12 @@ public class Restaurant {
 		this.restaurantId = restaurantId;
 	}
 
-	public String getObjectId() {
-		return objectId;
+	public Object getObjectId() {
+		return _id;
 	}
 
-	public void setObjectId(String objectId) {
-		this.objectId = objectId;
+	public void setObjectId(Object _id) {
+		this._id = _id;
 	}
 
 	public Adress getAdress() {
@@ -80,5 +80,10 @@ public class Restaurant {
 	public void setRestaurantId(Long restaurantId) {
 		this.restaurantId = restaurantId;
 	}
-	
+
+	@Override
+	public String toString() {
+		return "Restaurant [_id=" + _id + ", adress=" + adress + ", borough=" + borough + ", cuisine="
+				+ cuisine + ", grades=" + grades + ", name=" + name + ", restaurantId=" + restaurantId + "]";
+	}
 }
