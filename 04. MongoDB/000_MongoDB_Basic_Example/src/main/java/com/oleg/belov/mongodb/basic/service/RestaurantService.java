@@ -20,4 +20,6 @@ public interface RestaurantService<T> {
 	public void deleteByRestaurantId(Long restaurantId);
 
 	public Restaurant findbyRestaurantId(Long restaurantId);
+
+	public void insertRestaurant(Restaurant restauranr);
 }

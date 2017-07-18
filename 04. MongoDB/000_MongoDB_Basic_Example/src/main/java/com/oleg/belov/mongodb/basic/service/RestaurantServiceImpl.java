@@ -55,4 +55,9 @@ public class RestaurantServiceImpl implements RestaurantService<Restaurant> {
 	public Restaurant findbyRestaurantId(Long restaurantId) {
 		return restaurantRepository.findbyRestaurantId(restaurantId);
 	}
+
+	@Override
+	public void insertRestaurant(Restaurant restauranr) {
+		 restaurantRepository.insertRestaurant(restauranr);
+	}
 }

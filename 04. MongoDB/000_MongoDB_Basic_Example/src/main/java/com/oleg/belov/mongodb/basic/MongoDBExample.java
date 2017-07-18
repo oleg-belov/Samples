@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.oleg.belov.mongodb.basic.documents.Adress;
+import com.oleg.belov.mongodb.basic.documents.Grade;
 import com.oleg.belov.mongodb.basic.documents.Restaurant;
 import com.oleg.belov.mongodb.basic.service.RestaurantService;
 
@@ -46,9 +48,23 @@ public class MongoDBExample {
 //		updateNameByRestaurantId(RESTAURANT_ID, NEW_RESTAURANT_NAME);
 //		updateRestauranById(RESTAURANT_ID);
 //		deleteByRestaurantId(RESTAURANT_ID);
-		findbyRestaurantId(RESTAURANT_ID);
+//		findbyRestaurantId(RESTAURANT_ID);
+		insertRestaurant();
 	}
 	
+	private static void insertRestaurant() {
+		Restaurant restauranr = new Restaurant(
+				new Adress(27, new ArrayList<Double>(Arrays.asList(25.00, 75.00)),  "Frunze 1k street", 12345),
+				"Queens", "Delicatessen",  new ArrayList<Grade>(Arrays.asList(
+					new Grade(new Date(),'C', 20),
+					new Grade(new Date(), 'B', 25),
+					new Grade(new Date(), 'D', 15)))
+				, NEW_RESTAURANT_NAME, 12345678902L);
+		
+		restaurantService.insertRestaurant(restauranr);
+		log.info("Restaurant: " + restauranr + ", is succesful inserted.");
+	}
+
 	private static void findbyRestaurantId(Long restaurantId) {
 		Restaurant restaurant = restaurantService.findbyRestaurantId(restaurantId);
 		log.info("Restaurant with id: " + restaurantId + " is: " + restaurant);

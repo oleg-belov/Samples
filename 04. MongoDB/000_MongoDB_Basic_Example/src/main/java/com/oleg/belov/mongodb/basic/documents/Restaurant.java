@@ -13,6 +13,19 @@ public class Restaurant {
 
 	public Restaurant() {
 	}
+	
+	
+
+	public Restaurant(Adress adress, String borough, String cuisine, List<Grade> grades, String name,
+			Long restaurantId) {
+		super();
+		this.adress = adress;
+		this.borough = borough;
+		this.cuisine = cuisine;
+		this.grades = grades;
+		this.name = name;
+		this.restaurantId = restaurantId;
+	}
 
 	public Restaurant(Object _id, Adress adress, String borough, String cuisine, List<Grade> grades, String name,
 			Long restaurantId) {
