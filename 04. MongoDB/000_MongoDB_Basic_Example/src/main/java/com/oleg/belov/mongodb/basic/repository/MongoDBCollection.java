@@ -18,14 +18,13 @@ import com.mongodb.client.MongoDatabase;
 public class MongoDBCollection {
 	private static Logger log = LoggerFactory.getLogger(getCurrentClassName());
 
-	private static String host;
-	private static String port;
-	private static String database;
-	private static String collection;
-	private static String user;
-	private static String pws;
+	private String host;
+	private String port;
+	private String database;
+	private String collection;
+	private String user;
+	private String pws;
 
-	@SuppressWarnings("static-access")
 	public MongoDBCollection(String host, String port, String database, String collection, String user, String pws) {
 		this.host = host;
 		this.port = port;

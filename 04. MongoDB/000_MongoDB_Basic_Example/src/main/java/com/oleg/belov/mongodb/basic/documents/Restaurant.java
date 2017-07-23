@@ -2,13 +2,17 @@ package com.oleg.belov.mongodb.basic.documents;
 
 import java.util.List;
 
+import com.google.gson.annotations.SerializedName;
+
 public class Restaurant {
-	private Object _id;
+	@SerializedName("_id")
+	private Object id;
 	private Adress adress;
 	private String borough;
 	private String cuisine;
 	private List<Grade> grades;
 	private String name;
+	@SerializedName("restaurant_id")
 	private Long restaurantId;
 
 	public Restaurant() {
@@ -27,9 +31,9 @@ public class Restaurant {
 		this.restaurantId = restaurantId;
 	}
 
-	public Restaurant(Object _id, Adress adress, String borough, String cuisine, List<Grade> grades, String name,
+	public Restaurant(Object id, Adress adress, String borough, String cuisine, List<Grade> grades, String name,
 			Long restaurantId) {
-		this._id = _id;
+		this.id = id;
 		this.adress = adress;
 		this.borough = borough;
 		this.cuisine = cuisine;
@@ -39,11 +43,11 @@ public class Restaurant {
 	}
 
 	public Object getObjectId() {
-		return _id;
+		return id;
 	}
 
-	public void setObjectId(Object _id) {
-		this._id = _id;
+	public void setObjectId(Object id) {
+		this.id = id;
 	}
 
 	public Adress getAdress() {
@@ -96,7 +100,7 @@ public class Restaurant {
 
 	@Override
 	public String toString() {
-		return "Restaurant [_id=" + _id + ", adress=" + adress + ", borough=" + borough + ", cuisine="
+		return "Restaurant [id=" + id + ", adress=" + adress + ", borough=" + borough + ", cuisine="
 				+ cuisine + ", grades=" + grades + ", name=" + name + ", restaurantId=" + restaurantId + "]";
 	}
 }
