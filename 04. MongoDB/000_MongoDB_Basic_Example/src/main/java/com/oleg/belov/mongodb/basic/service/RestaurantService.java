@@ -19,9 +19,9 @@ public interface RestaurantService<T> {
 
 	public void deleteByRestaurantId(Long restaurantId);
 
-	public Restaurant findbyRestaurantId(Long restaurantId);
+	public T findbyRestaurantId(Long restaurantId);
 
-	public void insertRestaurant(Restaurant restauranr);
+	public void insertRestaurant(T restauranr);
 
-	public void bulkInsertRestaurants(List<Restaurant> restaurantList);
+	public void bulkInsertRestaurants(List<T> restaurantList);
 }
