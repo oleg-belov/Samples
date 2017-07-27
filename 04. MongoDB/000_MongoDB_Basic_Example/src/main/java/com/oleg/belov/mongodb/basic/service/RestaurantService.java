@@ -22,4 +22,6 @@ public interface RestaurantService<T> {
 	public Restaurant findbyRestaurantId(Long restaurantId);
 
 	public void insertRestaurant(Restaurant restauranr);
+
+	public void bulkInsertRestaurants(List<Restaurant> restaurantList);
 }

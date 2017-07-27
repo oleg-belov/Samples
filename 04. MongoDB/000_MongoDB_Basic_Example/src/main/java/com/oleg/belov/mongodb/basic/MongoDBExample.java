@@ -49,9 +49,27 @@ public class MongoDBExample {
 //		updateRestauranById(RESTAURANT_ID);
 //		deleteByRestaurantId(RESTAURANT_ID);
 //		findbyRestaurantId(RESTAURANT_ID);
-		insertRestaurant();
+//		insertRestaurant();
+		bulkInsertRestaurants();
 	}
 	
+	@SuppressWarnings("unchecked")
+	private static void bulkInsertRestaurants() {
+		List<Restaurant> restaurantList = new ArrayList<>();
+		for(long i = 12345678903L; i < 12345678913L; i++) {
+			Restaurant restauranr = new Restaurant(
+					new Adress(27, new ArrayList<Double>(Arrays.asList(25.00, 75.00)),  "Frunze 1k street", 12345),
+					"Queens", "Delicatessen",  new ArrayList<Grade>(Arrays.asList(
+						new Grade(new Date(),'C', 20),
+						new Grade(new Date(), 'B', 25),
+						new Grade(new Date(), 'D', 15)))
+					, NEW_RESTAURANT_NAME, i);
+			restaurantList.add(restauranr);
+		}
+		restaurantService.bulkInsertRestaurants(restaurantList);
+		log.info("Is succesful inserted: " + (12345678913L - 12345678903L) + ", restaurants.");
+	}
+
 	private static void insertRestaurant() {
 		Restaurant restauranr = new Restaurant(
 				new Adress(27, new ArrayList<Double>(Arrays.asList(25.00, 75.00)),  "Frunze 1k street", 12345),

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import com.google.gson.Gson;
+import com.mongodb.BulkWriteOperation;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.oleg.belov.mongodb.basic.documents.Restaurant;
@@ -94,5 +95,17 @@ private MongoCollection<Document> collection;
 		Gson gson = new Gson();
 		Document doc =  Document.parse(gson.toJson(restauranr));
 		collection.insertOne(doc);
+	}
+
+	@Override
+	public void bulkInsertRestaurants(List<Restaurant> restaurantList) {
+		List<Document> docs = new ArrayList<>();
+		for(Restaurant restaurant :restaurantList) {
+			Gson gson = new Gson();
+			Document doc =  Document.parse(gson.toJson(restaurant));
+			docs.add(doc);
+		}
+			
+		collection.insertMany(docs);
 	}
 }

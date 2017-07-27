@@ -60,4 +60,9 @@ public class RestaurantServiceImpl implements RestaurantService<Restaurant> {
 	public void insertRestaurant(Restaurant restauranr) {
 		 restaurantRepository.insertRestaurant(restauranr);
 	}
+
+	@Override
+	public void bulkInsertRestaurants(List<Restaurant> restaurantList) {
+		restaurantRepository.bulkInsertRestaurants(restaurantList);
+	}
 }
