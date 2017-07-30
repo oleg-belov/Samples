@@ -36,7 +36,7 @@ private JdbcTemplate jdbcTemplate;
 	
 	@Override
 	public void dropAuthorTable() {
-		String sql = "DROP TABLE author";
+		String sql = "DROP TABLE author CASCADE";
 		
 		jdbcTemplate.execute(sql);
 	}

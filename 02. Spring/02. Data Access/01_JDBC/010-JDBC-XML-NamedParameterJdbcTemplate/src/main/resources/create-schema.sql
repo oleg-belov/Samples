@@ -1,7 +1,7 @@
-DROP TABLE IF EXISTS book_author;
-DROP TABLE IF EXISTS book;
-DROP TABLE IF EXISTS author;
-DROP TABLE IF EXISTS book_category;
+DROP TABLE IF EXISTS book_author CASCADE;
+DROP TABLE IF EXISTS book CASCADE;
+DROP TABLE IF EXISTS author CASCADE;
+DROP TABLE IF EXISTS book_category CASCADE;
 
 ------ Cteate Table for books category --------
 CREATE TABLE book_category (
@@ -101,7 +101,7 @@ ALTER TABLE public.author
   
 ------ Insert into author table --------
 INSERT INTO author (author_name, author_date_of_birth)
-VALUES ('Герберт Шилдт', '23/2/1951');
+VALUES ('Герберт Шилдт', TO_DATE('23/2/1951', 'DD/MM/YYYY'));
 
 INSERT INTO author (author_name)
 VALUES ('Кей С. Хорстманн');
