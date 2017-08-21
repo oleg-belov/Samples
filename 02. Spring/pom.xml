@@ -13,6 +13,7 @@
         <module>01. Spring-Framework</module>
         <module>02. Data Access</module>
         <module>03. MVC</module>
+		<module>04_Data</module>
     </modules>
 	
 </project>

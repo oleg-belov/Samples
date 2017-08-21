@@ -1,0 +1,2 @@
+mongorestore -d stocks -c values stocks.values.bson
+mongorestore -d stocks -c values stocks.vsystem.indexes.bson

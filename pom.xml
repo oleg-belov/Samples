@@ -11,7 +11,7 @@
 
     <modules>
         <module>02. Spring</module>
-	<module>04. MongoDB</module>
+		<module>04. MongoDB</module>
     </modules>
 	
 	<properties>
@@ -23,6 +23,7 @@
 		<servlet.version>3.1.0</servlet.version>
 		<webflow-version>2.4.4.RELEASE</webflow-version>
 		<spring-framework-version>4.3.7.RELEASE</spring-framework-version>
+		<spring-data-version>Hopper-SR11</spring-data-version>
 		<springsecurity-version>4.2.2.RELEASE</springsecurity-version>
 		<spring-integration.version>4.1.0.RELEASE</spring-integration.version>
 		<slf4j-version>1.7.25</slf4j-version>
@@ -54,6 +55,11 @@
   
 	<repositories>
 		<repository>
+			<id>io.spring.repo.maven.milestone</id>
+			<url>http://repo.spring.io/milestone/</url>
+			<snapshots><enabled>true</enabled></snapshots>
+		</repository>
+		<repository>
 			<id>io.spring.repo.maven.snapshot</id>
 			<url>http://repo.spring.io/snapshot/</url>
 			<snapshots><enabled>true</enabled></snapshots>
@@ -73,6 +79,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+	  			<groupId>org.springframework.data</groupId>
+	  			<artifactId>spring-data-releasetrain</artifactId>
+	  			<version>${spring-data-version}</version>
+	  			<type>pom</type>
+	  			<scope>import</scope>
+  			</dependency>
 			<dependency>
                 <groupId>org.glassfish.jersey</groupId>
                 <artifactId>jersey-bom</artifactId>

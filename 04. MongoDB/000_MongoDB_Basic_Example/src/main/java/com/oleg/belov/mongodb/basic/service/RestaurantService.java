@@ -6,7 +6,7 @@ import org.bson.Document;
 
 import com.oleg.belov.mongodb.basic.documents.Restaurant;
 
-public interface RestaurantService<T> {
+public interface RestaurantService {
 	public void insertRestaurantDBObject(Document doc);
 
 	public List<Document> findFirstRestaurants(int count);
@@ -19,9 +19,9 @@ public interface RestaurantService<T> {
 
 	public void deleteByRestaurantId(Long restaurantId);
 
-	public T findbyRestaurantId(Long restaurantId);
+	public Restaurant findbyRestaurantId(Long restaurantId);
 
-	public void insertRestaurant(T restauranr);
+	public void insertRestaurant(Restaurant restauranr);
 
-	public void bulkInsertRestaurants(List<T> restaurantList);
+	public void bulkInsertRestaurants(List<Restaurant> restaurantList);
 }

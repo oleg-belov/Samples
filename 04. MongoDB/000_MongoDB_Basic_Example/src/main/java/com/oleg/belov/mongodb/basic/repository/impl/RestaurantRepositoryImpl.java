@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import com.google.gson.Gson;
-import com.mongodb.BulkWriteOperation;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.oleg.belov.mongodb.basic.documents.Restaurant;

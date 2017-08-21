@@ -12,4 +12,5 @@ Software Links
 * IDE: [Spring Tool Suite](https://spring.io/tools/sts/all)
 * BUILD: [Maven](http://maven.apache.org/download.cgi)
 * DB: [PostgreSQL](http://www.postgresql.org/download)
+* NoSQL DB: [MongoDB](https://www.mongodb.com/download-center#community)
 

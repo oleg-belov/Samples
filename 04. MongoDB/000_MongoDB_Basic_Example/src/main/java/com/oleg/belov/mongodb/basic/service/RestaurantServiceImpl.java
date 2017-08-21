@@ -10,7 +10,7 @@ import com.oleg.belov.mongodb.basic.documents.Restaurant;
 import com.oleg.belov.mongodb.basic.repository.RestaurantRepository;
 
 @Service
-public class RestaurantServiceImpl implements RestaurantService<Restaurant> {
+public class RestaurantServiceImpl implements RestaurantService {
 	
 	private RestaurantRepository restaurantRepository;
 	

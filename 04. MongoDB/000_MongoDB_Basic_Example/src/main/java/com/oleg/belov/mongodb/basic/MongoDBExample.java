@@ -23,7 +23,7 @@ import com.oleg.belov.mongodb.basic.documents.Restaurant;
 import com.oleg.belov.mongodb.basic.service.RestaurantService;
 
 @Component
-@SuppressWarnings({ "static-access", "rawtypes", "unused" })
+@SuppressWarnings({ "static-access", "unused" })
 public class MongoDBExample {
 	private final static int COUNT = 10;
 	private final static String RESTAURANT_NAME = "Carvel Ice Cream";
@@ -53,7 +53,6 @@ public class MongoDBExample {
 		bulkInsertRestaurants();
 	}
 	
-	@SuppressWarnings("unchecked")
 	private static void bulkInsertRestaurants() {
 		List<Restaurant> restaurantList = new ArrayList<>();
 		for(long i = 12345678903L; i < 12345678913L; i++) {
@@ -128,14 +127,12 @@ public class MongoDBExample {
 		log.info("Restaurant with id: " + restaurantId + " is succesfull updated");
 	}
 
-	@SuppressWarnings({ "unchecked" })
 	private static void findByName(String name) {
-		List<DBObject> docs = restaurantService.findByName(name);
-		for(DBObject doc : docs)
+		List<Document> docs = restaurantService.findByName(name);
+		for(Document doc : docs)
 			log.info(doc.toString());
 	}
 
-	@SuppressWarnings({ "unchecked" })
 	private static void findFirstTenRestaurants(int count) {
 		List<Document> docs = restaurantService.findFirstRestaurants(count);
 		for(Document doc : docs)
