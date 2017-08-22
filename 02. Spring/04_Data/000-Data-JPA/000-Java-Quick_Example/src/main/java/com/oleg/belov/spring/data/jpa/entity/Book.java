@@ -2,13 +2,10 @@ package com.oleg.belov.spring.data.jpa.entity;
 
 import java.io.Serializable;
 import javax.persistence.*;
+
+import java.util.Arrays;
 import java.util.List;
 
-
-/**
- * The persistent class for the book database table.
- * 
- */
 @Entity
 @NamedQuery(name="Book.findAll", query="SELECT b FROM Book b")
 public class Book implements Serializable {
@@ -178,4 +175,11 @@ public class Book implements Serializable {
 		return vote;
 	}
 
+	@Override
+	public String toString() {
+		return "Book [bookId=" + bookId + ", bookContent=" + Arrays.toString(bookContent) + ", bookDate=" + bookDate
+				+ ", bookDescr=" + bookDescr + ", bookImg=" + Arrays.toString(bookImg) + ", bookLanguage="
+				+ bookLanguage + ", bookName=" + bookName + ", bookPages=" + bookPages + ", bookTupe=" + bookTupe
+				+ ", bookCategory=" + bookCategory + ", authors=" + authors + ", votes=" + votes + "]";
+	}
 }

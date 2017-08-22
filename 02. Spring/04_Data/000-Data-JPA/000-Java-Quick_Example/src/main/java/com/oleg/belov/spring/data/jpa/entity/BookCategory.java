@@ -4,11 +4,6 @@ import java.io.Serializable;
 import javax.persistence.*;
 import java.util.List;
 
-
-/**
- * The persistent class for the book_category database table.
- * 
- */
 @Entity
 @Table(name="book_category")
 @NamedQuery(name="BookCategory.findAll", query="SELECT b FROM BookCategory b")
@@ -16,7 +11,7 @@ public class BookCategory implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	@GeneratedValue(strategy=GenerationType.SEQUENCE)
 	@Column(name="category_id")
 	private Integer categoryId;
 
@@ -68,4 +63,8 @@ public class BookCategory implements Serializable {
 		return book;
 	}
 
+	@Override
+	public String toString() {
+		return "BookCategory [categoryId=" + categoryId + ", categoryName=" + categoryName + ", books=" + books + "]";
+	}
 }

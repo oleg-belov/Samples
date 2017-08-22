@@ -3,11 +3,6 @@ package com.oleg.belov.spring.data.jpa.entity;
 import java.io.Serializable;
 import javax.persistence.*;
 
-
-/**
- * The persistent class for the vote database table.
- * 
- */
 @Entity
 @NamedQuery(name="Vote.findAll", query="SELECT v FROM Vote v")
 public class Vote implements Serializable {
@@ -53,4 +48,8 @@ public class Vote implements Serializable {
 		this.book = book;
 	}
 
+	@Override
+	public String toString() {
+		return "Vote [voteId=" + voteId + ", voteValue=" + voteValue + ", book=" + book + "]";
+	}
 }
