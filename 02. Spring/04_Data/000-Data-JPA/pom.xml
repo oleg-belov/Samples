@@ -11,6 +11,7 @@
 
     <modules>
         <module>000-Java-Quick_Example</module>
+        <module>010-XML-Derived-Queries</module>
 	</modules>
 </project>
 
