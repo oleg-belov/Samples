@@ -45,12 +45,12 @@ public class MongoDBExample {
 //		insertRestaurantDBObject();
 //		findFirstTenRestaurants(COUNT);
 //		findByName(RESTAURANT_NAME);
-//		updateNameByRestaurantId(RESTAURANT_ID, NEW_RESTAURANT_NAME);
+		updateNameByRestaurantId(RESTAURANT_ID, NEW_RESTAURANT_NAME);
 //		updateRestauranById(RESTAURANT_ID);
 //		deleteByRestaurantId(RESTAURANT_ID);
 //		findbyRestaurantId(RESTAURANT_ID);
 //		insertRestaurant();
-		bulkInsertRestaurants();
+//		bulkInsertRestaurants();
 	}
 	
 	private static void bulkInsertRestaurants() {

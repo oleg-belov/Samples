@@ -50,7 +50,7 @@
 		<cglib.version>2.2</cglib.version>
 		<aspectj.version>1.7.2</aspectj.version>
 		<aspectjlib.version>1.6.2</aspectjlib.version>
-		<jackson.version>2.5.4</jackson.version>
+		<jackson.version>2.9.0</jackson.version>
 	</properties>
   
 	<repositories>
@@ -67,6 +67,21 @@
 		<repository>
             <id>zk repository</id>
             <url>http://mavensync.zkoss.org/maven2</url>
+        </repository>
+        <repository>
+            <id>mvnrepository1</id>
+            <url>http://repo1.maven.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <id>mvnrepository</id>
+            <name>mvnrepository</name>
+            <url>https://mvnrepository.com/artifact</url>
         </repository>
 	</repositories>
 
@@ -141,11 +156,12 @@
 				<version>${servlet.version}</version>
 				<scope>provided</scope>
 			</dependency>
-			<dependency>
-		  		<groupId>com.fasterxml.jackson.core</groupId>
-		  		<artifactId>jackson-databind</artifactId>
-		  		<version>%{jackson.version}</version>
-		  	</dependency>
+		  	<dependency>
+			    <groupId>com.fasterxml.jackson</groupId>
+			    <artifactId>jackson-bom</artifactId>
+			    <version>%{jackson.version}</version>
+			    <type>pom</type>
+			</dependency>
 
 			<!-- Databases -->
 			<dependency>

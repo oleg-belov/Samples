@@ -11,6 +11,7 @@
 
     <modules>
         <module>000-Data-JPA</module>
+		<module>010-Data-Mongo</module>
 	</modules>
 	
 </project>

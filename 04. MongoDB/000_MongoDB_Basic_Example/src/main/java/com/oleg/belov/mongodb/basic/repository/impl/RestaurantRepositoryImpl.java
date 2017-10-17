@@ -57,7 +57,7 @@ private MongoCollection<Document> collection;
 	@Override
 	public void updateNameByRestaurantId(Long restaurantId, String newRestaurantName) {
 		Document newDocument = new Document();
-		newDocument.put("name", newRestaurantName);
+		newDocument.put("$set", new Document( "name", newRestaurantName));
 		
 		Document searchQuery = new Document().append("restaurant_id", restaurantId);
 		collection.updateOne(searchQuery, newDocument);
