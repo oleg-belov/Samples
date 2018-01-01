@@ -26,17 +26,17 @@ public class BookCategoryServiceImpl implements BookCategoryService {
 
 	@Override
 	public List<BookCategory> findAll(ArrayList<Long> arrayList) {
-		return bookCategoryRepository.findAll(arrayList);
+		return bookCategoryRepository.findAllById(arrayList);
 	}
 
 	@Override
 	public BookCategory findOneById(long id) {
-		return bookCategoryRepository.findOne(id);
+		return bookCategoryRepository.findById(id).get();
 	}
 	
 	@Override
 	public void delete(Long id) {
-		bookCategoryRepository.delete(id);
+		bookCategoryRepository.deleteById(id);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class BookCategoryServiceImpl implements BookCategoryService {
 
 	@Override
 	public void delete(List<BookCategory> list) {
-		bookCategoryRepository.delete(list);
+		bookCategoryRepository.deleteAll(list);
 	}
 
 	@Override
@@ -68,5 +68,4 @@ public class BookCategoryServiceImpl implements BookCategoryService {
 	public List<BookCategory> findAllUseReadOnlyRepository() {
 		return readOnlyRookCategoryRepository.findAll();
 	}
-
 }

@@ -35,6 +35,7 @@ public class SpringExample {
 		this.bookStoreService = bookStoreService;
 	}
 	
+	@SuppressWarnings("deprecation")
 	public static void main(String[] args) {
 		@SuppressWarnings({ "resource", "unused" })
 		ApplicationContext context = new ClassPathXmlApplicationContext(new String[]{"springExample.xml"});

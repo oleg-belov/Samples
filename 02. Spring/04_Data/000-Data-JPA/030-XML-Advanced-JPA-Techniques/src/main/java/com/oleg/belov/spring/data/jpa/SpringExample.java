@@ -20,12 +20,8 @@ import com.oleg.belov.spring.data.jpa.service.BookStoreService;
 public class SpringExample {
 	private static Logger log = LoggerFactory.getLogger(getCurrentClassName());
 	private static  BookStoreService bookStoreService;
-	private final static String CATEGORY_NAME = "Swing";
 	private final static Long CATEGORY_ID_GREATER_THAN = 5L;
-	private final static Long CATEGORY_ID_GREATER_THAN_EQUAL = 5L;
-	private final static Long CATEGORY_ID_LESS_THAN_EQUAL = 5L;
-	private final static int PAGEABLE_PAGE = 1;
-	private final static int PAGEABLE_SIZE = 2;
+
 	
 	
 	@SuppressWarnings("static-access")
