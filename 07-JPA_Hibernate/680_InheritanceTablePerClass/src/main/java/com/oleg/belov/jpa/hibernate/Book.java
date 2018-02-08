@@ -1,25 +1,20 @@
-package org.thoughts.on.java.model;
+package com.oleg.belov.jpa.hibernate;
 
 import javax.persistence.Entity;
 
 @Entity
-public class BlogPost extends Publication {
+public class Book extends Publication {
 
-	private String url;
+	private int numPages;
 
-	public String getUrl() {
-		return url;
+	public int getNumPages() {
+		return numPages;
 	}
 
-	public void setUrl(String url) {
-		this.url = url;
+	public void setNumPages(int numPages) {
+		this.numPages = numPages;
 	}
-
-	@Override
-	public String toString() {
-		return "BlogPost [url=" + url + "]";
-	}
-
+	
 	@Override
 	public int hashCode() {
 		return 31;
@@ -33,7 +28,7 @@ public class BlogPost extends Publication {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		BlogPost other = (BlogPost) obj;
+		Book other = (Book) obj;
 		if (getId() != null) {
 			if (!getId().equals(other.getId())) {
 				return false;
@@ -41,6 +36,4 @@ public class BlogPost extends Publication {
 		}
 		return true;
 	}
-	
-	
 }

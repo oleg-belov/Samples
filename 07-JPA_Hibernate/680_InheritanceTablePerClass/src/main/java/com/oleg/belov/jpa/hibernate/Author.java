@@ -1,4 +1,4 @@
-package org.thoughts.on.java.model;
+package com.oleg.belov.jpa.hibernate;
 
 import java.util.ArrayList;
 import java.util.List;

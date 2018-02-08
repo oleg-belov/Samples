@@ -1,4 +1,4 @@
-package org.thoughts.on.java.model;
+package com.oleg.belov.jpa.hibernate;
 
 import java.time.LocalDate;
 
@@ -7,15 +7,20 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 
-import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.oleg.belov.jpa.hibernate.Author;
+import com.oleg.belov.jpa.hibernate.Book;
+import com.oleg.belov.jpa.hibernate.Publication;
 
 public class TestInheritance {
 
-	Logger log = Logger.getLogger(this.getClass().getName());
+	Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
 	private EntityManagerFactory emf;
 
@@ -62,7 +67,7 @@ public class TestInheritance {
 		Assert.assertTrue(b instanceof Book);
 		Assert.assertEquals(new Long(1), ((Book)b).getId());
 		
-		log.info(b);
+		log.info(b.toString());
 		
 		em.getTransaction().commit();
 		em.close();
@@ -73,7 +78,7 @@ public class TestInheritance {
 
 		a = em.find(Author.class, 1L);
 		for (Publication p : a.getPublications()) {
-			log.info(p);
+			log.info(p.toString());
 		}
 
 		em.getTransaction().commit();

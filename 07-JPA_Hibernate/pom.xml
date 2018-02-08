@@ -81,5 +81,6 @@
 		<module>650_QueryCache</module>
 		<module>660_EntityGraph</module>
 		<module>670_InheritanceJoined</module>
+		<module>680_InheritanceTablePerClass</module>
     </modules>
 </project>
