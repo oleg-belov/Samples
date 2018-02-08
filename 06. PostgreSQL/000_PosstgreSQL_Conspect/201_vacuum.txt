@@ -1,0 +1,326 @@
+
+ВНУТРИСТРАНИЧНАЯ ОЧИСТКА
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим БД, таблицу с небольшим fillfactor, чтобы на одной странице помещалось
+только несколько строк, и установим расширение pageinspect.
+
+        => create database db5;
+        CREATE DATABASE
+
+        => \c db5
+        You are now connected to database "db5" as user "postgres".
+
+        => create table t(s char(200)) with( fillfactor=10 );
+        CREATE TABLE
+
+        => create index t_s on t(s);
+        CREATE INDEX
+
+        => create extension pageinspect;
+        CREATE EXTENSION
+
+.......................................................................
+
+Создадим представление, знакомое по предыдущим темам, показывающее внутреннюю
+информацию из нулевой страницы таблицы:
+
+        => create view t_v as
+        =>   select '(0,'||lp||')' as ctid,
+        =>          case lp_flags
+        =>            when 0 then 'unused'
+        =>            when 1 then 'normal'
+        =>            when 2 then 'redirect to '||lp_off
+        =>            when 3 then 'dead'
+        =>          end as state,
+        =>          t_xmin as xmin,
+        =>          t_xmax as xmax,
+        =>          case when (t_infomask & 256) > 0 then 't' end as xmin_c,
+        =>          case when (t_infomask & 512) > 0 then 't' end as xmin_a,
+        =>          case when (t_infomask & 1024) > 0 then 't' end as xmax_c,
+        =>          case when (t_infomask & 2048) > 0 then 't' end as xmax_a,
+        =>          case when (t_infomask2 & 16384) > 0 then 't' end as hhu,
+        =>          case when (t_infomask2 & 32768) > 0 then 't' end as hot,
+        =>          t_ctid
+        =>   from heap_page_items(get_raw_page('t',0))
+        =>   order by lp;
+        CREATE VIEW
+
+.......................................................................
+
+Также создадим представление, чтобы заглянуть в индекс:
+
+        => create view t_s_v as
+        =>   select itemoffset,
+        =>          ctid
+        =>   from bt_page_items('t_s',1);
+        CREATE VIEW
+
+.......................................................................
+
+Проверим, как работает внутристраничная очистка. Для этого для начала вставим одну строку:
+
+        => insert into t(s) values ('1');
+        INSERT 0 1
+
+Затем изменим ее:
+
+        => update t set s = '2';
+        UPDATE 1
+
+        => update t set s = '3';
+        UPDATE 1
+
+.......................................................................
+
+В странице сейчас находятся три версии:
+
+        => select * from t_v;
+         ctid  | state  | xmin | xmax | xmin_c | xmin_a | xmax_c | xmax_a | hhu | hot | t_ctid 
+        -------+--------+------+------+--------+--------+--------+--------+-----+-----+--------
+         (0,1) | normal |  721 |  722 | t      |        | t      |        |     |     | (0,2)
+         (0,2) | normal |  722 |  723 | t      |        |        |        |     |     | (0,3)
+         (0,3) | normal |  723 |    0 |        |        |        | t      |     |     | (0,3)
+        (3 rows)
+        
+
+.......................................................................
+
+Теперь откроем параллельную транзакцию, чтобы текущая версия попала в снимок.
+
+        |  psql 
+
+        |  => \c db5
+        |  You are now connected to database "db5" as user "postgres".
+
+        |  => begin;
+        |  BEGIN
+
+        |  => set transaction isolation level repeatable read;
+        |  SET
+
+        |  => select trim(s) from t;
+        |   btrim 
+        |  -------
+        |   3
+        |  (1 row)
+        |  
+
+.......................................................................
+
+Выполним еще одно изменение.
+
+        => update t set s = '4';
+        UPDATE 1
+
+.......................................................................
+
+В странице сейчас четыре версии:
+
+        => select * from t_v;
+         ctid  | state  | xmin | xmax | xmin_c | xmin_a | xmax_c | xmax_a | hhu | hot | t_ctid 
+        -------+--------+------+------+--------+--------+--------+--------+-----+-----+--------
+         (0,1) | normal |  721 |  722 | t      |        | t      |        |     |     | (0,2)
+         (0,2) | normal |  722 |  723 | t      |        | t      |        |     |     | (0,3)
+         (0,3) | normal |  723 |  724 | t      |        |        |        |     |     | (0,4)
+         (0,4) | normal |  724 |    0 |        |        |        | t      |     |     | (0,4)
+        (4 rows)
+        
+
+.......................................................................
+
+На самом деле мы только что превысили порог fillfactor:
+На это указывает разница между upper и pagesize (т. е. занятое пространство),
+равная 8192-7264=928. При этом 10% от размера блока составляет 819 байтов
+
+        => select * from page_header(get_raw_page('t',0));
+            lsn    | checksum | flags | lower | upper | special | pagesize | version | prune_xid 
+        -----------+----------+-------+-------+-------+---------+----------+---------+-----------
+         0/17B3854 |        0 |     0 |    40 |  7280 |    8192 |     8192 |       4 |       722
+        (1 row)
+        
+
+.......................................................................
+
+Проверим это.
+
+        => update t set s = '5';
+        UPDATE 1
+
+Какие изменения произойдут со страницей?
+
+.......................................................................
+
+        => select * from t_v;
+         ctid  | state  | xmin | xmax | xmin_c | xmin_a | xmax_c | xmax_a | hhu | hot | t_ctid 
+        -------+--------+------+------+--------+--------+--------+--------+-----+-----+--------
+         (0,1) | dead   |      |      |        |        |        |        |     |     | 
+         (0,2) | dead   |      |      |        |        |        |        |     |     | 
+         (0,3) | normal |  723 |  724 | t      |        | t      |        |     |     | (0,4)
+         (0,4) | normal |  724 |  725 | t      |        |        |        |     |     | (0,5)
+         (0,5) | normal |  725 |    0 |        |        |        | t      |     |     | (0,5)
+        (5 rows)
+        
+
+Первые две версии строки не нужны ни в одном снимке и поэтому очищены.
+Третья версия требуется снимку, который использует параллельная транзакция,
+поэтому все следующие версии остались без изменений.
+
+.......................................................................
+
+Заглянем в индекс:
+
+        => select * from t_s_v;
+         itemoffset | ctid  
+        ------------+-------
+                  1 | (0,1)
+                  2 | (0,2)
+                  3 | (0,3)
+                  4 | (0,4)
+                  5 | (0,5)
+        (5 rows)
+        
+
+Элементы индекса ссылаются на каждую из пяти версий строк (в том числе на две
+уже удаленные из табличной страницы).
+
+.......................................................................
+
+ЗАПУСК ОЧИСТКИ ВРУЧНУЮ
+~~~~~~~~~~~~~~~~~~~~~~
+
+Попробуем теперь запустить очистку вручную.
+
+        => vacuum t;
+        VACUUM
+
+Как изменится табличная страница?
+
+.......................................................................
+
+        => select * from t_v;
+         ctid  | state  | xmin | xmax | xmin_c | xmin_a | xmax_c | xmax_a | hhu | hot | t_ctid 
+        -------+--------+------+------+--------+--------+--------+--------+-----+-----+--------
+         (0,1) | unused |      |      |        |        |        |        |     |     | 
+         (0,2) | unused |      |      |        |        |        |        |     |     | 
+         (0,3) | normal |  723 |  724 | t      |        | t      |        |     |     | (0,4)
+         (0,4) | normal |  724 |  725 | t      |        | t      |        |     |     | (0,5)
+         (0,5) | normal |  725 |    0 | t      |        |        | t      |     |     | (0,5)
+        (5 rows)
+        
+
+Очистка освободила два указателя. В остальном все осталось без изменений, так как
+параллельная транзакция до сих пор не завершена.
+
+.......................................................................
+
+Можно попросить очистку рассказать о том, что происходит:
+
+        => vacuum verbose t;
+        INFO:  vacuuming "public.t"
+        INFO:  index "t_s" now contains 3 row versions in 2 pages
+        DETAIL:  0 index row versions were removed.
+        0 index pages have been deleted, 0 are currently reusable.
+        CPU 0.00s/0.00u sec elapsed 0.00 sec.
+        INFO:  "t": found 0 removable, 3 nonremovable row versions in 1 out of 1 pages
+        DETAIL:  2 dead row versions cannot be removed yet.
+        There were 2 unused item pointers.
+        Skipped 0 pages due to buffer pins.
+        0 pages are entirely empty.
+        CPU 0.00s/0.00u sec elapsed 0.00 sec.
+        VACUUM
+
+Обратите внимание на "3 nonremovable row versions" и
+"2 dead row versions cannot be removed yet".
+
+.......................................................................
+
+Теперь завершим параллельную транзакцию и снова вызовем очистку.
+
+        |  => end;
+        |  COMMIT
+
+        => vacuum verbose t;
+        INFO:  vacuuming "public.t"
+        INFO:  scanned index "t_s" to remove 2 row versions
+        DETAIL:  CPU 0.00s/0.00u sec elapsed 0.00 sec.
+        INFO:  "t": removed 2 row versions in 1 pages
+        DETAIL:  CPU 0.00s/0.00u sec elapsed 0.00 sec.
+        INFO:  index "t_s" now contains 1 row versions in 2 pages
+        DETAIL:  2 index row versions were removed.
+        0 index pages have been deleted, 0 are currently reusable.
+        CPU 0.00s/0.00u sec elapsed 0.00 sec.
+        INFO:  "t": found 2 removable, 1 nonremovable row versions in 1 out of 1 pages
+        DETAIL:  0 dead row versions cannot be removed yet.
+        There were 2 unused item pointers.
+        Skipped 0 pages due to buffer pins.
+        0 pages are entirely empty.
+        CPU 0.00s/0.00u sec elapsed 0.00 sec.
+        VACUUM
+
+.......................................................................
+
+Теперь в странице осталась только последняя версия строки:
+
+        => select * from t_v;
+         ctid  | state  | xmin | xmax | xmin_c | xmin_a | xmax_c | xmax_a | hhu | hot | t_ctid 
+        -------+--------+------+------+--------+--------+--------+--------+-----+-----+--------
+         (0,1) | unused |      |      |        |        |        |        |     |     | 
+         (0,2) | unused |      |      |        |        |        |        |     |     | 
+         (0,3) | unused |      |      |        |        |        |        |     |     | 
+         (0,4) | unused |      |      |        |        |        |        |     |     | 
+         (0,5) | normal |  725 |    0 | t      |        |        | t      |     |     | (0,5)
+        (5 rows)
+        
+
+А что с индексом?
+
+.......................................................................
+
+В индексе также осталась только одна ссылка:
+
+        => select * from t_s_v;
+         itemoffset | ctid  
+        ------------+-------
+                  1 | (0,5)
+        (1 row)
+        
+
+.......................................................................
+
+ПОЛНАЯ ОЧИСТКА
+~~~~~~~~~~~~~~
+
+Наконец, полная очистка.
+
+        => vacuum full verbose t;
+        INFO:  vacuuming "public.t"
+        INFO:  "t": found 0 removable, 1 nonremovable row versions in 1 pages
+        DETAIL:  0 dead row versions cannot be removed yet.
+        CPU 0.00s/0.00u sec elapsed 0.00 sec.
+        VACUUM
+
+.......................................................................
+
+Таблица и индекс полностью перестроены:
+
+        => select * from t_v;
+         ctid  | state  | xmin | xmax | xmin_c | xmin_a | xmax_c | xmax_a | hhu | hot | t_ctid 
+        -------+--------+------+------+--------+--------+--------+--------+-----+-----+--------
+         (0,1) | normal |  725 |    0 | t      | t      |        | t      |     |     | (0,1)
+        (1 row)
+        
+
+        => select * from t_s_v;
+         itemoffset | ctid  
+        ------------+-------
+                  1 | (0,1)
+        (1 row)
+        
+
+.......................................................................
+
+Конец демонстрации.
+
+        |  => \q
+        => \q

@@ -8,11 +8,20 @@
 	<context:component-scan base-package="com.oleg.belov.mongodb.basic" />
 	<!-- <context:annotation-config/> -->
 	
-	<bean id="dbCollection" class="com.oleg.belov.mongodb.basic.repository.MongoDBCollection">
+	<bean id="restaurantCollection" class="com.oleg.belov.mongodb.basic.repository.MongoDBRestaurantCollection">
 		<constructor-arg name="host" value="${host}"/>
 		<constructor-arg name="port" value="${port}"/>
 		<constructor-arg name="database" value="${database}"/>
 		<constructor-arg name="collection" value="${collection}"/>
+		<constructor-arg name="user" value="${db.user}"/>
+		<constructor-arg name="pws" value="${pws}"/>
+	</bean>
+	
+	<bean id="studentCollection" class="com.oleg.belov.mongodb.basic.repository.MongoDBStudentCollection">
+		<constructor-arg name="host" value="${host}"/>
+		<constructor-arg name="port" value="${port}"/>
+		<constructor-arg name="database" value="${database.school}"/>
+		<constructor-arg name="collection" value="${collection.students}"/>
 		<constructor-arg name="user" value="${db.user}"/>
 		<constructor-arg name="pws" value="${pws}"/>
 	</bean>

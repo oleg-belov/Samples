@@ -1,0 +1,606 @@
+
+УПРАВЛЕНИЕ РАСШИРЕНИЯМИ
+~~~~~~~~~~~~~~~~~~~~~~~
+
+В отдельной БД создадим таблицу и функцию.
+
+        => create database db23;
+        CREATE DATABASE
+
+        => \c db23
+        You are now connected to database "db23" as user "postgres".
+
+        => CREATE TABLE uom (
+        =>     name text,
+        =>     k    numeric,
+        =>     predefined boolean DEFAULT false
+        => );
+        CREATE TABLE
+
+        => INSERT INTO uom VALUES ('м', 1, true), ('км', 1000, true),
+        => ('см', 0.01, true), ('верста', 1066.8, true), ('сажень', 2.1336, true),
+        => ('аршин', 0.7112, true), ('вершок', 0.04445, true);
+        INSERT 0 7
+
+        => CREATE FUNCTION uom2m (p_value numeric, p_name text) RETURNS numeric
+        => LANGUAGE sql IMMUTABLE
+        => AS $$
+        =>    select p_value * t.k from uom t where name = p_name;
+        => $$;
+        CREATE FUNCTION
+
+.......................................................................
+
+Посмотрим как их использовать
+
+        => select * from uom;
+          name  |    k    | predefined 
+        --------+---------+------------
+         м      |       1 | t
+         км     |    1000 | t
+         см     |    0.01 | t
+         верста |  1066.8 | t
+         сажень |  2.1336 | t
+         аршин  |  0.7112 | t
+         вершок | 0.04445 | t
+        (7 rows)
+        
+
+        => select uom2m (15, 'сажень');
+          uom2m  
+        ---------
+         32.0040
+        (1 row)
+        
+
+.......................................................................
+
+СОЗДАНИЕ РАСШИРЕНИЙ
+~~~~~~~~~~~~~~~~~~~
+
+Сейчас таблица и функция - это два несвязанных объекта.
+Сделаем из них расширение.
+Для этого в директории `pg_config --sharedir`/extension
+нужны два файла: управляющий файл расширения и файл sql.
+
+Содержимое управляющего файла uom.control :
+
+cat /usr/local/pgsql/share/extension/uom.control 
+default_version = '1.0'
+relocatable = true
+encoding = UTF8
+
+
+
+.......................................................................
+
+Содержимое файла sql uom--unpackaged--1.0.sql :
+
+cat /usr/local/pgsql/share/extension/uom--unpackaged--1.0.sql 
+\echo Use "CREATE EXTENSION uom FROM unpackaged" to load this file. \quit
+
+comment on extension uom is 'Единицы измерения';
+
+alter extension uom add table uom;
+alter extension uom add function uom2m (numeric, text);
+
+
+.......................................................................
+
+Создаем расширение на базе имеющихся объектов
+
+        => create extension uom FROM unpackaged;
+        CREATE EXTENSION
+
+        => \dx
+                         List of installed extensions
+          Name   | Version |   Schema   |         Description          
+        ---------+---------+------------+------------------------------
+         plpgsql | 1.0     | pg_catalog | PL/pgSQL procedural language
+         uom     | 1.0     | public     | Единицы измерения
+        (2 rows)
+        
+
+.......................................................................
+
+Посмотрим из каких объектов расширение состоит:
+
+        => \dx+ uom
+          Objects in extension "uom"
+              Object Description      
+        ------------------------------
+         function uom2m(numeric,text)
+         table uom
+        (2 rows)
+        
+
+.......................................................................
+
+Теперь таблица и функция относятся к расширению и их нельзя удалять:
+
+        => drop function uom2m (numeric, text);
+        ERROR:  cannot drop function uom2m(numeric,text) because extension uom requires it
+        HINT:  You can drop extension uom instead.
+
+.......................................................................
+
+pg_dump выгружает команду CREATE EXTENSION, а не отдельные объекты
+
+pg_dump -d db23 
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 9.5.3
+-- Dumped by pg_dump version 9.5.3
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+
+--
+-- Name: uom; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS uom WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION uom; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION uom IS 'Единицы измерения';
+
+
+--
+-- Name: public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM postgres;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+
+.......................................................................
+
+Расширение можно переносить в другую схему
+
+        => create schema uom;
+        CREATE SCHEMA
+
+        => alter extension uom set schema uom;
+        ALTER EXTENSION
+
+        => \dt uom.*
+                List of relations
+         Schema | Name | Type  |  Owner   
+        --------+------+-------+----------
+         uom    | uom  | table | postgres
+        (1 row)
+        
+
+        => alter extension uom set schema public;
+        ALTER EXTENSION
+
+.......................................................................
+
+При удалении расширения удаляются и его объекты
+
+        => drop extension uom;
+        DROP EXTENSION
+
+        => \dt uom
+        No matching relations found.
+
+.......................................................................
+
+Теперь создаем расширение вместе с объектами.
+Для этого, кроме управляющего файла, потребуется файл sql,
+в котором должны быть команды создания объектов.
+В имени sql файла должен присутствовать номер версии расширения.
+В нашем случае это uom--1.0.sql
+
+.......................................................................
+
+cat /usr/local/pgsql/share/extension/uom--1.0.sql 
+\echo Use "CREATE EXTENSION uom" to load this file. \quit
+
+comment on extension uom is 'Единицы измерения';
+
+-- Версия 1.0
+
+CREATE TABLE uom (
+    name       text,
+    k          numeric,
+    predefined boolean DEFAULT false
+);
+
+INSERT INTO uom VALUES ('м', 1, true);
+INSERT INTO uom VALUES ('км', 1000, true);
+INSERT INTO uom VALUES ('см', 0.01, true);
+INSERT INTO uom VALUES ('верста', 1066.8, true);
+INSERT INTO uom VALUES ('сажень', 2.1336, true);
+INSERT INTO uom VALUES ('аршин', 0.7112, true);
+INSERT INTO uom VALUES ('вершок', 0.04445, true);
+
+CREATE FUNCTION uom2m (p_value numeric, p_name text) RETURNS numeric
+LANGUAGE sql IMMUTABLE
+AS $$
+   select p_value * t.k from uom t where name = p_name;
+$$;
+
+
+.......................................................................
+
+Создаем расширение:
+
+        => create extension uom;
+        CREATE EXTENSION
+
+        => \dx uom
+                List of installed extensions
+         Name | Version | Schema |    Description    
+        ------+---------+--------+-------------------
+         uom  | 1.0     | public | Единицы измерения
+        (1 row)
+        
+
+        => \dx+ uom
+          Objects in extension "uom"
+              Object Description      
+        ------------------------------
+         function uom2m(numeric,text)
+         table uom
+        (2 rows)
+        
+
+.......................................................................
+
+Полный список доступных к установке расширений:
+
+        => select name, default_version, installed_version
+        =>   from pg_available_extensions;
+                name        | default_version | installed_version 
+        --------------------+-----------------+-------------------
+         btree_gist         | 1.1             | 
+         timetravel         | 1.0             | 
+         moddatetime        | 1.0             | 
+         fuzzystrmatch      | 1.0             | 
+         refint             | 1.0             | 
+         file_fdw           | 1.0             | 
+         pg_freespacemap    | 1.0             | 
+         tsearch2           | 1.0             | 
+         pageinspect        | 1.3             | 
+         hstore             | 1.3             | 
+         btree_gin          | 1.0             | 
+         pgcrypto           | 1.2             | 
+         tsm_system_time    | 1.0             | 
+         tcn                | 1.0             | 
+         pg_buffercache     | 1.1             | 
+         autoinc            | 1.0             | 
+         intarray           | 1.0             | 
+         chkpass            | 1.0             | 
+         pg_stat_statements | 1.3             | 
+         ltree              | 1.0             | 
+         unaccent           | 1.0             | 
+         earthdistance      | 1.0             | 
+         dict_int           | 1.0             | 
+         seg                | 1.0             | 
+         tsm_system_rows    | 1.0             | 
+         cube               | 1.0             | 
+         tablefunc          | 1.0             | 
+         adminpack          | 1.0             | 
+         lo                 | 1.0             | 
+         uom                | 1.0             | 1.0
+         insert_username    | 1.0             | 
+         dblink             | 1.1             | 
+         dict_xsyn          | 1.0             | 
+         pgstattuple        | 1.3             | 
+         intagg             | 1.0             | 
+         isn                | 1.0             | 
+         pg_trgm            | 1.1             | 
+         pg_prewarm         | 1.0             | 
+         citext             | 1.1             | 
+         plpgsql            | 1.0             | 1.0
+         postgres_fdw       | 1.0             | 
+         pgrowlocks         | 1.1             | 
+        (42 rows)
+        
+
+.......................................................................
+
+ОБНОВЛЕНИЕ РАСШИРЕНИЙ
+~~~~~~~~~~~~~~~~~~~~~
+
+Обновление расширения до новой версии возможно двумя способами:
+1. Пересоздание расширения, с предварительным удалением существующего.
+2. Обновление существующего расширения.
+
+.......................................................................
+
+1. Пересоздание расширения
+Необходимо предоставить sql файл на создание новой версии
+Файл должен включать создание всех объектов раширения,
+а не просто обновление существующих объектов.
+
+В нашем примере добавим в версию 1.1 расширения
+функцию uom2uom и представление uom_v
+
+.......................................................................
+
+Параметр default_version говорит о том, какая версия расширения
+будет установлена, если она не указана явно в команде CREATE EXTENSION
+Установим версию по умолчанию 1.1
+
+sed -i /usr/local/pgsql/share/extension/uom.control -e "s/^default_version\\'(.\\')*$/default_version = 1.1/" 
+sed: couldn't open temporary file /usr/local/pgsql/share/extension/sedsRl0dg: Permission denied
+cat /usr/local/pgsql/share/extension/uom.control 
+default_version = '1.0'
+relocatable = true
+encoding = UTF8
+
+
+
+.......................................................................
+
+cat /usr/local/pgsql/share/extension/uom--1.1.sql 
+\echo Use "CREATE EXTENSION uom" to load this file. \quit
+
+comment on extension uom is 'Единицы измерения';
+
+-- Версия 1.0
+
+CREATE TABLE uom (
+    name       text,
+    k          numeric,
+    predefined boolean DEFAULT false
+);
+
+INSERT INTO uom VALUES ('м', 1, true);
+INSERT INTO uom VALUES ('км', 1000, true);
+INSERT INTO uom VALUES ('см', 0.01, true);
+INSERT INTO uom VALUES ('верста', 1066.8, true);
+INSERT INTO uom VALUES ('сажень', 2.1336, true);
+INSERT INTO uom VALUES ('аршин', 0.7112, true);
+INSERT INTO uom VALUES ('вершок', 0.04445, true);
+
+CREATE FUNCTION uom2m (p_value numeric, p_name text) RETURNS numeric
+LANGUAGE sql IMMUTABLE
+AS $$
+   select p_value * t.k from uom t where name = p_name;
+$$;
+
+-- Изменения версии 1.1
+
+CREATE VIEW uom_v AS SELECT uom.name, uom.k FROM uom;
+
+CREATE FUNCTION uom2uom
+   (p_value numeric, p_name_from text, p_name_to text) 
+   RETURNS numeric
+LANGUAGE sql IMMUTABLE
+AS $$
+   select p_value * 
+          (select k from uom where name = p_name_from) /
+          (select k from uom where name = p_name_to) ;
+$$;
+
+
+.......................................................................
+
+Удаляем и повторно создаем расширение
+
+        => drop extension uom;
+        DROP EXTENSION
+
+        => create extension uom;
+        CREATE EXTENSION
+
+        => \dx uom
+                List of installed extensions
+         Name | Version | Schema |    Description    
+        ------+---------+--------+-------------------
+         uom  | 1.0     | public | Единицы измерения
+        (1 row)
+        
+
+        => \dx+ uom
+          Objects in extension "uom"
+              Object Description      
+        ------------------------------
+         function uom2m(numeric,text)
+         table uom
+        (2 rows)
+        
+
+.......................................................................
+
+2. Обновление существующего расширения
+Для этого необходимо предоставить файл SQL на обновление.
+
+cat /usr/local/pgsql/share/extension/uom--1.0--1.1.sql 
+\echo Use "ALTER EXTENSION uom UPDATE TO '1.1'" to load this file. \quit
+
+-- Изменения версии 1.1
+
+CREATE VIEW uom_v AS SELECT uom.name, uom.k FROM uom;
+
+CREATE FUNCTION uom2uom
+   (p_value numeric, p_name_from text, p_name_to text) 
+   RETURNS numeric
+LANGUAGE sql IMMUTABLE
+AS $$
+   select p_value * 
+          (select k from uom where name = p_name_from) /
+          (select k from uom where name = p_name_to) ;
+$$;
+
+
+.......................................................................
+
+Восстановим версию 1.0
+Чтобы установить версию расширения отличную от default_version,
+номер версии нужно указать явно.
+
+        => drop extension uom;
+        DROP EXTENSION
+
+        => create extension uom VERSION '1.0';
+        CREATE EXTENSION
+
+        => \dx uom
+                List of installed extensions
+         Name | Version | Schema |    Description    
+        ------+---------+--------+-------------------
+         uom  | 1.0     | public | Единицы измерения
+        (1 row)
+        
+
+.......................................................................
+
+Список всех имеющихся версий расширений доступных для установки:
+
+        => select name, version, installed, superuser, relocatable, schema
+        =>   from pg_available_extension_versions;
+                name        | version | installed | superuser | relocatable |   schema   
+        --------------------+---------+-----------+-----------+-------------+------------
+         btree_gist         | 1.1     | f         | t         | t           | 
+         timetravel         | 1.0     | f         | t         | t           | 
+         moddatetime        | 1.0     | f         | t         | t           | 
+         fuzzystrmatch      | 1.0     | f         | t         | t           | 
+         refint             | 1.0     | f         | t         | t           | 
+         file_fdw           | 1.0     | f         | t         | t           | 
+         pg_freespacemap    | 1.0     | f         | t         | t           | 
+         tsearch2           | 1.0     | f         | t         | f           | 
+         pageinspect        | 1.3     | f         | t         | t           | 
+         hstore             | 1.3     | f         | t         | t           | 
+         btree_gin          | 1.0     | f         | t         | t           | 
+         pgcrypto           | 1.2     | f         | t         | t           | 
+         tsm_system_time    | 1.0     | f         | t         | t           | 
+         tcn                | 1.0     | f         | t         | t           | 
+         pg_buffercache     | 1.1     | f         | t         | t           | 
+         autoinc            | 1.0     | f         | t         | t           | 
+         intarray           | 1.0     | f         | t         | t           | 
+         chkpass            | 1.0     | f         | t         | t           | 
+         pg_stat_statements | 1.3     | f         | t         | t           | 
+         ltree              | 1.0     | f         | t         | t           | 
+         unaccent           | 1.0     | f         | t         | t           | 
+         earthdistance      | 1.0     | f         | t         | t           | 
+         dict_int           | 1.0     | f         | t         | t           | 
+         seg                | 1.0     | f         | t         | t           | 
+         tsm_system_rows    | 1.0     | f         | t         | t           | 
+         cube               | 1.0     | f         | t         | t           | 
+         tablefunc          | 1.0     | f         | t         | t           | 
+         adminpack          | 1.0     | f         | t         | f           | pg_catalog
+         lo                 | 1.0     | f         | t         | t           | 
+         uom                | 1.0     | t         | t         | t           | 
+         uom                | 1.2     | f         | t         | t           | 
+         uom                | 1.1     | f         | t         | t           | 
+         insert_username    | 1.0     | f         | t         | t           | 
+         dblink             | 1.1     | f         | t         | t           | 
+         dict_xsyn          | 1.0     | f         | t         | t           | 
+         pgstattuple        | 1.3     | f         | t         | t           | 
+         intagg             | 1.0     | f         | t         | t           | 
+         isn                | 1.0     | f         | t         | t           | 
+         pg_trgm            | 1.1     | f         | t         | t           | 
+         pg_prewarm         | 1.0     | f         | t         | t           | 
+         citext             | 1.1     | f         | t         | t           | 
+         plpgsql            | 1.0     | t         | f         | f           | pg_catalog
+         postgres_fdw       | 1.0     | f         | t         | t           | 
+         pgrowlocks         | 1.1     | f         | t         | t           | 
+        (44 rows)
+        
+
+.......................................................................
+
+А теперь выполним обновление
+
+        => alter extension uom UPDATE TO '1.1';
+        ALTER EXTENSION
+
+        => \dx uom
+                List of installed extensions
+         Name | Version | Schema |    Description    
+        ------+---------+--------+-------------------
+         uom  | 1.1     | public | Единицы измерения
+        (1 row)
+        
+
+.......................................................................
+
+Список доступных вариантов обновления можно получить запросом:
+
+        => select * from pg_extension_update_paths('uom');
+           source   |   target   |           path            
+        ------------+------------+---------------------------
+         1.0        | 1.1        | 1.0--1.1
+         1.0        | 1.2        | 1.0--1.1--1.2
+         1.0        | unpackaged | 
+         1.1        | 1.0        | 
+         1.1        | 1.2        | 1.1--1.2
+         1.1        | unpackaged | 
+         1.2        | 1.0        | 
+         1.2        | 1.1        | 
+         1.2        | unpackaged | 
+         unpackaged | 1.0        | unpackaged--1.0
+         unpackaged | 1.1        | unpackaged--1.0--1.1
+         unpackaged | 1.2        | unpackaged--1.0--1.1--1.2
+        (12 rows)
+        
+
+.......................................................................
+
+Теперь меры длины можно преобразовывать не только в метры
+
+        => select uom2uom(1, 'верста', 'сажень');
+               uom2uom        
+        ----------------------
+         500.0000000000000000
+        (1 row)
+        
+
+А для просмотра единиц измерений использовать представление:
+
+        => select * from uom_v;
+          name  |    k    
+        --------+---------
+         м      |       1
+         км     |    1000
+         см     |    0.01
+         верста |  1066.8
+         сажень |  2.1336
+         аршин  |  0.7112
+         вершок | 0.04445
+        (7 rows)
+        
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+        => \q

@@ -1,0 +1,617 @@
+
+МАСТЕР: НАСТРОЙКА ПОТОКОВОЙ РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Настраиваем потоковую репликацию без использования архива сегментов WAL.
+Внесем необходимые изменения в конфигурацию.
+
+    psql -h localhost -p 5432 -U postgres
+
+    => alter system set wal_level = hot_standby;
+    ALTER SYSTEM
+
+    => alter system set archive_mode = off;
+    ALTER SYSTEM
+
+    => alter system set max_standby_streaming_delay = '10s';
+    ALTER SYSTEM
+
+    => alter system set max_replication_slots = 5;
+    ALTER SYSTEM
+
+    => alter system set max_wal_senders = 5;
+    ALTER SYSTEM
+
+.......................................................................
+
+А также добавим еще несколько параметров, которые надо будет изменить
+на реплике.
+
+    => alter system set port = 5432;
+    ALTER SYSTEM
+
+    => alter system set hot_standby = off;
+    ALTER SYSTEM
+
+    => alter system set hot_standby_feedback = off;
+    ALTER SYSTEM
+
+    => alter system set wal_receiver_status_interval = 0;
+    ALTER SYSTEM
+
+.......................................................................
+
+МАСТЕР: ПРОВЕРКА ПОДКЛЮЧЕНИЯ ДЛЯ РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+В файле pg_hba.conf должна быть строка для базы данных replication:
+
+postgres> sed -i s/#\(\w\+\s\+replication\)/\1/ /usr/local/pgsql/data/pg_hba.conf 
+
+
+
+postgres> tail -n 5 /usr/local/pgsql/data/pg_hba.conf 
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     postgres                                trust
+host    replication     postgres        127.0.0.1/32            trust
+host    replication     postgres        ::1/128                 trust
+
+Все в порядке.
+
+.......................................................................
+
+Перезапустим сервер, чтобы изменения вступили в силу.
+
+    => \q
+
+postgres> pg_ctl restart -w -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+
+.......................................................................
+
+МАСТЕР: СЛОТ РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим слот репликации.
+
+    psql -h localhost -p 5432 -U postgres
+
+    => select pg_create_physical_replication_slot('slot_a');
+     pg_create_physical_replication_slot 
+    -------------------------------------
+     (slot_a,)
+    (1 row)
+    
+
+.......................................................................
+
+    => \x
+    Expanded display is on.
+
+    => select * from pg_replication_slots;
+    -[ RECORD 1 ]+---------
+    slot_name    | slot_a
+    plugin       | 
+    slot_type    | physical
+    datoid       | 
+    database     | 
+    active       | f
+    active_pid   | 
+    xmin         | 
+    catalog_xmin | 
+    restart_lsn  | 
+    
+
+Обратите внимание на столбец restart_lsn: он пустой, так как слот создается
+неинициализированным. Для абсолютной надежности слот надо инициализировать
+и использовать его не только для подключения реплики, но и в утилите
+pg_basebackup.
+Но полноценные средства для этого будут доступны только в версии 9.6:
+- второй параметр у функции pg_create_physical_replication_slot,
+- ключ у pg_basebackup.
+
+Пока будем просто надеяться на лучшее, хотя мы могли бы инициализировать
+слот с помощью утилиты pg_receivexlog, запустив и остановив ее.
+
+.......................................................................
+
+СОЗДАНИЕ БАЗОВОЙ РЕЗЕРВНОЙ КОПИИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим базовую резервную копию.
+Убедимся, что в кластере нет пользовательских табличных пространств, так как
+их наличие усложнило бы процесс резервирования и восстановления.
+
+    => \x
+    Expanded display is off.
+
+    => \db
+           List of tablespaces
+        Name    |  Owner   | Location 
+    ------------+----------+----------
+     pg_default | postgres | 
+     pg_global  | postgres | 
+    (2 rows)
+    
+
+.......................................................................
+
+Выполним команду pg_basebackup от имени postgres2, в качестве каталога
+указываем PGDATA будущей реплики. Используем формат по умолчанию (plain),
+Ключ -R создаст заготовку файла recovery.conf.
+
+postgres2> bash -c "rm -rf /usr/local/pgsql2/data/*" 
+postgres2> pg_basebackup -U postgres -p 5432 -D /usr/local/pgsql2/data -X stream -R 
+
+.......................................................................
+
+Проверим содержимое каталога:
+
+postgres2> ls -l /usr/local/pgsql2/data 
+total 120
+-rw-------  1 postgres2 postgres2   206 мая   27 21:27 backup_label
+drwx------ 13 postgres2 postgres2  4096 мая   27 21:27 base
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 global
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_clog
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_commit_ts
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_dynshmem
+-rw-------  1 postgres2 postgres2  4465 мая   27 21:27 pg_hba.conf
+-rw-------  1 postgres2 postgres2  1636 мая   27 21:27 pg_ident.conf
+drwx------  4 postgres2 postgres2  4096 мая   27 21:27 pg_logical
+drwx------  4 postgres2 postgres2  4096 мая   27 21:27 pg_multixact
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_notify
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_replslot
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_serial
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_snapshots
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_stat
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_stat_tmp
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_subtrans
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_tblspc
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_twophase
+-rw-------  1 postgres2 postgres2     4 мая   27 21:27 PG_VERSION
+drwx------  3 postgres2 postgres2  4096 мая   27 21:27 pg_xlog
+-rw-------  1 postgres2 postgres2   315 мая   27 21:27 postgresql.auto.conf
+-rw-------  1 postgres2 postgres2 21711 мая   27 21:27 postgresql.conf
+-rw-r--r--  1 postgres2 postgres2    98 мая   27 21:27 recovery.conf
+
+.......................................................................
+
+РЕПЛИКА: НАСТРОЙКА
+~~~~~~~~~~~~~~~~~~
+
+Требуется немного изменить postgresql.auto.conf. Изменяем его вручную,
+а не командой alter system, поскольку экземпляр еще не запущен.
+
+
+postgres2> sed -i "s/port = .*/port = 5433/" /usr/local/pgsql2/data/postgresql.auto.conf 
+postgres2> sed -i "s/hot_standby = .*/hot_standby = on/" /usr/local/pgsql2/data/postgresql.auto.conf 
+postgres2> sed -i "s/hot_standby_feedback = .*/hot_standby_feedback = on/" /usr/local/pgsql2/data/postgresql.auto.conf 
+postgres2> sed -i "s/wal_receiver_status_interval = .*/wal_receiver_status_interval = 1s/" /usr/local/pgsql2/data/postgresql.auto.conf 
+
+.......................................................................
+
+Проверим, что получилось:
+
+postgres2> cat /usr/local/pgsql2/data/postgresql.auto.conf 
+# Do not edit this file manually!
+# It will be overwritten by ALTER SYSTEM command.
+wal_level = 'hot_standby'
+archive_mode = 'off'
+max_standby_streaming_delay = '10s'
+max_replication_slots = '5'
+max_wal_senders = '5'
+port = 5433
+hot_standby = on
+hot_standby_feedback = on
+wal_receiver_status_interval = 1s
+
+Параметр wal_receiver_status_interval уменьшен для целей демонстрации.
+
+.......................................................................
+
+Заготовка для recovery.conf была подготовлена утилитой pg_basebackup:
+
+postgres2> cat /usr/local/pgsql2/data/recovery.conf 
+standby_mode = 'on'
+primary_conninfo = 'user=postgres port=5432 sslmode=disable sslcompression=1'
+
+.......................................................................
+
+Остается только добавить указание использовать слот репликации.
+
+
+postgres2> bash -c "echo primary_slot_name = \\'\'slot_a\\'\' >> /usr/local/pgsql2/data/recovery.conf" 
+postgres2> cat /usr/local/pgsql2/data/recovery.conf 
+standby_mode = 'on'
+primary_conninfo = 'user=postgres port=5432 sslmode=disable sslcompression=1'
+primary_slot_name = 'slot_a'
+
+.......................................................................
+
+РЕПЛИКА: СТАРТ СЕРВЕРА
+~~~~~~~~~~~~~~~~~~~~~~
+
+Можно стартовать сервер.
+
+postgres2> pg_ctl start -w -l /home/postgres2/logfile 
+waiting for server to start.... done
+server started
+
+.......................................................................
+
+Посмотрим на процессы реплики.
+
+postgres2> ps -o pid,command --ppid `sudo head -n 1 /usr/local/pgsql2/data/postmaster.pid`
+  PID COMMAND
+ 9754 postgres: startup process   waiting for 000000010000000000000009
+ 9755 postgres: checkpointer process  
+ 9756 postgres: writer process      
+ 9757 postgres: stats collector process  
+ 9758 postgres: wal receiver process  
+
+Добавился процесс wal receiver.
+
+.......................................................................
+
+И сравним с процессами мастера.
+
+postgres> ps -o pid,command --ppid `sudo head -n 1 /usr/local/pgsql/data/postmaster.pid`
+  PID COMMAND
+ 9682 postgres: checkpointer process  
+ 9683 postgres: writer process     
+ 9684 postgres: wal writer process  
+ 9685 postgres: autovacuum launcher process  
+ 9686 postgres: stats collector process  
+ 9695 postgres: postgres postgres 127.0.0.1(60407) idle
+ 9759 postgres: wal sender process postgres [local] idle
+
+Здесь добавился процесс wal sender.
+
+.......................................................................
+
+Слот репликации инициализировался и используется (поле active
+и не пустое поле restart_lsn):
+
+    => \x
+    Expanded display is on.
+
+    => select * from pg_replication_slots;
+    -[ RECORD 1 ]+----------
+    slot_name    | slot_a
+    plugin       | 
+    slot_type    | physical
+    datoid       | 
+    database     | 
+    active       | t
+    active_pid   | 9759
+    xmin         | 3819
+    catalog_xmin | 
+    restart_lsn  | 0/9000000
+    
+
+.......................................................................
+
+ПРОВЕРКА РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~
+
+На реплике нет базы данных db11:
+
+    |    psql -h localhost -p 5433 -U postgres
+
+    |    => select count(*) from pg_database where datname = 'db11';
+    |     count 
+    |    -------
+    |         0
+    |    (1 row)
+    |    
+
+.......................................................................
+
+Создадим базу данных и таблицу на мастере:
+
+    => create database db11;
+    CREATE DATABASE
+
+    => \c db11
+    You are now connected to database "db11" as user "postgres".
+
+    => create table replica_test(t text);
+    CREATE TABLE
+
+.......................................................................
+
+И вот они на реплике:
+
+    |    => \c db11
+    |    You are now connected to database "db11" as user "postgres".
+
+    |    => select * from replica_test;
+    |     t 
+    |    ---
+    |    (0 rows)
+    |    
+
+.......................................................................
+
+Теперь вставим в таблицу большое количество строк, чтобы увидеть репликацию
+в процессе работы.
+
+    => insert into replica_test select 'a line' from generate_series(1,1000000);
+    INSERT 0 1000000
+
+    => select *, pg_current_xlog_location() from pg_stat_replication;
+    -[ RECORD 1 ]------------+------------------------------
+    pid                      | 9759
+    usesysid                 | 10
+    usename                  | postgres
+    application_name         | walreceiver
+    client_addr              | 
+    client_hostname          | 
+    client_port              | -1
+    backend_start            | 2016-05-27 21:27:36.606354+03
+    backend_xmin             | 
+    state                    | streaming
+    sent_location            | 0/CB00000
+    write_location           | 0/CAE0000
+    flush_location           | 0/CAC0000
+    replay_location          | 0/C344A10
+    sync_priority            | 0
+    sync_state               | async
+    pg_current_xlog_location | 0/CD4C244
+    
+
+Обратите внимание на поля *location - они показывают запаздывание
+на разных этапах.
+
+.......................................................................
+
+Смотрим на реплику:
+
+    |    => select count(*) from replica_test;
+    |      count  
+    |    ---------
+    |     1000000
+    |    (1 row)
+    |    
+
+Все строки успешно доехали.
+
+.......................................................................
+
+И еще раз проверим состояние репликации:
+
+    => select *, pg_current_xlog_location() from pg_stat_replication;
+    -[ RECORD 1 ]------------+------------------------------
+    pid                      | 9759
+    usesysid                 | 10
+    usename                  | postgres
+    application_name         | walreceiver
+    client_addr              | 
+    client_hostname          | 
+    client_port              | -1
+    backend_start            | 2016-05-27 21:27:36.606354+03
+    backend_xmin             | 
+    state                    | streaming
+    sent_location            | 0/CD4C244
+    write_location           | 0/CD4C244
+    flush_location           | 0/CD4C244
+    replay_location          | 0/CD4C244
+    sync_priority            | 0
+    sync_state               | async
+    pg_current_xlog_location | 0/CD4C244
+    
+
+.......................................................................
+
+КОНФЛИКТ С ОЧИСТКОЙ СТРОК
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Теперь смоделируем конфликт с очисткой строк.
+На мастере создадим таблицу с одной строкой...
+
+    => create table replica_test2(t varchar(10));
+    CREATE TABLE
+
+    => insert into replica_test2 values ('one');
+    INSERT 0 1
+
+.......................................................................
+
+На реплике начинаем транзакцию с уровнем repeatable read и читаем строку...
+
+    |    => begin;
+    |    BEGIN
+
+    |    => set transaction isolation level repeatable read;
+    |    SET
+
+    |    => select * from replica_test2;
+    |      t  
+    |    -----
+    |     one
+    |    (1 row)
+    |    
+
+...после чего изменяем строку на мастере.
+
+    => update replica_test2 set t = 'two';
+    UPDATE 1
+
+.......................................................................
+
+Снимок на реплике "видит" первую версию строки, а на мастере видна вторая.
+
+    |    => select *, xmin, xmax from replica_test2;
+    |      t  | xmin | xmax 
+    |    -----+------+------
+    |     one | 3823 | 3824
+    |    (1 row)
+    |    
+
+    => \x
+    Expanded display is off.
+
+    => select *, xmin, xmax from replica_test2;
+      t  | xmin | xmax 
+    -----+------+------
+     two | 3824 |    0
+    (1 row)
+    
+
+.......................................................................
+
+Причем мастер знает, какая версия нужна реплике (поле xmin):
+
+    => \x
+    Expanded display is on.
+
+    => select * from pg_replication_slots;
+    -[ RECORD 1 ]+----------
+    slot_name    | slot_a
+    plugin       | 
+    slot_type    | physical
+    datoid       | 
+    database     | 
+    active       | t
+    active_pid   | 9759
+    xmin         | 3824
+    catalog_xmin | 
+    restart_lsn  | 0/CD4EFBC
+    
+
+Если бы слот не использовался, то информация обратной связи отражалась бы
+в представлении pg_stat_replication (поле backend_xmin).
+
+.......................................................................
+
+Теперь мастер может "уйти вперед", но будет помнить, какая транзакция
+нужна реплике:
+
+    => select txid_current();
+    -[ RECORD 1 ]+-----
+    txid_current | 3825
+    
+
+    => select * from pg_replication_slots;
+    -[ RECORD 1 ]+----------
+    slot_name    | slot_a
+    plugin       | 
+    slot_type    | physical
+    datoid       | 
+    database     | 
+    active       | t
+    active_pid   | 9759
+    xmin         | 3824
+    catalog_xmin | 
+    restart_lsn  | 0/CD4EFBC
+    
+
+.......................................................................
+
+Если теперь выполнить очистку строк, она просто ничего не сделает
+(1 dead row versions cannot be removed yet):
+
+    => vacuum verbose replica_test2;
+    INFO:  vacuuming "public.replica_test2"
+    INFO:  "replica_test2": found 0 removable, 2 nonremovable row versions in 1 out of 1 pages
+    DETAIL:  1 dead row versions cannot be removed yet.
+    There were 0 unused item pointers.
+    Skipped 0 pages due to buffer pins.
+    0 pages are entirely empty.
+    CPU 0.00s/0.00u sec elapsed 0.00 sec.
+    VACUUM
+
+.......................................................................
+
+И только после того, как транзакция на реплике завершится, очистка
+сможет отработать.
+
+    |    => commit;
+    |    COMMIT
+
+.......................................................................
+
+    => vacuum verbose replica_test2;
+    INFO:  vacuuming "public.replica_test2"
+    INFO:  "replica_test2": found 1 removable, 1 nonremovable row versions in 1 out of 1 pages
+    DETAIL:  0 dead row versions cannot be removed yet.
+    There were 0 unused item pointers.
+    Skipped 0 pages due to buffer pins.
+    0 pages are entirely empty.
+    CPU 0.00s/0.00u sec elapsed 0.00 sec.
+    VACUUM
+
+.......................................................................
+
+Теперь оба сервера снова видят одни и те же данные.
+
+    |    => select *, xmin, xmax from replica_test2;
+    |      t  | xmin | xmax 
+    |    -----+------+------
+    |     two | 3824 |    0
+    |    (1 row)
+    |    
+
+    => \x
+    Expanded display is off.
+
+    => select *, xmin, xmax from replica_test2;
+      t  | xmin | xmax 
+    -----+------+------
+     two | 3824 |    0
+    (1 row)
+    
+
+.......................................................................
+
+А номер транзакции xmin увеличился до текущего:
+
+    => \x
+    Expanded display is on.
+
+    => select * from pg_replication_slots;
+    -[ RECORD 1 ]+----------
+    slot_name    | slot_a
+    plugin       | 
+    slot_type    | physical
+    datoid       | 
+    database     | 
+    active       | t
+    active_pid   | 9759
+    xmin         | 3826
+    catalog_xmin | 
+    restart_lsn  | 0/CD511E0
+    
+
+.......................................................................
+
+
+Конец демонстрации.
+
+.......................................................................
+
+    |    => \q
+
+postgres2> pg_ctl stop -D /usr/local/pgsql2/data 
+waiting for server to shut down.... done
+server stopped
+
+    => select pg_drop_replication_slot('slot_a');
+    -[ RECORD 1 ]------------+-
+    pg_drop_replication_slot | 
+    
+
+    => alter system reset all;
+    ALTER SYSTEM
+
+    => \q
+
+postgres> pg_ctl restart -w -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started

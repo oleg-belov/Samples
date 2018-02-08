@@ -1,0 +1,334 @@
+
+ЭТАПЫ ОБРАБОТКИ ЗАПРОСА
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим отдельную базу данных и таблицу:
+
+        => create database db14;
+        CREATE DATABASE
+
+        => \c db14
+        You are now connected to database "db14" as user "postgres".
+
+        => create table big(id serial, s text);
+        CREATE TABLE
+
+        => insert into big(s) select repeat('a',10) from generate_series(1,1000000);
+        INSERT 0 1000000
+
+        => analyze big;
+        ANALYZE
+
+.......................................................................
+
+Установим параметры, которые покажут примерное время выполнения
+этапов обработки:
+
+        => alter system reset all;
+        ALTER SYSTEM
+
+        => alter system set log_parser_stats = on;
+        ALTER SYSTEM
+
+        => alter system set log_planner_stats = on;
+        ALTER SYSTEM
+
+        => alter system set log_executor_stats = on;
+        ALTER SYSTEM
+
+        => select pg_reload_conf();
+         pg_reload_conf 
+        ----------------
+         t
+        (1 row)
+        
+
+.......................................................................
+
+Теперь выполним какой-нибудь запрос и проверим журнал сообщений.
+
+        => \timing on
+        Timing is on.
+
+        => select s, count(*) from big group by s;
+             s      |  count  
+        ------------+---------
+         aaaaaaaaaa | 1000000
+        (1 row)
+        
+        Time: 252,012 ms
+
+.......................................................................
+
+Сначала идет статистика синтаксического разбора:
+
+tail -n 45 ~/logfile | sed -n '/PARSER STATISTICS/,+8p'
+LOG:  PARSER STATISTICS
+DETAIL:  ! system usage stats:
+	!	0.000023 elapsed 0.000000 user 0.000000 system sec
+	!	[1.684000 user 0.144000 sys total]
+	!	0/0 [0/324336] filesystem blocks in/out
+	!	0/0 [0/14406] page faults/reclaims, 0 [0] swaps
+	!	0 [0] signals rcvd, 0/0 [0/0] messages rcvd/sent
+	!	0/0 [107/91] voluntary/involuntary context switches
+STATEMENT:  select s, count(*) from big group by s;
+
+Значения в квадратных скобках - цифры с начала работы процесса,
+нам они не интересны.
+* elapsed - общее время выполнения этапа,
+* user    - время в пользовательском режиме,
+* system  - время в режиме ядра.
+По идее, elapsed = user + system, но эти значения определяются разными
+функциями с разной точностью. Рассчитывать можно на миллисекунды.
+
+.......................................................................
+
+Затем - семантический разбор:
+
+tail -n 45 ~/logfile | sed -n '/PARSE ANALYSIS STATISTICS/,+8p'
+LOG:  PARSE ANALYSIS STATISTICS
+DETAIL:  ! system usage stats:
+	!	0.000220 elapsed 0.000000 user 0.000000 system sec
+	!	[1.684000 user 0.144000 sys total]
+	!	0/0 [0/324336] filesystem blocks in/out
+	!	0/12 [0/14419] page faults/reclaims, 0 [0] swaps
+	!	0 [0] signals rcvd, 0/0 [0/0] messages rcvd/sent
+	!	0/0 [107/91] voluntary/involuntary context switches
+STATEMENT:  select s, count(*) from big group by s;
+
+.......................................................................
+
+Дальше - трансформация:
+
+tail -n 45 ~/logfile | sed -n '/REWRITER STATISTICS/,+8p'
+LOG:  REWRITER STATISTICS
+DETAIL:  ! system usage stats:
+	!	0.000007 elapsed 0.000000 user 0.000000 system sec
+	!	[1.684000 user 0.144000 sys total]
+	!	0/0 [0/324336] filesystem blocks in/out
+	!	0/0 [0/14419] page faults/reclaims, 0 [0] swaps
+	!	0 [0] signals rcvd, 0/0 [0/0] messages rcvd/sent
+	!	0/0 [107/91] voluntary/involuntary context switches
+STATEMENT:  select s, count(*) from big group by s;
+
+.......................................................................
+
+Затем - планировщик:
+
+tail -n 45 ~/logfile | sed -n '/PLANNER STATISTICS/,+8p'
+LOG:  PLANNER STATISTICS
+DETAIL:  ! system usage stats:
+	!	0.000131 elapsed 0.000000 user 0.000000 system sec
+	!	[1.684000 user 0.144000 sys total]
+	!	0/0 [0/324336] filesystem blocks in/out
+	!	0/9 [0/14428] page faults/reclaims, 0 [0] swaps
+	!	0 [0] signals rcvd, 0/0 [0/0] messages rcvd/sent
+	!	0/0 [107/91] voluntary/involuntary context switches
+STATEMENT:  select s, count(*) from big group by s;
+
+.......................................................................
+
+И, наконец, выполнение запроса:
+
+tail -n 45 ~/logfile | sed -n '/EXECUTOR STATISTICS/,+8p'
+LOG:  EXECUTOR STATISTICS
+DETAIL:  ! system usage stats:
+	!	0.250827 elapsed 0.244000 user 0.000000 system sec
+	!	[1.928000 user 0.144000 sys total]
+	!	0/0 [0/324336] filesystem blocks in/out
+	!	0/0 [0/14429] page faults/reclaims, 0 [0] swaps
+	!	0 [0] signals rcvd, 0/0 [0/0] messages rcvd/sent
+	!	0/10 [107/101] voluntary/involuntary context switches
+STATEMENT:  select s, count(*) from big group by s;
+
+.......................................................................
+
+Выведем еще раз без подробностей, чтобы обратить внимание на время выполнения
+каждого этапа. Это даст примерное представление о том, сколько времени можно
+сэкономить, используя подготовленные операторы.
+
+tail -n 45 ~/logfile | sed -n '/^LOG\|elapsed/p'
+LOG:  PARSER STATISTICS
+	!	0.000023 elapsed 0.000000 user 0.000000 system sec
+LOG:  PARSE ANALYSIS STATISTICS
+	!	0.000220 elapsed 0.000000 user 0.000000 system sec
+LOG:  REWRITER STATISTICS
+	!	0.000007 elapsed 0.000000 user 0.000000 system sec
+LOG:  PLANNER STATISTICS
+	!	0.000131 elapsed 0.000000 user 0.000000 system sec
+LOG:  EXECUTOR STATISTICS
+	!	0.250827 elapsed 0.244000 user 0.000000 system sec
+
+.......................................................................
+
+ПОДГОТОВЛЕННЫЕ ОПЕРАТОРЫ
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим подготовленный оператор для нашего запроса:
+
+        => prepare stmt as select s, count(*) from big group by s;
+        PREPARE
+        Time: 0,206 ms
+
+.......................................................................
+
+Вот какие этапы отработали при выполнении этой каманды:
+
+tail -n 27 ~/logfile | sed -n '/^LOG\|elapsed\|^STATEMENT/p'
+LOG:  PARSER STATISTICS
+	!	0.000028 elapsed 0.000000 user 0.000000 system sec
+LOG:  PARSE ANALYSIS STATISTICS
+	!	0.000002 elapsed 0.000000 user 0.000000 system sec
+LOG:  REWRITER STATISTICS
+	!	0.000001 elapsed 0.000000 user 0.000000 system sec
+
+.......................................................................
+
+Теперь мы можем вызывать оператор по имени:
+
+        => execute stmt;
+             s      |  count  
+        ------------+---------
+         aaaaaaaaaa | 1000000
+        (1 row)
+        
+        Time: 252,014 ms
+
+.......................................................................
+
+Вот что какие этапы прошел запрос:
+
+tail -n 54 ~/logfile | sed -n '/^LOG\|elapsed\|^STATEMENT/p'
+LOG:  PARSER STATISTICS
+	!	0.000012 elapsed 0.000000 user 0.000000 system sec
+LOG:  PARSE ANALYSIS STATISTICS
+	!	0.000002 elapsed 0.000000 user 0.000000 system sec
+LOG:  REWRITER STATISTICS
+	!	0.000000 elapsed 0.000000 user 0.000000 system sec
+LOG:  PLANNER STATISTICS
+	!	0.000043 elapsed 0.000000 user 0.000000 system sec
+LOG:  EXECUTOR STATISTICS
+	!	0.251426 elapsed 0.224000 user 0.016000 system sec
+LOG:  EXECUTOR STATISTICS
+	!	0.251559 elapsed 0.224000 user 0.016000 system sec
+
+Почему так? Ведь мы говорили о том, что подготовленный оператор только
+оптимизируется и выполняется.
+И почему executor выводится два раза?
+
+.......................................................................
+
+Дело в том, что саму команду execute тоже надо разобрать и выполнить
+(поэтому мы видим два этапа выполнения). Другое дело, что разбор
+тривиальный и не занимает много времени.
+
+.......................................................................
+
+Все подготовленные операторы можно увидеть в представлении:
+
+        => \x
+        Expanded display is on.
+
+        => select * from pg_prepared_statements;
+        -[ RECORD 1 ]---+--------------------------------------------------------
+        name            | stmt
+        statement       | prepare stmt as select s, count(*) from big group by s;
+        prepare_time    | 2016-05-27 21:28:13.951974+03
+        parameter_types | {}
+        from_sql        | t
+        
+        Time: 0,466 ms
+
+.......................................................................
+
+Если подготовленный оператор не нужен, его можно удалить командой deallocate,
+но в любом случае оператор пропадет при завершении серверного процесса.
+
+        => \q
+
+        psql 
+
+        => \c db14
+        You are now connected to database "db14" as user "postgres".
+
+        => select * from pg_prepared_statements;
+         name | statement | prepare_time | parameter_types | from_sql 
+        ------+-----------+--------------+-----------------+----------
+        (0 rows)
+        
+
+.......................................................................
+
+ЗАЩИТА ОТ ВНЕДРЕНИЯ SQL-КОДА
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Пусть имеется таблица:
+
+        => create table t(code varchar(10), descr text);
+        CREATE TABLE
+
+        => insert into t values ('A','раз'),('B','два');
+        INSERT 0 2
+
+Представим себе, что в приложении есть следующий код:
+
+  $query = "select descr from t where code = '$code'";
+
+Если значение $code получено из ненадежного источника, злоумышленник может,
+например, получить несанкционированный доступ к другим данным.
+
+К чему приведет такое значение?
+
+  A' union all select rolname from pg_roles where '' = '
+
+.......................................................................
+
+        => select descr from t where code = 'A' union all select rolname from pg_roles where '' = '';
+          descr   
+        ----------
+         раз
+         postgres
+        (2 rows)
+        
+
+Мы получили доступ к данным другой таблицы, изменив структуру запроса.
+
+.......................................................................
+
+При использовании подготовленных операторов это невозможно, так как структура
+SQL-запроса фиксируется при синтаксическом разборе. Выражение всегда останется
+выражением и не сможет превратиться, скажем, в имя таблицы.
+
+        => prepare s(varchar) as select descr from t where code = $1;
+        PREPARE
+
+        => execute s('A');
+         descr 
+        -------
+         раз
+        (1 row)
+        
+
+        => execute s($$A' union all select rolname from pg_roles where '' = '$$);
+         descr 
+        -------
+        (0 rows)
+        
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+        => alter system reset all;
+        ALTER SYSTEM
+
+        => select pg_reload_conf();
+         pg_reload_conf 
+        ----------------
+         t
+        (1 row)
+        
+
+        => \q

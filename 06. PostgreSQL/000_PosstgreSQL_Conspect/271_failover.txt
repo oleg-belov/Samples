@@ -1,0 +1,521 @@
+
+МАСТЕР: НАСТРОЙКА ПОТОКОВОЙ РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Настраиваем потоковую репликацию без использования архива сегментов WAL,
+точно так же, как в предыдущей теме.
+Внесем необходимые изменения в конфигурацию.
+
+    psql -h localhost -p 5432 -U postgres
+
+    => alter system set wal_level = hot_standby;
+    ALTER SYSTEM
+
+    => alter system set archive_mode = off;
+    ALTER SYSTEM
+
+    => alter system set max_standby_streaming_delay = '10s';
+    ALTER SYSTEM
+
+    => alter system set max_replication_slots = 5;
+    ALTER SYSTEM
+
+    => alter system set max_wal_senders = 5;
+    ALTER SYSTEM
+
+    => alter system set wal_log_hints = on;
+    ALTER SYSTEM
+
+Параметр wal_log_hints нужен для утилиты pg_rewind.
+
+.......................................................................
+
+Добавим еще несколько параметров, которые надо будет изменить
+на реплике.
+
+    => alter system set port = 5432;
+    ALTER SYSTEM
+
+    => alter system set hot_standby = off;
+    ALTER SYSTEM
+
+    => alter system set hot_standby_feedback = off;
+    ALTER SYSTEM
+
+    => alter system set wal_receiver_status_interval = 0;
+    ALTER SYSTEM
+
+.......................................................................
+
+МАСТЕР: ПРОВЕРКА ПОДКЛЮЧЕНИЯ ДЛЯ РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+В файле pg_hba.conf должна быть строка для базы данных replication:
+
+postgres> sed -i s/#\(\w\+\s\+replication\)/\1/ /usr/local/pgsql/data/pg_hba.conf 
+
+
+
+postgres> tail -n 5 /usr/local/pgsql/data/pg_hba.conf 
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     postgres                                trust
+host    replication     postgres        127.0.0.1/32            trust
+host    replication     postgres        ::1/128                 trust
+
+Все в порядке.
+
+.......................................................................
+
+Перезапустим сервер, чтобы изменения вступили в силу.
+
+    => \q
+
+postgres> pg_ctl restart -w -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+
+.......................................................................
+
+МАСТЕР: СЛОТ РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим слот репликации.
+
+    psql -h localhost -p 5432 -U postgres
+
+    => select pg_create_physical_replication_slot('slot_a');
+     pg_create_physical_replication_slot 
+    -------------------------------------
+     (slot_a,)
+    (1 row)
+    
+
+.......................................................................
+
+СОЗДАНИЕ БАЗОВОЙ РЕЗЕРВНОЙ КОПИИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим базовую резервную копию.
+Убедимся, что в кластере нет пользовательских табличных пространств, так как
+их наличие усложнило бы процесс резервирования и восстановления.
+
+    => \db
+           List of tablespaces
+        Name    |  Owner   | Location 
+    ------------+----------+----------
+     pg_default | postgres | 
+     pg_global  | postgres | 
+    (2 rows)
+    
+
+.......................................................................
+
+Выполним команду pg_basebackup от имени postgres2, в качестве каталога
+указываем PGDATA будущей реплики. Используем формат по умолчанию (plain),
+Ключ -R создаст заготовку файла recovery.conf.
+
+postgres2> bash -c "rm -rf /usr/local/pgsql2/data/*" 
+postgres2> pg_basebackup -U postgres -p 5432 -D /usr/local/pgsql2/data -X stream -R 
+
+.......................................................................
+
+Проверим содержимое каталога:
+
+postgres2> ls -l /usr/local/pgsql2/data 
+total 120
+-rw-------  1 postgres2 postgres2   206 мая   27 21:27 backup_label
+drwx------ 14 postgres2 postgres2  4096 мая   27 21:27 base
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 global
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_clog
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_commit_ts
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_dynshmem
+-rw-------  1 postgres2 postgres2  4465 мая   27 21:27 pg_hba.conf
+-rw-------  1 postgres2 postgres2  1636 мая   27 21:27 pg_ident.conf
+drwx------  4 postgres2 postgres2  4096 мая   27 21:27 pg_logical
+drwx------  4 postgres2 postgres2  4096 мая   27 21:27 pg_multixact
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_notify
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_replslot
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_serial
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_snapshots
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_stat
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_stat_tmp
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_subtrans
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_tblspc
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_twophase
+-rw-------  1 postgres2 postgres2     4 мая   27 21:27 PG_VERSION
+drwx------  3 postgres2 postgres2  4096 мая   27 21:27 pg_xlog
+-rw-------  1 postgres2 postgres2   336 мая   27 21:27 postgresql.auto.conf
+-rw-------  1 postgres2 postgres2 21711 мая   27 21:27 postgresql.conf
+-rw-r--r--  1 postgres2 postgres2    98 мая   27 21:27 recovery.conf
+
+.......................................................................
+
+РЕПЛИКА: НАСТРОЙКА
+~~~~~~~~~~~~~~~~~~
+
+Требуется немного изменить postgresql.auto.conf. Изменяем его вручную,
+а не командой alter system, поскольку экземпляр еще не запущен.
+
+
+postgres2> sed -i "s/port = .*/port = 5433/" /usr/local/pgsql2/data/postgresql.auto.conf 
+postgres2> sed -i "s/hot_standby = .*/hot_standby = on/" /usr/local/pgsql2/data/postgresql.auto.conf 
+postgres2> sed -i "s/hot_standby_feedback = .*/hot_standby_feedback = on/" /usr/local/pgsql2/data/postgresql.auto.conf 
+postgres2> sed -i "s/wal_receiver_status_interval = .*/wal_receiver_status_interval = 1s/" /usr/local/pgsql2/data/postgresql.auto.conf 
+
+.......................................................................
+
+Проверим, что получилось:
+
+postgres2> cat /usr/local/pgsql2/data/postgresql.auto.conf 
+# Do not edit this file manually!
+# It will be overwritten by ALTER SYSTEM command.
+wal_level = 'hot_standby'
+archive_mode = 'off'
+max_standby_streaming_delay = '10s'
+max_replication_slots = '5'
+max_wal_senders = '5'
+wal_log_hints = 'on'
+port = 5433
+hot_standby = on
+hot_standby_feedback = on
+wal_receiver_status_interval = 1s
+
+Параметр wal_receiver_status_interval уменьшен для целей демонстрации.
+
+.......................................................................
+
+Заготовка для recovery.conf была подготовлена утилитой pg_basebackup:
+
+postgres2> cat /usr/local/pgsql2/data/recovery.conf 
+standby_mode = 'on'
+primary_conninfo = 'user=postgres port=5432 sslmode=disable sslcompression=1'
+
+.......................................................................
+
+Остается добавить указание использовать слот репликации.
+
+
+postgres2> bash -c "echo primary_slot_name = \\'\'slot_a\\'\' >> /usr/local/pgsql2/data/recovery.conf" 
+postgres2> cat /usr/local/pgsql2/data/recovery.conf 
+standby_mode = 'on'
+primary_conninfo = 'user=postgres port=5432 sslmode=disable sslcompression=1'
+primary_slot_name = 'slot_a'
+
+.......................................................................
+
+РЕПЛИКА: СТАРТ СЕРВЕРА
+~~~~~~~~~~~~~~~~~~~~~~
+
+Можно стартовать сервер.
+
+postgres2> pg_ctl start -w -l /home/postgres2/logfile 
+waiting for server to start..... done
+server started
+
+.......................................................................
+
+Слот репликации инициализировался и используется (поле active
+и не пустое поле restart_lsn):
+
+    => \x
+    Expanded display is on.
+
+    => select * from pg_replication_slots;
+    -[ RECORD 1 ]+----------
+    slot_name    | slot_a
+    plugin       | 
+    slot_type    | physical
+    datoid       | 
+    database     | 
+    active       | t
+    active_pid   | 10188
+    xmin         | 3826
+    catalog_xmin | 
+    restart_lsn  | 0/E000000
+    
+
+.......................................................................
+
+ПРОВЕРКА РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~
+
+Создадим базу данных и таблицу на мастере:
+
+    => create database db12;
+    CREATE DATABASE
+
+    => \c db12
+    You are now connected to database "db12" as user "postgres".
+
+    => create table replica_test(t text);
+    CREATE TABLE
+
+    => insert into replica_test values ('Я - мастер.');
+    INSERT 0 1
+
+.......................................................................
+
+Вот они на реплике:
+
+    |    psql -h localhost -p 5433 -U postgres
+
+    |    => \c db12
+    |    You are now connected to database "db12" as user "postgres".
+
+    |    => select * from replica_test;
+    |          t      
+    |    -------------
+    |     Я - мастер.
+    |    (1 row)
+    |    
+
+.......................................................................
+
+ПЕРЕХОД НА РЕПЛИКУ
+~~~~~~~~~~~~~~~~~~
+
+Сейчас второй сервер является репликой (находится в режиме восстановления):
+
+    |    => select pg_is_in_recovery();
+    |     pg_is_in_recovery 
+    |    -------------------
+    |     t
+    |    (1 row)
+    |    
+
+.......................................................................
+
+Повышаем реплику:
+
+postgres2> pg_ctl -w promote 
+server promoting
+
+.......................................................................
+
+Теперь бывшая реплика стала полноценным экземпляром.
+
+    |    => select pg_is_in_recovery();
+    |     pg_is_in_recovery 
+    |    -------------------
+    |     f
+    |    (1 row)
+    |    
+
+Мы можем изменять данные:
+
+    |    => insert into replica_test values ('Я - бывшая реплика (новый мастер).');
+    |    INSERT 0 1
+
+.......................................................................
+
+Между тем старый мастер еще не выключен и в принципе тоже может изменять
+данные:
+
+    => insert into replica_test values ('Die hard');
+    INSERT 0 1
+
+Основим его (аккуратно, с выполнением контрольной точки).
+
+    => \q
+
+postgres> pg_ctl stop 
+waiting for server to shut down.... done
+server stopped
+
+.......................................................................
+
+Создадим на новом мастере слот для будущей реплики.
+
+    |    => select pg_create_physical_replication_slot('slot_a');
+    |     pg_create_physical_replication_slot 
+    |    -------------------------------------
+    |     (slot_a,)
+    |    (1 row)
+    |    
+
+.......................................................................
+
+БЫВШИЙ МАСТЕР -> НОВАЯ РЕПЛИКА
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Теперь мы хотим ввести в строй бывший мастер в качестве новой реплики.
+Для этого мы можем создать новую резервную копию, а можем воспользоваться
+утилитой pg_rewind, которая решает задачу быстрее.
+
+В ключах утилиты надо указать каталог PGDATA нашего сервера и способ обращения
+к серверу-источнику: либо подключение от имени суперпользователя (если сервер
+работает), либо местоположение его каталога PGDATA (если он выключен).
+
+postgres> pg_rewind -D /usr/local/pgsql/data "--source-server=user=postgres port=5433" -P 
+connected to server
+servers diverged at WAL position 0/E01FDC8 on timeline 1
+rewinding from last common checkpoint at 0/E0011A8 on timeline 1
+reading source file list
+reading target file list
+reading WAL in target
+need to copy 64 MB (total source directory size is 187 MB)
+    0/65654 kB (0%) copied65654/65654 kB (100%) copied
+creating backup label and updating control file
+syncing target data directory
+Done!
+
+.......................................................................
+
+В результате работы утилита pg_rewind "откатывает" файлы данных на ближайшую
+контрольную точку до того момента, как пути серверов разошлись, а также создает
+файл backup_label, который обеспечивает применение нужных журналов для завершения
+восстановления.
+
+Заглянем в backuplabel:
+
+postgres> cat /usr/local/pgsql/data/backup_label 
+START WAL LOCATION: 0/E001170 (file 00000001000000000000000E)
+CHECKPOINT LOCATION: 0/E0011A8
+BACKUP METHOD: pg_rewind
+BACKUP FROM: standby
+START TIME: 2016-05-27 21:28:01 MSK
+
+.......................................................................
+
+Поскольку postgresql.auto.conf был скопирован с нового мастера, его нужно
+немного поправить.
+
+postgres> sed -i "s/port = .*/port = 5432/" /usr/local/pgsql/data/postgresql.auto.conf 
+postgres> sed -i "s/hot_standby = .*/hot_standby = on/" /usr/local/pgsql/data/postgresql.auto.conf 
+postgres> sed -i "s/hot_standby_feedback = .*/hot_standby_feedback = on/" /usr/local/pgsql/data/postgresql.auto.conf 
+
+Проверим, что получилось:
+
+postgres> cat /usr/local/pgsql/data/postgresql.auto.conf 
+# Do not edit this file manually!
+# It will be overwritten by ALTER SYSTEM command.
+wal_level = 'hot_standby'
+archive_mode = 'off'
+max_standby_streaming_delay = '10s'
+max_replication_slots = '5'
+max_wal_senders = '5'
+wal_log_hints = 'on'
+port = 5432
+hot_standby = on
+hot_standby_feedback = on
+wal_receiver_status_interval = 1s
+
+.......................................................................
+
+Теперь бывший мастер готов к восстановлению. Но мы хотим, чтобы он стал
+новой репликой. Поэтому нам еще требуется файл recovery.conf.
+
+postgres> bash -c "echo standby_mode = \\'\'on\\'\' >> /usr/local/pgsql/data/recovery.conf" 
+postgres> bash -c "echo primary_conninfo = \\'\'user=postgres port=5433 sslmode=disable sslcompression=1\\'\' >> /usr/local/pgsql/data/recovery.conf" 
+postgres> bash -c "echo primary_slot_name = \\'\'slot_a\\'\' >> /usr/local/pgsql/data/recovery.conf" 
+
+.......................................................................
+
+Проверим:
+
+postgres> cat /usr/local/pgsql/data/recovery.conf 
+standby_mode = 'on'
+primary_conninfo = 'user=postgres port=5433 sslmode=disable sslcompression=1'
+primary_slot_name = 'slot_a'
+
+.......................................................................
+
+НОВАЯ РЕПЛИКА: СТАРТ СЕРВЕРА
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Можно стартовать новую реплику.
+
+postgres> pg_ctl start -w -l /home/postgres/logfile 
+waiting for server to start.... done
+server started
+
+.......................................................................
+
+Слот репликации инициализировался и используется:
+
+    |    => \x
+    |    Expanded display is on.
+
+    |    => select * from pg_replication_slots;
+    |    -[ RECORD 1 ]+----------
+    |    slot_name    | slot_a
+    |    plugin       | 
+    |    slot_type    | physical
+    |    datoid       | 
+    |    database     | 
+    |    active       | t
+    |    active_pid   | 10321
+    |    xmin         | 3832
+    |    catalog_xmin | 
+    |    restart_lsn  | 0/E03F6A0
+    |    
+
+.......................................................................
+
+Данные, измененные на новом мастере, получены:
+
+    psql -h localhost -p 5432 -U postgres
+
+    => \c db12
+    You are now connected to database "db12" as user "postgres".
+
+    => select * from replica_test;
+                     t                  
+    ------------------------------------
+     Я - мастер.
+     Я - бывшая реплика (новый мастер).
+    (2 rows)
+    
+
+.......................................................................
+
+Проверим еще:
+
+    |    => insert into replica_test values ('Еще строка с нового мастера.');
+    |    INSERT 0 1
+
+    => select * from replica_test;
+                     t                  
+    ------------------------------------
+     Я - мастер.
+     Я - бывшая реплика (новый мастер).
+     Еще строка с нового мастера.
+    (3 rows)
+    
+
+.......................................................................
+
+Таким образом, два сервера поменялись ролями.
+
+Конец демонстрации.
+
+.......................................................................
+
+    |    => \q
+
+postgres2> pg_ctl stop -D /usr/local/pgsql2/data 
+waiting for server to shut down.... done
+server stopped
+postgres> pg_ctl -w promote 
+server promoting
+
+    => select pg_drop_replication_slot('slot_a');
+     pg_drop_replication_slot 
+    --------------------------
+     
+    (1 row)
+    
+
+    => alter system reset all;
+    ALTER SYSTEM
+
+    => \q
+
+postgres> pg_ctl restart -w -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started

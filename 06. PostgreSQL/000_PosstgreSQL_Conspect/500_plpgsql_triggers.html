@@ -1,0 +1,626 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+Порядок вызова триггеров
+</h1>
+<p class="C">
+Создадим "универсальную" триггерную функцию, которая описывает контекст,
+в котором она вызвана. Контекст передается в различных TG-переменных.
+</p>
+<p class="C">
+Затем создадим триггеры на различные события, и будем смотреть, какие триггеры
+вызываются при выполнении операций и в каком порядке.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">describe</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS trigger AS</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    rec <span style="color:#a00050">record</span><span style="color:#323232">;</span>
+    str <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">''</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">IF</span> TG_LEVEL <span style="color:#323232">=</span> <span style="color:#1094a0">'ROW'</span> <span style="color:#3b6ac8">THEN</span>
+        <span style="color:#3b6ac8">CASE</span> TG_OP
+            <span style="color:#3b6ac8">WHEN</span> <span style="color:#1094a0">'DELETE'</span> <span style="color:#3b6ac8">THEN</span> rec <span style="color:#323232">:=</span> OLD<span style="color:#323232">;</span> str <span style="color:#323232">:=</span> OLD<span style="color:#323232">::</span><span style="color:#a00050">text</span><span style="color:#323232">;</span>
+            <span style="color:#3b6ac8">WHEN</span> <span style="color:#1094a0">'UPDATE'</span> <span style="color:#3b6ac8">THEN</span> rec <span style="color:#323232">:=</span> NEW<span style="color:#323232">;</span> str <span style="color:#323232">:=</span> OLD || <span style="color:#1094a0">' -&gt; '</span> || NEW<span style="color:#323232">;</span>
+            <span style="color:#3b6ac8">WHEN</span> <span style="color:#1094a0">'INSERT'</span> <span style="color:#3b6ac8">THEN</span> rec <span style="color:#323232">:=</span> NEW<span style="color:#323232">;</span> str <span style="color:#323232">:=</span> NEW<span style="color:#323232">::</span><span style="color:#a00050">text</span><span style="color:#323232">;</span>
+        <span style="color:#3b6ac8">END CASE</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END IF</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'% % % %: %'</span><span style="color:#323232">,</span> TG_TABLE_NAME<span style="color:#323232">,</span> TG_WHEN<span style="color:#323232">,</span> TG_OP<span style="color:#323232">,</span> TG_LEVEL<span style="color:#323232">,</span> str<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RETURN</span> rec<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Таблица:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">t</span><span style="color:#323232">(</span>
+    id <span style="color:#a00050">integer</span> <span style="color:#3b6ac8">PRIMARY KEY</span><span style="color:#323232">,</span>
+    s <span style="color:#a00050">text</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Триггеры на уровне оператора:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TRIGGER</span> t_before_row
+<span style="color:#3b6ac8">BEFORE INSERT OR UPDATE OR DELETE ON</span> t
+<span style="color:#3b6ac8">FOR EACH STATEMENT EXECUTE PROCEDURE</span> <span style="color:#c73a69">describe</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TRIGGER
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TRIGGER</span> t_after_row
+<span style="color:#3b6ac8">AFTER INSERT OR UPDATE OR DELETE ON</span> t
+<span style="color:#3b6ac8">FOR EACH STATEMENT EXECUTE PROCEDURE</span> <span style="color:#c73a69">describe</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TRIGGER
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+И на уровне строк:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TRIGGER</span> t_before_stmt
+<span style="color:#3b6ac8">BEFORE INSERT OR UPDATE OR DELETE ON</span> t
+<span style="color:#3b6ac8">FOR EACH ROW EXECUTE PROCEDURE</span> <span style="color:#c73a69">describe</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TRIGGER
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TRIGGER</span> t_after_stmt
+<span style="color:#3b6ac8">AFTER INSERT OR UPDATE OR DELETE ON</span> t
+<span style="color:#3b6ac8">FOR EACH ROW EXECUTE PROCEDURE</span> <span style="color:#c73a69">describe</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TRIGGER
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Пробуем вставку:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">'aaa'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  t BEFORE INSERT STATEMENT: 
+NOTICE:  t BEFORE INSERT ROW: (1,aaa)
+NOTICE:  t AFTER INSERT ROW: (1,aaa)
+NOTICE:  t AFTER INSERT STATEMENT: 
+INSERT 0 1
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Обновление:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> t <span style="color:#3b6ac8">SET</span> s <span style="color:#323232">=</span> <span style="color:#1094a0">'bbb'</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  t BEFORE UPDATE STATEMENT: 
+NOTICE:  t BEFORE UPDATE ROW: (1,aaa) -> (1,bbb)
+NOTICE:  t AFTER UPDATE ROW: (1,aaa) -> (1,bbb)
+NOTICE:  t AFTER UPDATE STATEMENT: 
+UPDATE 1
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Тонкий момент: оператор UPSERT приводит к тому, что срабатывают триггеры
+BEFORE ROW и на вставку, и на обновление:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">'ccc'</span><span style="color:#323232">),(</span><span style="color:#1094a0">3</span><span style="color:#323232">,</span><span style="color:#1094a0">'ddd'</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">ON CONFLICT</span><span style="color:#323232">(</span>id<span style="color:#323232">)</span> <span style="color:#3b6ac8">DO UPDATE SET</span> s <span style="color:#323232">=</span> EXCLUDED.s<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  t BEFORE INSERT STATEMENT: 
+NOTICE:  t BEFORE UPDATE STATEMENT: 
+NOTICE:  t BEFORE INSERT ROW: (1,ccc)
+NOTICE:  t BEFORE UPDATE ROW: (1,bbb) -> (1,ccc)
+NOTICE:  t BEFORE INSERT ROW: (3,ddd)
+NOTICE:  t AFTER UPDATE ROW: (1,bbb) -> (1,ccc)
+NOTICE:  t AFTER INSERT ROW: (3,ddd)
+NOTICE:  t AFTER UPDATE STATEMENT: 
+NOTICE:  t AFTER INSERT STATEMENT: 
+INSERT 0 2
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+И, наконец, удаление:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DELETE FROM</span> t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  t BEFORE DELETE STATEMENT: 
+NOTICE:  t BEFORE DELETE ROW: (1,ccc)
+NOTICE:  t BEFORE DELETE ROW: (3,ddd)
+NOTICE:  t AFTER DELETE ROW: (1,ccc)
+NOTICE:  t AFTER DELETE ROW: (3,ddd)
+NOTICE:  t AFTER DELETE STATEMENT: 
+DELETE 2
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Пример: сохранение истории изменения строк
+</h1>
+<p class="C">
+Пусть есть таблица, содержащая актуальные данные. Задача состоит в том, чтобы
+в отдельной таблице сохранять всю историю изменения строк основной таблицы.
+</p>
+<p class="C">
+Поддержку исторической таблицы можно было бы возложить на приложение, но
+тогда велика вероятность, что в каких-то случаях из-за ошибок история не
+будет сохраняться. Поэтому решим задачу с помощью триггера.
+</p>
+<p class="C">
+Основная таблица:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">main</span><span style="color:#323232">(</span>
+    id <span style="color:#a00050">serial</span> <span style="color:#3b6ac8">PRIMARY KEY</span><span style="color:#323232">,</span>
+    s <span style="color:#a00050">text</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Историческая таблица:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">main_history</span><span style="color:#323232">(</span><span style="color:#3b6ac8">LIKE</span> t<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER TABLE</span> main_history <span style="color:#3b6ac8">ADD</span> start_date <span style="color:#a00050">timestamp</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">ADD</span> end_date <span style="color:#a00050">timestamp</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER TABLE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Одна триггерная функция будет обрабатывать вставку строк:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">history_insert</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS trigger AS</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">EXECUTE</span> <span style="color:#c73a69">format</span><span style="color:#323232">(</span><span style="color:#1094a0">'INSERT INTO %I SELECT ($1).*, current_timestamp, NULL'</span><span style="color:#323232">,</span>
+                   TG_TABLE_NAME||<span style="color:#1094a0">'_history'</span><span style="color:#323232">)</span>
+    <span style="color:#3b6ac8">USING</span> NEW<span style="color:#323232">;</span>
+
+    <span style="color:#3b6ac8">RETURN</span> NEW<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Другая функция будет обрабатывать удаление:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">history_delete</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS trigger AS</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">EXECUTE</span> <span style="color:#c73a69">format</span><span style="color:#323232">(</span><span style="color:#1094a0">'UPDATE %I SET end_date = current_timestamp WHERE id = $1 AND end_date IS NULL'</span><span style="color:#323232">,</span>
+                   TG_TABLE_NAME||<span style="color:#1094a0">'_history'</span><span style="color:#323232">)</span>
+    <span style="color:#3b6ac8">USING</span> OLD.id<span style="color:#323232">;</span>
+
+    <span style="color:#3b6ac8">RETURN</span> OLD<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь создадим триггеры:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TRIGGER</span> main_history_insert
+<span style="color:#3b6ac8">AFTER INSERT OR UPDATE ON</span> main
+<span style="color:#3b6ac8">FOR EACH ROW EXECUTE PROCEDURE</span> <span style="color:#c73a69">history_insert</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TRIGGER
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TRIGGER</span> main_history_delete
+<span style="color:#3b6ac8">AFTER UPDATE OR DELETE ON</span> main
+<span style="color:#3b6ac8">FOR EACH ROW EXECUTE PROCEDURE</span> <span style="color:#c73a69">history_delete</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TRIGGER
+</pre></div>
+<p class="C">
+Важные моменты:
+</p>
+<ul class="U">
+<li>Обновление трактуется как вставка и удаление; порядок, в котором сработают триггеры, не важен.</li>
+<li>Current_timestamp возвращает время начала транзакции, поэтому при обновлении start_date одной строки будет равен end_date другой.</li>
+<li>Использование AFTER-триггеров позволяет избежать проблем с UPSERT и потенциальными конфликтами с другими триггерами, которые могут существовать на основной таблице.</li>
+</ul>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Проверим работу триггеров.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> main <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">'Первое значение'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> main <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span><span style="color:#1094a0">'Второе значение'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> main <span style="color:#3b6ac8">SET</span> s <span style="color:#323232">=</span> <span style="color:#1094a0">'Первое значение (измененное)'</span> <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+UPDATE 1
+</pre></div>
+<p class="C">
+Состояние на 2017-07-22 23:40:10.811274+03:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> main <span style="color:#3b6ac8">ORDER BY</span> id<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |              s               
+----+------------------------------
+  1 | Первое значение (измененное)
+  2 | Второе значение
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> main <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span><span style="color:#1094a0">'Второе значение (измененное)'</span><span style="color:#323232">),(</span><span style="color:#1094a0">3</span><span style="color:#323232">,</span><span style="color:#1094a0">'Третье значение'</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">ON CONFLICT</span><span style="color:#323232">(</span>id<span style="color:#323232">)</span> <span style="color:#3b6ac8">DO UPDATE SET</span> s <span style="color:#323232">=</span> EXCLUDED.s<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 2
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DELETE FROM</span> main <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DELETE 1
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> main<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |              s               
+----+------------------------------
+  2 | Второе значение (измененное)
+  3 | Третье значение
+(2 rows)
+
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> main_history <span style="color:#3b6ac8">ORDER BY</span> id<span style="color:#323232">,</span> start_date<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |              s               |         start_date         |          end_date          
+----+------------------------------+----------------------------+----------------------------
+  1 | Первое значение              | 2017-07-22 23:40:07.704311 | 2017-07-22 23:40:09.747801
+  1 | Первое значение (измененное) | 2017-07-22 23:40:09.747801 | 2017-07-22 23:40:12.875124
+  2 | Второе значение              | 2017-07-22 23:40:07.723398 | 2017-07-22 23:40:10.851011
+  2 | Второе значение (измененное) | 2017-07-22 23:40:10.851011 | 
+  3 | Третье значение              | 2017-07-22 23:40:10.851011 | 
+(5 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь по исторической таблице можно восстановить историю на любой момент
+времени (это напоминает работу механизма MVCC):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\set</span> d <span style="color:#1094a0">'2017-07-22 23:40:10.811274+03'</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> id<span style="color:#323232">,</span> s
+<span style="color:#3b6ac8">FROM</span> main_history
+<span style="color:#3b6ac8">WHERE</span> start_date <span style="color:#323232">&lt;= :</span><span style="color:#1094a0">'d'</span> <span style="color:#3b6ac8">AND</span> <span style="color:#323232">:</span><span style="color:#1094a0">'d'</span> <span style="color:#323232">&lt;</span> end_date
+<span style="color:#3b6ac8">ORDER BY</span> id<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |              s               
+----+------------------------------
+  1 | Первое значение (измененное)
+  2 | Второе значение
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Пример: обновляемое представление
+</h1>
+<p class="C">
+Пусть имеются две таблицы: позиции (items) и строки заказов (order_lines):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">items</span><span style="color:#323232">(</span>
+    id <span style="color:#a00050">serial</span> <span style="color:#3b6ac8">PRIMARY KEY</span><span style="color:#323232">,</span>
+    description <span style="color:#a00050">text</span> <span style="color:#3b6ac8">NOT NULL</span><span style="color:#323232">,</span>
+    <span style="color:#3b6ac8">CONSTRAINT</span> items_desc_unique <span style="color:#3b6ac8">UNIQUE</span><span style="color:#323232">(</span>description<span style="color:#323232">)</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">order_lines</span><span style="color:#323232">(</span>
+    id <span style="color:#a00050">serial</span> <span style="color:#3b6ac8">PRIMARY KEY</span><span style="color:#323232">,</span>
+    item_id <span style="color:#a00050">integer</span> <span style="color:#3b6ac8">NOT NULL REFERENCES</span> <span style="color:#c73a69">items</span><span style="color:#323232">(</span>id<span style="color:#323232">),</span>
+    qty <span style="color:#a00050">integer</span> <span style="color:#3b6ac8">NOT NULL</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Примерные данные:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">items</span><span style="color:#323232">(</span>description<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">'Болт'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">items</span><span style="color:#323232">(</span>description<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">'Гайка'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">items</span><span style="color:#323232">(</span>description<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">'Шуруп'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">order_lines</span><span style="color:#323232">(</span>item_id<span style="color:#323232">,</span>qty<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">2</span> <span style="color:#969696">/*Гайка*/</span><span style="color:#323232">,</span><span style="color:#1094a0">50</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">order_lines</span><span style="color:#323232">(</span>item_id<span style="color:#323232">,</span>qty<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">1</span> <span style="color:#969696">/*Болт*/</span><span style="color:#323232">,</span> <span style="color:#1094a0">100</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Для удобства можно определить представление:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE VIEW</span> order_lines_v <span style="color:#3b6ac8">AS</span>
+<span style="color:#3b6ac8">SELECT</span> ol.id<span style="color:#323232">,</span> i.description<span style="color:#323232">,</span> ol.qty
+<span style="color:#3b6ac8">FROM</span> order_lines ol <span style="color:#3b6ac8">JOIN</span> items i <span style="color:#3b6ac8">ON</span> ol.item_id <span style="color:#323232">=</span> i.id<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE VIEW
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> order_lines_v<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id | description | qty 
+----+-------------+-----
+  1 | Гайка       |  50
+  2 | Болт        | 100
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Но такое представление не допускает изменений:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> order_lines_v <span style="color:#3b6ac8">SET</span> description <span style="color:#323232">=</span> <span style="color:#1094a0">'Шуруп'</span> <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  cannot update view "order_lines_v"
+DETAIL:  Views that do not select from a single table or view are not automatically updatable.
+HINT:  To enable updating the view, provide an INSTEAD OF UPDATE trigger or an unconditional ON UPDATE DO INSTEAD rule.
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Однако мы можем определить триггер. Триггерная функция может выглядеть,
+например, так:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">view_update</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS trigger AS</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">UPDATE</span> order_lines
+    <span style="color:#3b6ac8">SET</span> item_id <span style="color:#323232">= (</span><span style="color:#3b6ac8">SELECT</span> id <span style="color:#3b6ac8">FROM</span> items <span style="color:#3b6ac8">WHERE</span> description <span style="color:#323232">=</span> NEW.description<span style="color:#323232">),</span>
+        qty <span style="color:#323232">=</span> NEW.qty
+    <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> OLD.id<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RETURN</span> NEW<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">EXCEPTION</span>
+    <span style="color:#3b6ac8">WHEN</span> not_null_violation <span style="color:#3b6ac8">THEN</span>
+        <span style="color:#3b6ac8">RAISE EXCEPTION</span> <span style="color:#1094a0">'Указанной позиции &quot;%&quot; не существует'</span><span style="color:#323232">,</span>NEW.description<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Изменение идентификатора игнорируется: мы предполагаем, что он всегда выдается
+из последовательности.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+И сам триггер:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TRIGGER</span> order_lines_v_upd
+<span style="color:#3b6ac8">INSTEAD OF UPDATE ON</span> order_lines_v
+<span style="color:#3b6ac8">FOR EACH ROW EXECUTE PROCEDURE</span> <span style="color:#c73a69">view_update</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TRIGGER
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Проверим:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> order_lines_v <span style="color:#3b6ac8">SET</span> qty <span style="color:#323232">=</span> qty <span style="color:#323232">+</span> <span style="color:#1094a0">10</span> <span style="color:#3b6ac8">RETURNING</span> <span style="color:#323232">*;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id | description | qty 
+----+-------------+-----
+  1 | Гайка       |  60
+  2 | Болт        | 110
+(2 rows)
+
+UPDATE 2
+</pre></div>
+<p class="C">
+В базовой таблице:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> order_lines<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id | item_id | qty 
+----+---------+-----
+  1 |       2 |  60
+  2 |       1 | 110
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Обновление описания позиции:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> order_lines_v <span style="color:#3b6ac8">SET</span> description <span style="color:#323232">=</span> <span style="color:#1094a0">'Шуруп'</span> <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">1</span> <span style="color:#3b6ac8">RETURNING</span> <span style="color:#323232">*;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id | description | qty 
+----+-------------+-----
+  1 | Шуруп       |  60
+(1 row)
+
+UPDATE 1
+</pre></div>
+<p class="C">
+Проверим базовую таблицу:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> order_lines<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id | item_id | qty 
+----+---------+-----
+  2 |       1 | 110
+  1 |       3 |  60
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+А попытка изменить позицию на несуществующую завершится ошибкой:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> order_lines_v <span style="color:#3b6ac8">SET</span> description <span style="color:#323232">=</span> <span style="color:#1094a0">'Винт'</span> <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">1</span> <span style="color:#3b6ac8">RETURNING</span> <span style="color:#323232">*;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  Указанной позиции "Винт" не существует
+CONTEXT:  PL/pgSQL function view_update() line 10 at RAISE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Конец демонстрации.
+</p>
+</body>
+</html>

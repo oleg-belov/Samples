@@ -1,0 +1,561 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+Таблицы, типы и ограничения
+</h1>
+<p class="C">
+Пример создания таблицы с разными типами столбцов и ограничениями целостности:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">people</span><span style="color:#323232">(</span>
+    id       <span style="color:#a00050">serial</span>       <span style="color:#3b6ac8">PRIMARY KEY</span><span style="color:#323232">,</span>
+    name     <span style="color:#a00050">varchar</span><span style="color:#323232">(</span><span style="color:#1094a0">100</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">NOT NULL</span><span style="color:#323232">,</span>
+    employee <span style="color:#a00050">boolean</span>      <span style="color:#3b6ac8">DEFAULT true</span><span style="color:#323232">,</span>
+    <span style="color:#3b6ac8">CONSTRAINT</span> uname <span style="color:#3b6ac8">UNIQUE</span><span style="color:#323232">(</span>name<span style="color:#323232">)</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<p class="C">
+Синтаксис соответствуют стандарту. Можно использовать различные типы данных
+и значения по умолчанию, указывать ограничения целостности как на уровне
+отдельных полей, так и на уровне таблицы.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Создадим аналогичную, но временную таблицу. Для этого воспользуемся специальным
+синтаксисом LIKE:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">BEGIN</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+BEGIN
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TEMPORARY TABLE</span> <span style="color:#c73a69">people_temp</span><span style="color:#323232">(</span><span style="color:#3b6ac8">LIKE</span> people <span style="color:#3b6ac8">INCLUDING ALL</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">ON COMMIT DELETE ROWS</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">people_temp</span><span style="color:#323232">(</span>name<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">'Иванов'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">COMMIT</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+COMMIT
+</pre></div>
+<p class="C">
+Что произошло при фиксации изменений?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Таблица пуста, потому что была объявлена как ON COMMIT DELETE ROWS:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> people_temp<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id | name | employee 
+----+------+----------
+(0 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В любом случае временные таблицы живут не дольше, чем сеанс. В другом сеансе
+нашей таблицы не существует:
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> people_temp<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ERROR:  relation "people_temp" does not exist
+LINE 1: SELECT * FROM people_temp;
+                      ^
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Последовательности
+</h1>
+<p class="C">
+В нашей таблице поле id имеет тип serial, что означает целое число с
+автоувеличением.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">people</span><span style="color:#323232">(</span>name<span style="color:#323232">,</span> employee<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">'Петров'</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">false</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> people<span style="color:#323232">;</span>
+</pre>
+</div>
+<p class="C">
+Какое значение будет иметь поле id у этой записи?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+
+<div class="R1"><pre class="R1">
+ id |  name  | employee 
+----+--------+----------
+  2 | Петров | f
+(1 row)
+
+</pre></div>
+<p class="C">
+Два, потому что первое значение было взято для временной таблицы из той
+же последовательности:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\d</span> people
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                                  Table "public.people"
+  Column  |          Type          |                      Modifiers                      
+----------+------------------------+-----------------------------------------------------
+ id       | integer                | not null default nextval('people_id_seq'::regclass)
+ name     | character varying(100) | not null
+ employee | boolean                | default true
+Indexes:
+    "people_pkey" PRIMARY KEY, btree (id)
+    "uname" UNIQUE CONSTRAINT, btree (name)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Изменим последовательность так, чтобы она использовала кэширование (это
+может дать выигрыш, если последовательность активно используется одновременно
+многими сеансами):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER SEQUENCE</span> people_id_seq <span style="color:#3b6ac8">CACHE</span> <span style="color:#1094a0">10</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER SEQUENCE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+К последовательности можно при необходимости обращаться и непосредственно:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">nextval</span><span style="color:#323232">(</span><span style="color:#1094a0">'people_id_seq'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ nextval 
+---------
+       3
+(1 row)
+
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">nextval</span><span style="color:#323232">(</span><span style="color:#1094a0">'people_id_seq'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<p class="C">
+Какое значение получит второй сеанс?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+
+<div class="R2"><pre class="R2">
+ nextval 
+---------
+      13
+(1 row)
+
+</pre></div>
+<p class="C">
+Тринадцать, потому что значения от 3 до 12 закэшированы первым сеансом:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">nextval</span><span style="color:#323232">(</span><span style="color:#1094a0">'people_id_seq'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ nextval 
+---------
+       4
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Индексы
+</h1>
+<p class="C">
+Создадим большую таблицу:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">bigtable</span><span style="color:#323232">(</span>id <span style="color:#a00050">serial</span><span style="color:#323232">,</span> t <span style="color:#a00050">text</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> bigtable
+    <span style="color:#3b6ac8">SELECT</span> s.id<span style="color:#323232">,</span> <span style="color:#1094a0">'This is line #'</span> || s.id <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">1000000</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">s</span><span style="color:#323232">(</span>id<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1000000
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> bigtable<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+  count  
+---------
+ 1000000
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Сколько времени занимает поиск одного значения в такой таблице?
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\timing</span> <span style="color:#3b6ac8">on</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+Timing is on.
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> bigtable <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">42</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |        t         
+----+------------------
+ 42 | This is line #42
+(1 row)
+
+Time: 104,595 ms
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\timing</span> <span style="color:#3b6ac8">off</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+Timing is off.
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Если попросить оптимизатор показать план запроса, мы увидим в нем Seq Scan -
+последовательное сканирование всей таблицы в поисках нужного значения (Filter):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN</span> <span style="color:#323232">(</span>COSTS <span style="color:#3b6ac8">OFF</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> bigtable <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">42</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+      QUERY PLAN      
+----------------------
+ Seq Scan on bigtable
+   Filter: (id = 42)
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь проиндексируем таблицу:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE UNIQUE INDEX</span> bigtable_id <span style="color:#3b6ac8">ON</span> <span style="color:#c73a69">bigtable</span><span style="color:#323232">(</span>id<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE INDEX
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\timing</span> <span style="color:#3b6ac8">on</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+Timing is on.
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> bigtable <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">42</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |        t         
+----+------------------
+ 42 | This is line #42
+(1 row)
+
+Time: 0,410 ms
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\timing</span> <span style="color:#3b6ac8">off</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+Timing is off.
+</pre></div>
+<p class="C">
+Невооруженным взглядом видно, что время уменьшилось.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+А в плане запроса появился индекс:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN</span> <span style="color:#323232">(</span>COSTS <span style="color:#3b6ac8">OFF</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> bigtable <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">42</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                QUERY PLAN                
+------------------------------------------
+ Index Scan using bigtable_id on bigtable
+   Index Cond: (id = 42)
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Однако индекс не является универсальным средством увеличения
+производительности. Обычно индекс очень полезен, если из таблицы требуется
+выбрать небольшую долю всех имеющихся строк. Если нужно прочитать много
+данных, индекс будет только мешать, и оптимизатор это понимает:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN</span> <span style="color:#323232">(</span>COSTS <span style="color:#3b6ac8">OFF</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> bigtable<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+      QUERY PLAN      
+----------------------
+ Seq Scan on bigtable
+(1 row)
+
+</pre></div>
+<p class="C">
+Кроме того, надо учитывать накладные расходы на обновление индексов при
+изменении таблицы и занимаемое ими место на диске.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Хранимые функции
+</h1>
+<p class="C">
+Простой пример функции на SQL:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">random_text</span><span style="color:#323232">(</span>len <span style="color:#a00050">integer</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">text</span> <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">string_agg</span><span style="color:#323232">(</span> <span style="color:#c73a69">chr</span><span style="color:#323232">(</span> <span style="color:#c73a69">trunc</span><span style="color:#323232">(</span><span style="color:#1094a0">65</span><span style="color:#323232">+</span><span style="color:#c73a69">random</span><span style="color:#323232">()*</span><span style="color:#1094a0">26</span><span style="color:#323232">)::</span><span style="color:#a00050">integer</span> <span style="color:#323232">),</span> <span style="color:#1094a0">''</span> <span style="color:#323232">)</span>
+    <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>len<span style="color:#323232">);</span>
+$$ <span style="color:#3b6ac8">LANGUAGE sql</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Теперь функцию можно использовать в запросах:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random_text</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ random_text 
+-------------
+ EJJOGXGMWV
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Триггеры
+</h1>
+<p class="C">
+Продемонстрируем триггер для сохранения времени последнего изменения строк.
+</p>
+<p class="C">
+Добавим поле в таблицу people:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER TABLE</span> people <span style="color:#3b6ac8">ADD COLUMN</span> last_update <span style="color:#a00050">timestamp</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER TABLE
+</pre></div>
+<p class="C">
+Создадим функцию, которая будут использоваться в триггере:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">set_last_update</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS TRIGGER AS</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+  new.last_update <span style="color:#323232">:=</span> <span style="color:#3b6ac8">current_timestamp</span><span style="color:#323232">;</span>
+  <span style="color:#3b6ac8">RETURN</span> new<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+И собственно триггер:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TRIGGER</span> people_last_update
+<span style="color:#3b6ac8">BEFORE UPDATE OR INSERT ON</span> people
+<span style="color:#3b6ac8">FOR EACH ROW</span>
+<span style="color:#3b6ac8">EXECUTE PROCEDURE</span> <span style="color:#c73a69">set_last_update</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TRIGGER
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Проверим работоспособность вставки:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">people</span><span style="color:#323232">(</span>id<span style="color:#323232">,</span> name<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">3</span><span style="color:#323232">,</span> <span style="color:#1094a0">'Сидоров'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> people<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |  name   | employee |        last_update         
+----+---------+----------+----------------------------
+  2 | Петров  | f        | 
+  3 | Сидоров | t        | 2017-07-22 23:39:03.416569
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+И обновления:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> people <span style="color:#3b6ac8">SET</span> name <span style="color:#323232">=</span> <span style="color:#1094a0">'Петров-Водкин'</span> <span style="color:#3b6ac8">WHERE</span> id <span style="color:#323232">=</span> <span style="color:#1094a0">2</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+UPDATE 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> people<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |     name      | employee |        last_update         
+----+---------------+----------+----------------------------
+  3 | Сидоров       | t        | 2017-07-22 23:39:03.416569
+  2 | Петров-Водкин | f        | 2017-07-22 23:39:03.457738
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Представления
+</h1>
+<p class="C">
+Создадим представление для отображения работников:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE VIEW</span> employees <span style="color:#3b6ac8">AS</span>
+<span style="color:#3b6ac8">SELECT</span> id<span style="color:#323232">,</span> name<span style="color:#323232">,</span> last_update <span style="color:#3b6ac8">FROM</span> people <span style="color:#3b6ac8">WHERE</span> employee<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE VIEW
+</pre></div>
+<p class="C">
+Теперь имя представления можно использовать практически так же, как и таблицу:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> employees<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id |  name   |        last_update         
+----+---------+----------------------------
+  3 | Сидоров | 2017-07-22 23:39:03.416569
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В простом случае с представлением будут работать и другие операции, например:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> employees <span style="color:#3b6ac8">SET</span> name <span style="color:#323232">=</span> <span style="color:#c73a69">initcap</span><span style="color:#323232">(</span>name<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+UPDATE 1
+</pre></div>
+<p class="C">
+С помощью триггеров можно сделать так, чтобы и в сложных случаях для
+представлений работали вставка, обновление и удаление строк.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+При планировании запроса представление "разворачивается" до базовых таблиц:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN</span> <span style="color:#323232">(</span>COSTS <span style="color:#3b6ac8">OFF</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> employees<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+     QUERY PLAN     
+--------------------
+ Seq Scan on people
+   Filter: employee
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Конец демонстрации.
+</p>
+</body>
+</html>

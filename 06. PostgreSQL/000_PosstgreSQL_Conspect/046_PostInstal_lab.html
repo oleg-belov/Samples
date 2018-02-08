@@ -1,0 +1,510 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+Параметры конфигурации
+</h1>
+<p class="C">
+Добавим в конец журнала строку:
+</p>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">postgres$ <span style="color:#a00050">echo</span> <span style="color:#1094a0">'work_mem = 8MB'</span> <span style="color:#323232">&gt;&gt; /</span>etc<span style="color:#323232">/</span>postgresql<span style="color:#323232">/</span><span style="color:#1094a0">9.6</span><span style="color:#323232">/</span>main<span style="color:#323232">/</span>postgresql.conf
+</pre>
+</div>
+<p class="C">
+Обновляем конфигурацию:
+</p>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">$ sudo <span style="color:#00a150">pg_ctlcluster</span> <span style="color:#1094a0">9.6</span> main reload
+</pre>
+</div>
+<p class="C">
+Проверяем:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">current_setting</span><span style="color:#323232">(</span><span style="color:#1094a0">'work_mem'</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> work_mem<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ work_mem 
+----------
+ 8MB
+(1 row)
+
+</pre></div>
+<h1>
+Выполнение скриптов в psql
+</h1>
+<p class="C">
+Запишем в файл ddl.sql команду на создание таблицы с ключевыми словами
+PostgreSQL (для этого можно использовать и любой текстовый редактор):
+</p>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">$ <span style="color:#00a150">cat</span> <span style="color:#323232">&gt;</span>ddl.sql <span style="color:#1094a0">&lt;&lt;EOF</span>
+<span style="color:#1094a0">CREATE TABLE keywords (</span>
+<span style="color:#1094a0">    word text,</span>
+<span style="color:#1094a0">    category text,</span>
+<span style="color:#1094a0">    description text</span>
+<span style="color:#1094a0">);</span>
+<span style="color:#1094a0">EOF</span>
+</pre>
+</div>
+<p class="C">
+Проверим содержимое файла:
+</p>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">$ <span style="color:#00a150">cat</span> ddl.sql
+</pre>
+</div>
+<div class="R"><pre class="R">
+CREATE TABLE keywords (
+    word text,
+    category text,
+    description text
+);
+</pre></div>
+<p class="C">
+Заполним таблицу keywords в файле popilate.sql:
+</p>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">$ <span style="color:#a00050">echo</span> <span style="color:#1094a0">'INSERT INTO keywords SELECT * FROM pg_get_keywords();'</span> <span style="color:#323232">&gt;</span> populate.sql
+</pre>
+</div>
+<p class="C">
+Проверим содержимое файла:
+</p>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">$ <span style="color:#00a150">cat</span> populate.sql
+</pre>
+</div>
+<div class="R"><pre class="R">
+INSERT INTO keywords SELECT * FROM pg_get_keywords();
+</pre></div>
+<p class="C">
+Запускаем psql, выполняем скрипты и проверяем записи в таблице:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\i</span> ddl.<span style="color:#3b6ac8">sql</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\i</span> populate.<span style="color:#3b6ac8">sql</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 419
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> keywords <span style="color:#3b6ac8">LIMIT</span> <span style="color:#1094a0">10</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+   word    | category | description 
+-----------+----------+-------------
+ abort     | U        | unreserved
+ absolute  | U        | unreserved
+ access    | U        | unreserved
+ action    | U        | unreserved
+ add       | U        | unreserved
+ admin     | U        | unreserved
+ after     | U        | unreserved
+ aggregate | U        | unreserved
+ all       | R        | reserved
+ also      | U        | unreserved
+(10 rows)
+
+</pre></div>
+<h1>
+Просмотр журнала
+</h1>
+<p class="C">
+Журнал можно открыть любым редактором. Каждая запись в журнале начинается
+с даты (настройки журнала после установки из пакета). Поэтому записи за
+сегодняшний день будут в конце файла.
+</p>
+<p class="C">
+Чтобы автоматизировать задачу, используем потоковый редактор sed.
+</p>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">postgres$ <span style="color:#00a150">sed</span> <span style="color:#323232">-</span>n <span style="color:#1094a0">'/^2017-07-22/,</span><span style="color:#7376c4">$p</span><span style="color:#1094a0">'</span> <span style="color:#323232">/</span>var<span style="color:#323232">/</span>log<span style="color:#323232">/</span>postgresql<span style="color:#323232">/</span>postgresql-9.6<span style="color:#323232">-</span>main.log
+</pre>
+</div>
+<div class="R"><pre class="R">
+2017-07-22 23:27:46 MSK [27824-1] LOG:  database system was interrupted; last known up at 2017-07-22 23:27:44 MSK
+2017-07-22 23:27:47 MSK [27825-1] [unknown]@[unknown] LOG:  incomplete startup packet
+2017-07-22 23:27:47 MSK [27828-1] postgres@postgres FATAL:  the database system is starting up
+2017-07-22 23:27:47 MSK [27824-2] LOG:  database system was not properly shut down; automatic recovery in progress
+2017-07-22 23:27:47 MSK [27824-3] LOG:  invalid record length at D/36C89224: wanted 24, got 0
+2017-07-22 23:27:47 MSK [27824-4] LOG:  redo is not required
+2017-07-22 23:27:47 MSK [27824-5] LOG:  MultiXact member wraparound protections are now enabled
+2017-07-22 23:27:47 MSK [27823-1] LOG:  database system is ready to accept connections
+2017-07-22 23:27:47 MSK [27832-1] LOG:  autovacuum launcher started
+2017-07-22 23:27:50 MSK [27911-1] student@student ERROR:  database "data_logical" does not exist
+2017-07-22 23:27:50 MSK [27911-2] student@student STATEMENT:  DROP DATABASE data_logical;
+2017-07-22 23:27:50 MSK [27938-1] student@data_logical ERROR:  relation "c" does not exist at character 15
+2017-07-22 23:27:50 MSK [27938-2] student@data_logical STATEMENT:  SELECT * FROM c;
+2017-07-22 23:27:51 MSK [28287-1] student@student ERROR:  database "data_physical" does not exist
+2017-07-22 23:27:51 MSK [28287-2] student@student STATEMENT:  DROP DATABASE data_physical;
+2017-07-22 23:27:51 MSK [28287-3] student@student ERROR:  tablespace "ts" does not exist
+2017-07-22 23:27:51 MSK [28287-4] student@student STATEMENT:  DROP TABLESPACE ts;
+2017-07-22 23:27:52 MSK [28569-1] student@data_objects ERROR:  new row for relation "observations" violates check constraint "observations_temperature_check"
+2017-07-22 23:27:52 MSK [28569-2] student@data_objects DETAIL:  Failing row contains (2017-07-22, 70).
+2017-07-22 23:27:52 MSK [28569-3] student@data_objects STATEMENT:  INSERT INTO observations VALUES (current_date, 70);
+2017-07-22 23:27:52 MSK [28569-4] student@data_objects ERROR:  null value in column "date_taken" violates not-null constraint
+2017-07-22 23:27:52 MSK [28569-5] student@data_objects DETAIL:  Failing row contains (null, 20).
+2017-07-22 23:27:52 MSK [28569-6] student@data_objects STATEMENT:  INSERT INTO observations VALUES (null, 20);
+2017-07-22 23:27:53 MSK [28723-1] student@student ERROR:  role "librarian" does not exist
+2017-07-22 23:27:53 MSK [28723-2] student@student STATEMENT:  DROP ROLE librarian;
+2017-07-22 23:27:53 MSK [28723-3] student@student ERROR:  role "storekeeper" does not exist
+2017-07-22 23:27:53 MSK [28723-4] student@student STATEMENT:  DROP ROLE storekeeper;
+2017-07-22 23:27:53 MSK [28723-5] student@student ERROR:  role "buyer" does not exist
+2017-07-22 23:27:53 MSK [28723-6] student@student STATEMENT:  DROP ROLE buyer;
+2017-07-22 23:27:54 MSK [29005-1] student@student ERROR:  role "librarian" does not exist
+2017-07-22 23:27:54 MSK [29005-2] student@student STATEMENT:  DROP ROLE librarian;
+2017-07-22 23:27:54 MSK [29005-3] student@student ERROR:  role "storekeeper" does not exist
+2017-07-22 23:27:54 MSK [29005-4] student@student STATEMENT:  DROP ROLE storekeeper;
+2017-07-22 23:27:54 MSK [29005-5] student@student ERROR:  role "buyer" does not exist
+2017-07-22 23:27:54 MSK [29005-6] student@student STATEMENT:  DROP ROLE buyer;
+2017-07-22 23:27:54 MSK [29257-1] student@student ERROR:  database "bstore_interaction" does not exist
+2017-07-22 23:27:54 MSK [29257-2] student@student STATEMENT:  DROP DATABASE bstore_interaction;
+2017-07-22 23:28:48 MSK [29678-1] student@student ERROR:  database "sql_func" does not exist
+2017-07-22 23:28:48 MSK [29678-2] student@student STATEMENT:  DROP DATABASE sql_func;
+2017-07-22 23:28:49 MSK [30094-1] student@student ERROR:  database "sql_row" does not exist
+2017-07-22 23:28:49 MSK [30094-2] student@student STATEMENT:  DROP DATABASE sql_row;
+2017-07-22 23:28:50 MSK [30478-1] student@student ERROR:  database "plpgsql_introduction" does not exist
+2017-07-22 23:28:50 MSK [30478-2] student@student STATEMENT:  DROP DATABASE plpgsql_introduction;
+2017-07-22 23:28:55 MSK [31504-1] student@plpgsql_dynamic ERROR:  a column definition list is required for functions returning "record" at character 15
+2017-07-22 23:28:55 MSK [31504-2] student@plpgsql_dynamic STATEMENT:  SELECT * FROM matrix();
+2017-07-22 23:28:57 MSK [32289-1] student@plpgsql_exceptions ERROR:  division_by_zero
+2017-07-22 23:28:57 MSK [32289-2] student@plpgsql_exceptions CONTEXT:  PL/pgSQL function inline_code_block line 7 at RAISE
+2017-07-22 23:28:57 MSK [32289-3] student@plpgsql_exceptions STATEMENT:  DO $$
+	BEGIN
+	    BEGIN
+	        RAISE NOTICE 'Операторы try';
+	        --
+	        RAISE NOTICE '...исключение, которое не обрабатывается';
+	        RAISE division_by_zero;
+	    EXCEPTION
+	        WHEN no_data_found THEN
+	            RAISE NOTICE 'Операторы catch';
+	    END;
+	    RAISE SQLSTATE 'ALLOK'; 
+	EXCEPTION
+	    WHEN others THEN
+	        RAISE NOTICE 'Операторы finally';
+	        IF SQLSTATE != 'ALLOK' THEN
+	            RAISE;
+	        END IF;
+	END;
+	$$;
+2017-07-22 23:28:58 MSK [32476-1] student@bookstore ERROR:  new row for relation "books" violates check constraint "books_onhand_qty_check"
+2017-07-22 23:28:58 MSK [32476-2] student@bookstore DETAIL:  Failing row contains (1, Сказка о царе Салтане, -71).
+2017-07-22 23:28:58 MSK [32476-3] student@bookstore CONTEXT:  SQL statement "UPDATE books
+	    SET onhand_qty = onhand_qty + NEW.qty_change
+	    WHERE book_id = NEW.book_id"
+	PL/pgSQL function update_onhand_qty() line 3 at SQL statement
+2017-07-22 23:28:58 MSK [32476-4] student@bookstore STATEMENT:  INSERT INTO operations(book_id, qty_change) VALUES (1,-100);
+2017-07-22 23:29:01 MSK [1576-1] student@student ERROR:  role "r" does not exist
+2017-07-22 23:29:01 MSK [1576-2] student@student STATEMENT:  DROP ROLE r;
+2017-07-22 23:29:02 MSK [27823-2] LOG:  received fast shutdown request
+2017-07-22 23:29:02 MSK [27823-3] LOG:  aborting any active transactions
+2017-07-22 23:29:02 MSK [27832-2] LOG:  autovacuum launcher shutting down
+2017-07-22 23:29:02 MSK [27829-1] LOG:  shutting down
+2017-07-22 23:29:02 MSK [27823-4] LOG:  database system is shut down
+2017-07-22 23:29:03 MSK [1821-1] LOG:  database system was shut down at 2017-07-22 23:29:02 MSK
+2017-07-22 23:29:03 MSK [1821-2] LOG:  MultiXact member wraparound protections are now enabled
+2017-07-22 23:29:03 MSK [1820-1] LOG:  database system is ready to accept connections
+2017-07-22 23:29:03 MSK [1825-1] LOG:  autovacuum launcher started
+2017-07-22 23:29:03 MSK [1827-1] [unknown]@[unknown] LOG:  incomplete startup packet
+2017-07-22 23:29:05 MSK [1976-1] r@access_overview ERROR:  permission denied for relation t
+2017-07-22 23:29:05 MSK [1976-2] r@access_overview STATEMENT:  UPDATE s.t SET key = key+1 WHERE key = 2;
+2017-07-22 23:29:11 MSK [2057-1] student@student ERROR:  database "access_overview" is being accessed by other users
+2017-07-22 23:29:11 MSK [2057-2] student@student DETAIL:  There are 2 other sessions using the database.
+2017-07-22 23:29:11 MSK [2057-3] student@student STATEMENT:  DROP DATABASE access_overview;
+2017-07-22 23:29:11 MSK [2057-4] student@student ERROR:  role "r" cannot be dropped because some objects depend on it
+2017-07-22 23:29:11 MSK [2057-5] student@student DETAIL:  3 objects in database access_overview
+2017-07-22 23:29:11 MSK [2057-6] student@student STATEMENT:  DROP ROLE r;
+2017-07-22 23:38:50 MSK [1820-2] LOG:  received SIGHUP, reloading configuration files
+2017-07-22 23:38:50 MSK [1820-3] LOG:  parameter "work_mem" changed to "16MB"
+2017-07-22 23:38:51 MSK [2576-1] student@tools_overview ERROR:  function pg_reload_con() does not exist at character 8
+2017-07-22 23:38:51 MSK [2576-2] student@tools_overview HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+2017-07-22 23:38:51 MSK [2576-3] student@tools_overview STATEMENT:  select pg_reload_con();
+2017-07-22 23:38:51 MSK [3397-1] student@student ERROR:  database "mvcc_overview" does not exist
+2017-07-22 23:38:51 MSK [3397-2] student@student STATEMENT:  drop database mvcc_overview;
+2017-07-22 23:38:52 MSK [3831-1] student@student ERROR:  database "wal_overview" does not exist
+2017-07-22 23:38:52 MSK [3831-2] student@student STATEMENT:  drop database wal_overview;
+2017-07-22 23:38:57 MSK [4186-1] student@test ERROR:  relation "t" does not exist at character 15
+2017-07-22 23:38:57 MSK [4186-2] student@test STATEMENT:  SELECT * FROM t;
+2017-07-22 23:38:57 MSK [4547-1] student@test ERROR:  cannot drop schema special because other objects depend on it
+2017-07-22 23:38:57 MSK [4547-2] student@test DETAIL:  table t depends on schema special
+2017-07-22 23:38:57 MSK [4547-3] student@test HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+2017-07-22 23:38:57 MSK [4547-4] student@test STATEMENT:  DROP SCHEMA special;
+2017-07-22 23:38:58 MSK [4692-1] student@student ERROR:  database "test" does not exist
+2017-07-22 23:38:58 MSK [4692-2] student@student STATEMENT:  DROP DATABASE test;
+2017-07-22 23:38:58 MSK [4692-3] student@student ERROR:  tablespace "ts" does not exist
+2017-07-22 23:38:58 MSK [4692-4] student@student STATEMENT:  DROP TABLESPACE ts;
+2017-07-22 23:38:59 MSK [5158-1] student@student ERROR:  database "data_objects" does not exist
+2017-07-22 23:38:59 MSK [5158-2] student@student STATEMENT:  DROP DATABASE data_objects;
+2017-07-22 23:39:00 MSK [5209-1] student@data_objects ERROR:  relation "people_temp" does not exist at character 15
+2017-07-22 23:39:00 MSK [5209-2] student@data_objects STATEMENT:  SELECT * FROM people_temp;
+2017-07-22 23:39:03 MSK [5932-1] student@student ERROR:  database "bookstore" does not exist
+2017-07-22 23:39:03 MSK [5932-2] student@student STATEMENT:  DROP DATABASE bookstore;
+2017-07-22 23:39:04 MSK [6095-1] student@student ERROR:  role "librarian" does not exist
+2017-07-22 23:39:04 MSK [6095-2] student@student STATEMENT:  DROP ROLE librarian;
+2017-07-22 23:39:04 MSK [6095-3] student@student ERROR:  role "storekeeper" does not exist
+2017-07-22 23:39:04 MSK [6095-4] student@student STATEMENT:  DROP ROLE storekeeper;
+2017-07-22 23:39:04 MSK [6095-5] student@student ERROR:  role "buyer" does not exist
+2017-07-22 23:39:04 MSK [6095-6] student@student STATEMENT:  DROP ROLE buyer;
+2017-07-22 23:39:06 MSK [6790-1] student@bookstore ERROR:  new row for relation "books" violates check constraint "books_onhand_qty_check"
+2017-07-22 23:39:06 MSK [6790-2] student@bookstore DETAIL:  Failing row contains (1, Сказка о царе Салтане, -71).
+2017-07-22 23:39:06 MSK [6790-3] student@bookstore CONTEXT:  SQL statement "UPDATE books
+	    SET onhand_qty = onhand_qty + NEW.qty_change
+	    WHERE book_id = NEW.book_id"
+	PL/pgSQL function update_onhand_qty() line 3 at SQL statement
+2017-07-22 23:39:06 MSK [6790-4] student@bookstore STATEMENT:  INSERT INTO operations(book_id, qty_change) VALUES (1,-100);
+2017-07-22 23:39:08 MSK [8053-1] student@student ERROR:  database "sqlfunc" does not exist
+2017-07-22 23:39:08 MSK [8053-2] student@student STATEMENT:  drop database sqlfunc;
+2017-07-22 23:39:09 MSK [8075-1] student@sqlfunc ERROR:  relation "t" does not exist at character 55
+2017-07-22 23:39:09 MSK [8075-2] student@sqlfunc STATEMENT:  CREATE FUNCTION fill() RETURNS void AS $$
+	INSERT INTO t
+	    SELECT random() FROM generate_series(1,3);
+	$$ LANGUAGE SQL;
+2017-07-22 23:39:09 MSK [8075-3] student@sqlfunc ERROR:  cannot change return type of existing function
+2017-07-22 23:39:09 MSK [8075-4] student@sqlfunc HINT:  Use DROP FUNCTION fill() first.
+2017-07-22 23:39:09 MSK [8075-5] student@sqlfunc STATEMENT:  CREATE OR REPLACE FUNCTION fill() RETURNS bigint AS $$
+	INSERT INTO t
+	    SELECT random() FROM generate_series(1,3);
+	SELECT count(*) FROM t;
+	$$ LANGUAGE SQL;
+2017-07-22 23:39:09 MSK [8075-6] student@sqlfunc ERROR:  COMMIT is not allowed in a SQL function
+2017-07-22 23:39:09 MSK [8075-7] student@sqlfunc CONTEXT:  SQL function "do_commit" during startup
+2017-07-22 23:39:09 MSK [8075-8] student@sqlfunc STATEMENT:  SELECT do_commit();
+2017-07-22 23:39:10 MSK [8075-9] student@sqlfunc ERROR:  relation "t" does not exist at character 26
+2017-07-22 23:39:10 MSK [8075-10] student@sqlfunc QUERY:  
+	TRUNCATE t;
+	INSERT INTO t
+	    SELECT random() FROM generate_series(1,nrows);
+	SELECT count(*)::integer, avg(a) FROM t;
+	
+2017-07-22 23:39:10 MSK [8075-11] student@sqlfunc CONTEXT:  SQL function "fill" during startup
+2017-07-22 23:39:10 MSK [8075-12] student@sqlfunc STATEMENT:  SELECT fill(10);
+2017-07-22 23:39:10 MSK [8075-13] student@sqlfunc ERROR:  could not determine polymorphic type because input has type "unknown"
+2017-07-22 23:39:10 MSK [8075-14] student@sqlfunc STATEMENT:  SELECT maximum('A','B');
+2017-07-22 23:39:10 MSK [8075-15] student@sqlfunc ERROR:  invalid input syntax for integer: "A" at character 18
+2017-07-22 23:39:10 MSK [8075-16] student@sqlfunc STATEMENT:  SELECT maximum(1,'A');
+2017-07-22 23:39:10 MSK [8075-17] student@sqlfunc ERROR:  function maximum(integer, integer) is not unique at character 8
+2017-07-22 23:39:10 MSK [8075-18] student@sqlfunc HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2017-07-22 23:39:10 MSK [8075-19] student@sqlfunc STATEMENT:  SELECT maximum(10,20);
+2017-07-22 23:39:19 MSK [9547-1] student@student ERROR:  database "sqlline" does not exist
+2017-07-22 23:39:19 MSK [9547-2] student@student STATEMENT:  drop database sqlline;
+2017-07-22 23:39:21 MSK [10499-1] student@student ERROR:  database "plpgsql_intro" does not exist
+2017-07-22 23:39:21 MSK [10499-2] student@student STATEMENT:  drop database plpgsql_intro;
+2017-07-22 23:39:22 MSK [10521-1] student@plpgsql_intro ERROR:  invalid input syntax for integer: "a" at character 12
+2017-07-22 23:39:22 MSK [10521-2] student@plpgsql_intro QUERY:  SELECT 2 + 'a'
+2017-07-22 23:39:22 MSK [10521-3] student@plpgsql_intro CONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE
+2017-07-22 23:39:22 MSK [10521-4] student@plpgsql_intro STATEMENT:  DO $$
+	BEGIN
+	    RAISE NOTICE '%', 2 + 'a';
+	END;
+	$$;
+2017-07-22 23:39:22 MSK [11059-1] student@student ERROR:  database "plpgsql_queries" does not exist
+2017-07-22 23:39:22 MSK [11059-2] student@student STATEMENT:  drop database plpgsql_queries;
+2017-07-22 23:39:23 MSK [11081-1] student@plpgsql_queries ERROR:  column reference "id" is ambiguous at character 8
+2017-07-22 23:39:23 MSK [11081-2] student@plpgsql_queries DETAIL:  It could refer to either a PL/pgSQL variable or a table column.
+2017-07-22 23:39:23 MSK [11081-3] student@plpgsql_queries QUERY:  SELECT id, code               FROM t WHERE id = id
+2017-07-22 23:39:23 MSK [11081-4] student@plpgsql_queries CONTEXT:  PL/pgSQL function inline_code_block line 6 at SQL statement
+2017-07-22 23:39:23 MSK [11081-5] student@plpgsql_queries STATEMENT:  DO $$
+	DECLARE
+	    id   integer := 1;
+	    code text;
+	BEGIN
+	    SELECT id, code INTO id, code FROM t WHERE id = id;
+	    RAISE NOTICE '%, %', id, code;
+	END;
+	$$;
+2017-07-22 23:39:23 MSK [11081-6] student@plpgsql_queries ERROR:  query returned more than one row
+2017-07-22 23:39:23 MSK [11081-7] student@plpgsql_queries CONTEXT:  PL/pgSQL function inline_code_block line 5 at SQL statement
+2017-07-22 23:39:23 MSK [11081-8] student@plpgsql_queries STATEMENT:  DO $$
+	DECLARE
+	    r record;
+	BEGIN
+	    SELECT id, code INTO STRICT r FROM t;
+	    RAISE NOTICE '%', r;
+	END;
+	$$;
+2017-07-22 23:39:23 MSK [11081-9] student@plpgsql_queries ERROR:  query returned no rows
+2017-07-22 23:39:23 MSK [11081-10] student@plpgsql_queries CONTEXT:  PL/pgSQL function inline_code_block line 5 at SQL statement
+2017-07-22 23:39:23 MSK [11081-11] student@plpgsql_queries STATEMENT:  DO $$
+	DECLARE
+	    r record;
+	BEGIN
+	    SELECT id, code INTO STRICT r FROM t WHERE false;
+	    RAISE NOTICE '%', r;
+	END;
+	$$;
+2017-07-22 23:39:23 MSK [11081-12] student@plpgsql_queries ERROR:  query returned more than one row
+2017-07-22 23:39:23 MSK [11081-13] student@plpgsql_queries CONTEXT:  PL/pgSQL function inline_code_block line 5 at SQL statement
+2017-07-22 23:39:23 MSK [11081-14] student@plpgsql_queries STATEMENT:  DO $$
+	DECLARE
+	    r record;
+	BEGIN
+	    UPDATE t SET code = code || '!' RETURNING * INTO r;
+	    RAISE NOTICE 'Изменили: %', r;
+	END;
+	$$;
+2017-07-22 23:39:23 MSK [11081-15] student@plpgsql_queries ERROR:  query returned no rows
+2017-07-22 23:39:23 MSK [11081-16] student@plpgsql_queries CONTEXT:  PL/pgSQL function inline_code_block line 5 at SQL statement
+2017-07-22 23:39:23 MSK [11081-17] student@plpgsql_queries STATEMENT:  DO $$
+	DECLARE
+	    r record;
+	BEGIN
+	    UPDATE t SET code = code || '!' WHERE id = -1 RETURNING * INTO STRICT r;
+	    RAISE NOTICE 'Изменили: %', r;
+	END;
+	$$;
+2017-07-22 23:39:23 MSK [11651-1] student@student ERROR:  database "plpgsql_cursors" does not exist
+2017-07-22 23:39:23 MSK [11651-2] student@student STATEMENT:  drop database plpgsql_cursors;
+2017-07-22 23:39:25 MSK [12211-1] student@student ERROR:  database "plpgsql_dynamic" does not exist
+2017-07-22 23:39:25 MSK [12211-2] student@student STATEMENT:  drop database plpgsql_dynamic;
+2017-07-22 23:39:25 MSK [12233-1] student@plpgsql_dynamic ERROR:  a column definition list is required for functions returning "record" at character 15
+2017-07-22 23:39:25 MSK [12233-2] student@plpgsql_dynamic STATEMENT:  SELECT * FROM sel_city ('city_brn', 5);
+2017-07-22 23:39:25 MSK [12520-1] student@student ERROR:  database "plpgsql_arrays" does not exist
+2017-07-22 23:39:25 MSK [12520-2] student@student STATEMENT:  drop database plpgsql_arrays;
+2017-07-22 23:39:26 MSK [12542-1] student@plpgsql_arrays ERROR:  array subscript out of range
+2017-07-22 23:39:26 MSK [12542-2] student@plpgsql_arrays CONTEXT:  PL/pgSQL function inline_code_block line 6 at assignment
+2017-07-22 23:39:26 MSK [12542-3] student@plpgsql_arrays STATEMENT:  DO $$
+	DECLARE
+	    a integer[][] := '{{10,20,30},{100,200,300}}';
+	BEGIN
+	    RAISE NOTICE '%', a;
+	    a[4][4] := 1;
+	END;
+	$$ LANGUAGE plpgsql;
+2017-07-22 23:39:27 MSK [13141-1] student@student ERROR:  database "plpgsql_exceptions" does not exist
+2017-07-22 23:39:27 MSK [13141-2] student@student STATEMENT:  drop database plpgsql_exceptions;
+2017-07-22 23:39:27 MSK [13163-1] student@plpgsql_exceptions ERROR:  query returned no rows
+2017-07-22 23:39:27 MSK [13163-2] student@plpgsql_exceptions CONTEXT:  PL/pgSQL function inline_code_block line 5 at SQL statement
+2017-07-22 23:39:27 MSK [13163-3] student@plpgsql_exceptions STATEMENT:  DO $$
+	DECLARE
+	    n integer;
+	BEGIN
+	    SELECT id INTO STRICT n FROM t;
+	END;
+	$$;
+2017-07-22 23:39:27 MSK [13163-4] student@plpgsql_exceptions ERROR:  Сбой матрицы
+2017-07-22 23:39:27 MSK [13163-5] student@plpgsql_exceptions DETAIL:  При выполнении функции произошел непоправимый сбой матрицы
+2017-07-22 23:39:27 MSK [13163-6] student@plpgsql_exceptions HINT:  Обратитесь к системному администратору
+2017-07-22 23:39:27 MSK [13163-7] student@plpgsql_exceptions CONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE
+2017-07-22 23:39:27 MSK [13163-8] student@plpgsql_exceptions STATEMENT:  DO $$
+	BEGIN
+	    RAISE SQLSTATE 'ERR01' USING
+	        message = 'Сбой матрицы',
+	        detail  = 'При выполнении функции произошел непоправимый сбой матрицы',
+	        hint = 'Обратитесь к системному администратору';
+	END;
+	$$;
+2017-07-22 23:39:28 MSK [13163-9] student@plpgsql_exceptions ERROR:  division by zero
+2017-07-22 23:39:28 MSK [13163-10] student@plpgsql_exceptions CONTEXT:  PL/pgSQL function f3(integer) line 3 at RETURN
+	PL/pgSQL function f2(integer) line 3 at RETURN
+	PL/pgSQL function f1(integer) line 3 at RETURN
+2017-07-22 23:39:28 MSK [13163-11] student@plpgsql_exceptions STATEMENT:  SELECT f1(2);
+2017-07-22 23:39:28 MSK [13163-12] student@plpgsql_exceptions ERROR:  control reached end of function without RETURN
+2017-07-22 23:39:28 MSK [13163-13] student@plpgsql_exceptions CONTEXT:  PL/pgSQL function f3(integer)
+	PL/pgSQL function f2(integer) line 3 at RETURN
+	PL/pgSQL function f1(integer) line 3 at RETURN
+2017-07-22 23:39:28 MSK [13163-14] student@plpgsql_exceptions STATEMENT:  SELECT f1(2);
+2017-07-22 23:39:29 MSK [13192-1] student@plpgsql_exceptions ERROR:  duplicate key value violates unique constraint "categories_code_idx"
+2017-07-22 23:39:29 MSK [13192-2] student@plpgsql_exceptions DETAIL:  Key (code)=(games) already exists.
+2017-07-22 23:39:29 MSK [13192-3] student@plpgsql_exceptions CONTEXT:  SQL statement "INSERT INTO categories VALUES (code, description)"
+	PL/pgSQL function change(text,text) line 9 at SQL statement
+2017-07-22 23:39:29 MSK [13192-4] student@plpgsql_exceptions STATEMENT:  SELECT change('games', 'Игры');
+2017-07-22 23:39:49 MSK [1822-1] LOG:  checkpoints are occurring too frequently (22 seconds apart)
+2017-07-22 23:39:49 MSK [1822-2] HINT:  Consider increasing the configuration parameter "max_wal_size".
+2017-07-22 23:40:06 MSK [14253-1] student@student ERROR:  database "plpgsql_triggers" does not exist
+2017-07-22 23:40:06 MSK [14253-2] student@student STATEMENT:  DROP DATABASE plpgsql_triggers;
+2017-07-22 23:40:13 MSK [14275-1] student@plpgsql_triggers ERROR:  cannot update view "order_lines_v"
+2017-07-22 23:40:13 MSK [14275-2] student@plpgsql_triggers DETAIL:  Views that do not select from a single table or view are not automatically updatable.
+2017-07-22 23:40:13 MSK [14275-3] student@plpgsql_triggers HINT:  To enable updating the view, provide an INSTEAD OF UPDATE trigger or an unconditional ON UPDATE DO INSTEAD rule.
+2017-07-22 23:40:13 MSK [14275-4] student@plpgsql_triggers STATEMENT:  UPDATE order_lines_v SET description = 'Шуруп' WHERE id = 1;
+2017-07-22 23:40:13 MSK [14275-5] student@plpgsql_triggers ERROR:  Указанной позиции "Винт" не существует
+2017-07-22 23:40:13 MSK [14275-6] student@plpgsql_triggers CONTEXT:  PL/pgSQL function view_update() line 10 at RAISE
+2017-07-22 23:40:13 MSK [14275-7] student@plpgsql_triggers STATEMENT:  UPDATE order_lines_v SET description = 'Винт' WHERE id = 1 RETURNING *;
+2017-07-22 23:40:13 MSK [15012-1] student@student ERROR:  database "plpgsql_debug" does not exist
+2017-07-22 23:40:13 MSK [15012-2] student@student STATEMENT:  DROP DATABASE plpgsql_debug;
+2017-07-22 23:40:32 MSK [15037-1] student@plpgsql_debug LOG:  student,2017-07-22 23:40:32.296941+03,long_running_function. Stage 1/3...
+2017-07-22 23:40:32 MSK [15037-2] student@plpgsql_debug CONTEXT:  PL/pgSQL function raise_msg(text) line 7 at RAISE
+	SQL statement "SELECT raise_msg('long_running_function. Stage 1/3...')"
+	PL/pgSQL function long_running_function_2() line 3 at PERFORM
+2017-07-22 23:40:32 MSK [15037-3] student@plpgsql_debug STATEMENT:  SELECT long_running_function_2();
+2017-07-22 23:40:34 MSK [15037-4] student@plpgsql_debug LOG:  student,2017-07-22 23:40:34.299189+03,long_running_function. Stage 2/3...
+2017-07-22 23:40:34 MSK [15037-5] student@plpgsql_debug CONTEXT:  PL/pgSQL function raise_msg(text) line 7 at RAISE
+	SQL statement "SELECT raise_msg('long_running_function. Stage 2/3...')"
+	PL/pgSQL function long_running_function_2() line 6 at PERFORM
+2017-07-22 23:40:34 MSK [15037-6] student@plpgsql_debug STATEMENT:  SELECT long_running_function_2();
+2017-07-22 23:40:37 MSK [15037-7] student@plpgsql_debug LOG:  student,2017-07-22 23:40:37.303445+03,long_running_function. Stage 3/3...
+2017-07-22 23:40:37 MSK [15037-8] student@plpgsql_debug CONTEXT:  PL/pgSQL function raise_msg(text) line 7 at RAISE
+	SQL statement "SELECT raise_msg('long_running_function. Stage 3/3...')"
+	PL/pgSQL function long_running_function_2() line 9 at PERFORM
+2017-07-22 23:40:37 MSK [15037-9] student@plpgsql_debug STATEMENT:  SELECT long_running_function_2();
+2017-07-22 23:40:38 MSK [15037-10] student@plpgsql_debug LOG:  student,2017-07-22 23:40:38.305757+03,long_running_function. Done.
+2017-07-22 23:40:38 MSK [15037-11] student@plpgsql_debug CONTEXT:  PL/pgSQL function raise_msg(text) line 7 at RAISE
+	SQL statement "SELECT raise_msg('long_running_function. Done.')"
+	PL/pgSQL function long_running_function_2() line 12 at PERFORM
+2017-07-22 23:40:38 MSK [15037-12] student@plpgsql_debug STATEMENT:  SELECT long_running_function_2();
+2017-07-22 23:41:11 MSK [15037-13] student@plpgsql_debug LOG:  statement: SELECT get_count('pg_views');
+2017-07-22 23:41:11 MSK [15037-14] student@plpgsql_debug LOG:  statement: SELECT trace('OFF');
+2017-07-22 23:41:11 MSK [15037-15] student@plpgsql_debug LOG:  duration: 1.611 ms  plan:
+	Query Text: SELECT get_count('pg_tables');
+	Result  (cost=0.00..0.26 rows=1 width=8)
+2017-07-22 23:41:11 MSK [15037-16] student@plpgsql_debug LOG:  duration: 0.512 ms  plan:
+	Query Text: SELECT COUNT(*) FROM pg_proc
+	Aggregate  (cost=94.37..94.38 rows=1 width=8)
+	  ->  Index Only Scan using pg_proc_oid_index on pg_proc  (cost=0.28..87.21 rows=2862 width=0)
+2017-07-22 23:41:11 MSK [15037-17] student@plpgsql_debug CONTEXT:  SQL statement "SELECT COUNT(*) FROM pg_proc"
+	PL/pgSQL function get_count(text) line 10 at EXECUTE
+2017-07-22 23:41:11 MSK [15037-18] student@plpgsql_debug LOG:  duration: 0.701 ms  plan:
+	Query Text: SELECT get_count('pg_proc');
+	Result  (cost=0.00..0.26 rows=1 width=8)
+2017-07-22 23:41:11 MSK [16114-1] student@student ERROR:  database "access_overview" does not exist
+2017-07-22 23:41:11 MSK [16114-2] student@student STATEMENT:  DROP DATABASE access_overview;
+2017-07-22 23:41:12 MSK [16325-1] r1@access_overview ERROR:  permission denied for database access_overview
+2017-07-22 23:41:12 MSK [16325-2] r1@access_overview STATEMENT:  CREATE SCHEMA r1;
+2017-07-22 23:41:12 MSK [16513-1] r2@access_overview ERROR:  permission denied for schema r1 at character 15
+2017-07-22 23:41:12 MSK [16513-2] r2@access_overview STATEMENT:  SELECT * FROM r1.t1;
+2017-07-22 23:41:13 MSK [16513-3] r2@access_overview ERROR:  permission denied for relation t1
+2017-07-22 23:41:13 MSK [16513-4] r2@access_overview STATEMENT:  SELECT * FROM r1.t1;
+2017-07-22 23:41:13 MSK [16513-5] r2@access_overview ERROR:  permission denied for relation t1
+2017-07-22 23:41:13 MSK [16513-6] r2@access_overview STATEMENT:  DELETE FROM r1.t1;
+2017-07-22 23:41:13 MSK [16513-7] r2@access_overview ERROR:  permission denied for relation t2
+2017-07-22 23:41:13 MSK [16513-8] r2@access_overview STATEMENT:  SELECT * FROM r1.t2;
+2017-07-22 23:41:13 MSK [16513-9] r2@access_overview ERROR:  permission denied for relation t2
+2017-07-22 23:41:13 MSK [16513-10] r2@access_overview CONTEXT:  SQL function "f" statement 1
+2017-07-22 23:41:13 MSK [16513-11] r2@access_overview STATEMENT:  SELECT r1.f();
+2017-07-22 23:41:13 MSK [16513-12] r2@access_overview ERROR:  permission denied for function f
+2017-07-22 23:41:13 MSK [16513-13] r2@access_overview STATEMENT:  SELECT r1.f();
+2017-07-22 23:41:13 MSK [16513-14] r2@access_overview ERROR:  permission denied for function f_new
+2017-07-22 23:41:13 MSK [16513-15] r2@access_overview STATEMENT:  SELECT r1.f_new();
+2017-07-22 23:41:14 MSK [17400-1] student@student ERROR:  database "tools_overview" does not exist
+2017-07-22 23:41:14 MSK [17400-2] student@student STATEMENT:  DROP DATABASE tools_overview;
+2017-07-22 23:41:15 MSK [1820-4] LOG:  received SIGHUP, reloading configuration files
+2017-07-22 23:41:15 MSK [1820-5] LOG:  parameter "work_mem" changed to "8MB"
+</pre></div>
+</body>
+</html>

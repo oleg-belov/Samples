@@ -1,0 +1,198 @@
+
+База и таблицы
+~~~~~~~~~~~~~~
+
+=> create database db16;
+CREATE DATABASE
+
+=> \c db16
+You are now connected to database "db16" as user "postgres".
+
+=> create table orders (
+=>   id serial,
+=>   placed date
+=> );
+CREATE TABLE
+
+=> create table items (
+=>   id serial,
+=>   order_id integer,
+=>   amount money
+=> );
+CREATE TABLE
+
+=> insert into orders(placed)
+=> select current_date
+=> from generate_series(1,1000000);
+INSERT 0 1000000
+
+=> insert into items(order_id,amount)
+=> select mod(s.id,1000000)+1, random()*100::money
+=> from generate_series(1,10000000) as s(id);
+INSERT 0 10000000
+
+=> alter table orders add constraint orders_pkey primary key(id);
+ALTER TABLE
+
+=> alter table items add constraint items_pkey primary key(id);
+ALTER TABLE
+
+=> alter table items add constraint items_id_fkey foreign key (order_id) references orders(id);
+ALTER TABLE
+
+=> create index on items(order_id);
+CREATE INDEX
+
+=> analyze orders;
+ANALYZE
+
+=> analyze items;
+ANALYZE
+
+
+План, выбираемый оптимизатором, и время выполнения
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Соединение вложенными циклами для небольшой выборки:
+
+=> explain analyze
+=> select i.*
+=> from orders o join items i on (o.id = i.order_id)
+=> where o.id between 1 and 100;
+                                                               QUERY PLAN                                                               
+----------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=0.86..3974.34 rows=894 width=16) (actual time=0.017..2.944 rows=1000 loops=1)
+   ->  Index Only Scan using orders_pkey on orders o  (cost=0.42..10.23 rows=90 width=4) (actual time=0.009..0.044 rows=100 loops=1)
+         Index Cond: ((id >= 1) AND (id <= 100))
+         Heap Fetches: 100
+   ->  Index Scan using items_order_id_idx on items i  (cost=0.43..43.95 rows=10 width=16) (actual time=0.002..0.023 rows=10 loops=100)
+         Index Cond: (order_id = o.id)
+ Planning time: 3.060 ms
+ Execution time: 3.257 ms
+(8 rows)
+
+
+Соединение слиянием для большой выборки:
+
+=> explain analyze
+=> select o.id, sum(i.amount)
+=> from orders o join items i on (o.id = i.order_id)
+=> group by o.id;
+                                                                          QUERY PLAN                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=22.30..667201.28 rows=1000000 width=12) (actual time=0.057..14227.761 rows=1000000 loops=1)
+   Group Key: o.id
+   ->  Merge Join  (cost=22.30..607507.40 rows=9938775 width=12) (actual time=0.029..10714.581 rows=10000000 loops=1)
+         Merge Cond: (o.id = i.order_id)
+         ->  Index Only Scan using orders_pkey on orders o  (cost=0.42..28220.42 rows=1000000 width=4) (actual time=0.016..387.729 rows=1000000 loops=1)
+               Heap Fetches: 1000000
+         ->  Index Scan using items_order_id_idx on items i  (cost=0.43..452401.14 rows=10000097 width=12) (actual time=0.009..5647.191 rows=10000000 loops=1)
+ Planning time: 0.963 ms
+ Execution time: 14428.960 ms
+(9 rows)
+
+
+
+Другой план и время выполнения
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+=> set enable_nestloop=off;
+SET
+
+=> explain analyze
+=> select i.* from orders o join items i on (o.id = i.order_id)
+=> where o.id between 1 and 100;
+                                                                QUERY PLAN                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=11.35..191576.62 rows=894 width=16) (actual time=0.085..4363.293 rows=1000 loops=1)
+   Hash Cond: (i.order_id = o.id)
+   ->  Seq Scan on items i  (cost=0.00..154055.97 rows=10000097 width=16) (actual time=0.010..2137.699 rows=10000000 loops=1)
+   ->  Hash  (cost=10.23..10.23 rows=90 width=4) (actual time=0.066..0.066 rows=100 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 7kB
+         ->  Index Only Scan using orders_pkey on orders o  (cost=0.42..10.23 rows=90 width=4) (actual time=0.009..0.035 rows=100 loops=1)
+               Index Cond: ((id >= 1) AND (id <= 100))
+               Heap Fetches: 100
+ Planning time: 0.271 ms
+ Execution time: 4363.479 ms
+(10 rows)
+
+
+Теперь используется соединение хэшированием и время выполнения увеличилось.
+
+=> set enable_nestloop=on;
+SET
+
+=> set enable_mergejoin=off;
+SET
+
+=> set enable_hashjoin=off;
+SET
+
+=> explain analyze
+=> select o.id, sum(i.amount)
+=> from orders o join items i on (o.id = i.order_id)
+=> group by o.id;
+                                                                       QUERY PLAN                                                                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=0.86..1101918.30 rows=1000000 width=12) (actual time=0.075..14937.678 rows=1000000 loops=1)
+   Group Key: o.id
+   ->  Nested Loop  (cost=0.86..1042224.43 rows=9938775 width=12) (actual time=0.031..11478.744 rows=10000000 loops=1)
+         ->  Index Only Scan using orders_pkey on orders o  (cost=0.42..28220.42 rows=1000000 width=4) (actual time=0.019..358.366 rows=1000000 loops=1)
+               Heap Fetches: 1000000
+         ->  Index Scan using items_order_id_idx on items i  (cost=0.43..0.91 rows=10 width=12) (actual time=0.002..0.007 rows=10 loops=1000000)
+               Index Cond: (order_id = o.id)
+ Planning time: 0.116 ms
+ Execution time: 15121.252 ms
+(9 rows)
+
+
+Соединение вложенными циклами - время увеличилось.
+
+
+Group by и Sort by
+~~~~~~~~~~~~~~~~~~
+
+Пример с группировкой, которая выполняется с помощью сортировки:
+
+=> explain select order_id
+=> from items
+=> group by order_id;
+                                              QUERY PLAN                                               
+-------------------------------------------------------------------------------------------------------
+ Group  (cost=0.43..477401.38 rows=1006170 width=4)
+   Group Key: order_id
+   ->  Index Only Scan using items_order_id_idx on items  (cost=0.43..452401.14 rows=10000097 width=4)
+(3 rows)
+
+
+При добавлении сортировки план не меняется:
+
+=> explain select order_id
+=> from items
+=> group by order_id
+=> order by order_id;
+                                              QUERY PLAN                                               
+-------------------------------------------------------------------------------------------------------
+ Group  (cost=0.43..477401.38 rows=1006170 width=4)
+   Group Key: order_id
+   ->  Index Only Scan using items_order_id_idx on items  (cost=0.43..452401.14 rows=10000097 width=4)
+(3 rows)
+
+
+При обратном порядке тот же индекс используется для поиска в обратном
+направлении:
+
+=> explain select order_id
+=> from items
+=> group by order_id
+=> order by order_id desc;
+                                                   QUERY PLAN                                                   
+----------------------------------------------------------------------------------------------------------------
+ Group  (cost=0.43..477401.38 rows=1006170 width=4)
+   Group Key: order_id
+   ->  Index Only Scan Backward using items_order_id_idx on items  (cost=0.43..452401.14 rows=10000097 width=4)
+(3 rows)
+
+
+=> \q

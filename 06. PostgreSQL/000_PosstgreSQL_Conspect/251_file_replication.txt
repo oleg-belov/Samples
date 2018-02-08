@@ -1,0 +1,401 @@
+
+МАСТЕР: НАСТРОЙКА НЕПРЕРЫВНОГО АРХИВИРОВАНИЯ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Внесем необходимые изменения в конфигурацию.
+
+    psql -h localhost -p 5432 -U postgres
+
+    => alter system set wal_level = hot_standby;
+    ALTER SYSTEM
+
+    => alter system set archive_mode = on;
+    ALTER SYSTEM
+
+    => alter system set archive_command = 'test ! -f /home/postgres/archivedir/%f && cp %p /home/postgres/archivedir/%f && chmod g+r /home/postgres/archivedir/%f';
+    ALTER SYSTEM
+
+    => alter system set max_standby_archive_delay = '10s';
+    ALTER SYSTEM
+
+    => alter system set max_replication_slots = 5;
+    ALTER SYSTEM
+
+    => alter system set max_wal_senders = 5;
+    ALTER SYSTEM
+
+.......................................................................
+
+А также добавим пару параметров, которые надо будет изменить
+на реплике.
+
+    => alter system set port = 5432;
+    ALTER SYSTEM
+
+    => alter system set hot_standby = off;
+    ALTER SYSTEM
+
+.......................................................................
+
+Очистим каталог /home/postgres/archivedir, куда будут сохраняться сегменты WAL.
+
+postgres> rm -rf /home/postgres/archivedir 
+postgres> mkdir /home/postgres/archivedir 
+postgres> ls -l /home/postgres/archivedir 
+total 0
+
+.......................................................................
+
+МАСТЕР: ПРОВЕРКА ПОДКЛЮЧЕНИЯ ДЛЯ РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+В файле pg_hba.conf должна быть строка для базы данных replication:
+
+postgres> sed -i s/#\(\w\+\s\+replication\)/\1/ /usr/local/pgsql/data/pg_hba.conf 
+
+
+
+postgres> tail -n 5 /usr/local/pgsql/data/pg_hba.conf 
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     postgres                                trust
+host    replication     postgres        127.0.0.1/32            trust
+host    replication     postgres        ::1/128                 trust
+
+Все в порядке.
+
+.......................................................................
+
+Перезапустим сервер, чтобы изменения вступили в силу.
+
+    => \q
+
+postgres> pg_ctl restart -w -m fast -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+
+.......................................................................
+
+После запуска, сервер переключится на новый сегмент WAL, а предыдущий будет
+скопирован в архив:
+
+postgres> ls -l /home/postgres/archivedir 
+total 0
+
+Права на доступ выставлены в соответствии с archive_command: u=rw,g=r
+Таким образом, архивирование настроено и работает.
+
+.......................................................................
+
+МАСТЕР: СОЗДАНИЕ БАЗОВОЙ РЕЗЕРВНОЙ КОПИИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим базовую резервную копию.
+Убедимся, что в кластере нет пользовательских табличных пространств, так как
+их наличие усложнило бы процесс резервирования и восстановления.
+
+    psql -h localhost -p 5432 -U postgres
+
+    => \db
+           List of tablespaces
+        Name    |  Owner   | Location 
+    ------------+----------+----------
+     pg_default | postgres | 
+     pg_global  | postgres | 
+    (2 rows)
+    
+
+.......................................................................
+
+Создадим тестовую таблицу, которую будем использовать для проверки репликации.
+
+    => create database db10;
+    CREATE DATABASE
+
+    => \c db10
+    You are now connected to database "db10" as user "postgres".
+
+    => create table replica_test(t text);
+    CREATE TABLE
+
+.......................................................................
+
+Выполним команду pg_basebackup. Используем формат по умолчанию (plain),
+в качестве каталога для сохранения сразу укажем PGDATA будущей реплики.
+
+postgres2> bash -c "rm -rf /usr/local/pgsql2/data/*" 
+postgres2> pg_basebackup -U postgres -p 5432 -D /usr/local/pgsql2/data 
+NOTICE:  pg_stop_backup complete, all required WAL segments have been archived
+
+.......................................................................
+
+Проверим содержимое каталога:
+
+postgres2> ls -l /usr/local/pgsql2/data 
+total 116
+-rw-------  1 postgres2 postgres2   206 мая   27 21:27 backup_label
+drwx------ 13 postgres2 postgres2  4096 мая   27 21:27 base
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 global
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_clog
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_commit_ts
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_dynshmem
+-rw-------  1 postgres2 postgres2  4465 мая   27 21:27 pg_hba.conf
+-rw-------  1 postgres2 postgres2  1636 мая   27 21:27 pg_ident.conf
+drwx------  4 postgres2 postgres2  4096 мая   27 21:27 pg_logical
+drwx------  4 postgres2 postgres2  4096 мая   27 21:27 pg_multixact
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_notify
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_replslot
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_serial
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_snapshots
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_stat
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_stat_tmp
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_subtrans
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_tblspc
+drwx------  2 postgres2 postgres2  4096 мая   27 21:27 pg_twophase
+-rw-------  1 postgres2 postgres2     4 мая   27 21:27 PG_VERSION
+drwx------  3 postgres2 postgres2  4096 мая   27 21:27 pg_xlog
+-rw-------  1 postgres2 postgres2   387 мая   27 21:27 postgresql.auto.conf
+-rw-------  1 postgres2 postgres2 21711 мая   27 21:27 postgresql.conf
+
+.......................................................................
+
+РЕПЛИКА: НАСТРОЙКИ
+~~~~~~~~~~~~~~~~~~
+
+Требуется немного изменить postgresql.auto.conf. Конечно, его надо
+изменять командой alter system, но наш экземпляр еще не запущен.
+
+
+postgres2> sed -i "s/port = .*/port = 5433/" /usr/local/pgsql2/data/postgresql.auto.conf 
+postgres2> sed -i "s/hot_standby = .*/hot_standby = on/" /usr/local/pgsql2/data/postgresql.auto.conf 
+
+
+
+postgres2> cat /usr/local/pgsql2/data/postgresql.auto.conf 
+# Do not edit this file manually!
+# It will be overwritten by ALTER SYSTEM command.
+wal_level = 'hot_standby'
+archive_mode = 'on'
+archive_command = 'test ! -f /home/postgres/archivedir/%f && cp %p /home/postgres/archivedir/%f && chmod g+r /home/postgres/archivedir/%f'
+max_standby_archive_delay = '10s'
+max_replication_slots = '5'
+max_wal_senders = '5'
+port = 5433
+hot_standby = on
+
+.......................................................................
+
+Теперь создадим файл recovery.conf.
+
+
+postgres2> bash -c "echo standby_mode = on >> /usr/local/pgsql2/data/recovery.conf" 
+postgres2> bash -c "echo restore_command = \\'\'cp /home/postgres/archivedir/%f %p\\'\' >> /usr/local/pgsql2/data/recovery.conf" 
+
+
+
+postgres2> cat /usr/local/pgsql2/data/recovery.conf 
+standby_mode = on
+restore_command = 'cp /home/postgres/archivedir/%f %p'
+
+.......................................................................
+
+РЕПЛИКА: СТАРТ СЕРВЕРА
+~~~~~~~~~~~~~~~~~~~~~~
+
+Можно стартовать сервер.
+
+postgres2> pg_ctl start -w -l /home/postgres2/logfile 
+waiting for server to start..... done
+server started
+
+.......................................................................
+
+Посмотрим на процессы реплики.
+
+postgres2> ps -o pid,command --ppid `sudo head -n 1 /usr/local/pgsql2/data/postmaster.pid`
+  PID COMMAND
+ 9406 postgres: startup process   waiting for 000000010000000000000004
+ 9410 postgres: checkpointer process  
+ 9411 postgres: writer process      
+ 9412 postgres: stats collector process  
+
+.......................................................................
+
+И сравним с процессами мастера.
+
+postgres> ps -o pid,command --ppid `sudo head -n 1 /usr/local/pgsql/data/postmaster.pid`
+  PID COMMAND
+ 9333 postgres: checkpointer process  
+ 9334 postgres: writer process     
+ 9335 postgres: wal writer process  
+ 9336 postgres: autovacuum launcher process  
+ 9337 postgres: archiver process   last was 000000010000000000000003.00000024.backup
+ 9338 postgres: stats collector process  
+ 9363 postgres: postgres db10 127.0.0.1(60402) idle
+
+.......................................................................
+
+ПРОВЕРКА РЕПЛИКАЦИИ
+~~~~~~~~~~~~~~~~~~~
+
+Подключимся к серверам и проверим таблицу:
+
+    => select * from replica_test;
+     t 
+    ---
+    (0 rows)
+    
+
+    |    psql -h localhost -p 5433 -U postgres
+
+    |    => \c db10
+    |    You are now connected to database "db10" as user "postgres".
+
+    |    => select * from replica_test;
+    |     t 
+    |    ---
+    |    (0 rows)
+    |    
+
+Таблица ожидаемо восстановилась из резервной копии.
+
+.......................................................................
+
+Теперь вставим в таблицу строку на мастере.
+
+    => insert into replica_test values ('one');
+    INSERT 0 1
+
+Будет ли видна эта строка на реплике?
+
+.......................................................................
+
+Не будет, поскольку сегмент WAL не заполнился и не попал в архив.
+
+    |    => select * from replica_test;
+    |     t 
+    |    ---
+    |    (0 rows)
+    |    
+
+.......................................................................
+
+Вызовем переключение сегмента вручную.
+
+    => select pg_switch_xlog();
+     pg_switch_xlog 
+    ----------------
+     0/400009C
+    (1 row)
+    
+
+Через некоторое время строка появится и на реплике.
+
+.......................................................................
+
+    |    => select * from replica_test;
+    |      t  
+    |    -----
+    |     one
+    |    (1 row)
+    |    
+
+.......................................................................
+
+Теперь смоделируем конфликт. Чтобы не создавать на реплике долгоиграющий
+запрос, просто начнем транзакцию с уровнем изоляции repeatable read.
+В начале транзакции на реплике будет сделан снимок, а необходимые для него
+версии строк мы очистим.
+
+    => update replica_test set t = 'two';
+    UPDATE 1
+
+.......................................................................
+
+    |    => begin;
+    |    BEGIN
+
+    |    => set transaction isolation level repeatable read;
+    |    SET
+
+    |    => select * from replica_test;
+    |      t  
+    |    -----
+    |     one
+    |    (1 row)
+    |    
+
+Снимок на реплике "видит" первую версию строки.
+
+.......................................................................
+
+    => vacuum replica_test;
+    VACUUM
+
+Когда конфликтующая запись передастся на реплику, ее применение будет
+отложено на max_standby_archive_delay (у нас 10 секунд).
+Поэтому после переключения сегмента выполним на реплике несколько запросов
+к таблице с интервалом в 5 секунд.
+
+.......................................................................
+
+    => select pg_switch_xlog();
+     pg_switch_xlog 
+    ----------------
+     0/5002924
+    (1 row)
+    
+
+sleep 5 
+
+    |    => select * from replica_test;
+    |      t  
+    |    -----
+    |     one
+    |    (1 row)
+    |    
+
+sleep 5 
+
+    |    => select * from replica_test;
+    |      t  
+    |    -----
+    |     one
+    |    (1 row)
+    |    
+
+sleep 5 
+
+    |    => select * from replica_test;
+    |    FATAL:  terminating connection due to conflict with recovery
+    |    DETAIL:  User query might have needed to see row versions that must be removed.
+    |    HINT:  In a moment you should be able to reconnect to the database and repeat your command.
+    |    server closed the connection unexpectedly
+    |    	This probably means the server terminated abnormally
+    |    	before or while processing the request.
+    |    connection to server was lost
+    |    
+    |    
+
+sleep 5 
+
+    |    => select * from replica_test;
+    |    
+    |    
+
+.......................................................................
+
+Как мы видим, конфликтующий запрос был остановлен. Приложение могло бы
+попробовать повторить его в надежде, что конфликт не возникнет повторно.
+
+Конец демонстрации.
+
+.......................................................................
+
+    => alter system reset all;
+    ALTER SYSTEM
+
+    => \q
+    |    => \q

@@ -1,0 +1,245 @@
+
+СОРТИРОВКА
+~~~~~~~~~~
+
+Создадим БД и таблицу со строками, которые будем сортировать.
+
+        => create database db18;
+        CREATE DATABASE
+
+        => \c db18
+        You are now connected to database "db18" as user "postgres".
+
+        => create table sortme(n float);
+        CREATE TABLE
+
+        => insert into sortme select random() from generate_series(1,1000000);
+        INSERT 0 1000000
+
+        => vacuum analyze sortme;
+        VACUUM
+
+.......................................................................
+
+Значение work_mem по умолчанию:
+
+        => show work_mem;
+         work_mem 
+        ----------
+         4MB
+        (1 row)
+        
+
+Увеличим его и включим сообщения о временных файлах.
+
+        => set work_mem = '128MB';
+        SET
+
+        => set log_temp_files = 0;
+        SET
+
+.......................................................................
+
+Выполним сортировку и проверим результат explain analyze:
+
+        => explain analyze select * from sortme order by n;
+                                                               QUERY PLAN                                                       
+        ------------------------------------------------------------------------------------------------------------------------
+         Sort  (cost=114082.84..116582.84 rows=1000000 width=8) (actual time=1307.931..1650.123 rows=1000000 loops=1)
+           Sort Key: n
+           Sort Method: quicksort  Memory: 55447kB
+           ->  Seq Scan on sortme  (cost=0.00..14425.00 rows=1000000 width=8) (actual time=0.005..201.090 rows=1000000 loops=1)
+         Planning time: 0.064 ms
+         Execution time: 1843.586 ms
+        (6 rows)
+        
+
+В данном случае строки поместились в память (Sort Method: quicksort).
+
+.......................................................................
+
+А теперь уменьшим work_mem:
+
+        => set work_mem = '128kB';
+        SET
+
+.......................................................................
+
+Снова выполняем сортировку:
+
+        => explain analyze select * from sortme order by n;
+                                                               QUERY PLAN                                                       
+        ------------------------------------------------------------------------------------------------------------------------
+         Sort  (cost=155106.34..157606.34 rows=1000000 width=8) (actual time=1935.670..2326.731 rows=1000000 loops=1)
+           Sort Key: n
+           Sort Method: external merge  Disk: 17592kB
+           ->  Seq Scan on sortme  (cost=0.00..14425.00 rows=1000000 width=8) (actual time=0.007..217.824 rows=1000000 loops=1)
+         Planning time: 0.034 ms
+         Execution time: 2491.253 ms
+        (6 rows)
+        
+
+Теперь строки не помещаются в память и используется внешняя сортировка
+(Sort Method: external merge).
+
+.......................................................................
+
+Также в журнале сообщений мы видим запись о временном файле:
+
+
+tail -n 2 /home/postgres/logfile 
+LOG:  temporary file: path "base/pgsql_tmp/pgsql_tmp11618.1", size 18014208
+STATEMENT:  explain analyze select * from sortme order by n;
+
+Запись появляется, когда файл освобождается, поэтому его размер известен.
+
+.......................................................................
+
+СОЕДИНЕНИЕ ХЭШИРОВАНИЕМ
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Посмотрим теперь на соединение хэшированием. Для этого нам потребуются
+две таблицы.
+
+        => create table a(id integer, s text);
+        CREATE TABLE
+
+        => create table b(id integer, s text);
+        CREATE TABLE
+
+        => insert into a select s.id, repeat('a',100) from generate_series(0,99999) s(id);
+        INSERT 0 100000
+
+        => insert into b select s.id/10, repeat('a',100) from generate_series(0,999999) s(id);
+        INSERT 0 1000000
+
+        => vacuum analyze a;
+        VACUUM
+
+        => vacuum analyze b;
+        VACUUM
+
+.......................................................................
+
+Увеличим work_mem:
+
+        => set work_mem = '128MB';
+        SET
+
+.......................................................................
+
+Выполним соединение:
+
+        => explain analyze select * from a join b on a.id = b.id;
+                                                              QUERY PLAN                                                       
+        -----------------------------------------------------------------------------------------------------------------------
+         Hash Join  (cost=3917.00..44257.98 rows=992398 width=210) (actual time=77.902..897.280 rows=1000000 loops=1)
+           Hash Cond: (b.id = a.id)
+           ->  Seq Scan on b  (cost=0.00..26667.00 rows=1000000 width=105) (actual time=0.007..211.807 rows=1000000 loops=1)
+           ->  Hash  (cost=2667.00..2667.00 rows=100000 width=105) (actual time=77.695..77.695 rows=100000 loops=1)
+                 Buckets: 131072  Batches: 1  Memory Usage: 12720kB
+                 ->  Seq Scan on a  (cost=0.00..2667.00 rows=100000 width=105) (actual time=0.009..35.730 rows=100000 loops=1)
+         Planning time: 0.148 ms
+         Execution time: 1069.162 ms
+        (8 rows)
+        
+
+Памяти хватило, использовался один пакет (Batches: 1).
+Параметр Buckets показывает число корзин в хэш-таблице,
+а Memory Usage - использованную оперативную память.
+Обратите внимание, что хэш-таблица строилась по меньшему набору строк.
+
+.......................................................................
+
+Теперь уменьшим work_mem:
+
+        => set work_mem = '128kB';
+        SET
+
+.......................................................................
+
+Снова выполним соединение:
+
+        => explain analyze select * from a join b on a.id = b.id;
+                                                              QUERY PLAN                                                       
+        -----------------------------------------------------------------------------------------------------------------------
+         Hash Join  (cost=5529.00..79709.98 rows=992398 width=210) (actual time=75.047..1533.505 rows=1000000 loops=1)
+           Hash Cond: (b.id = a.id)
+           ->  Seq Scan on b  (cost=0.00..26667.00 rows=1000000 width=105) (actual time=0.024..305.577 rows=1000000 loops=1)
+           ->  Hash  (cost=2667.00..2667.00 rows=100000 width=105) (actual time=74.395..74.395 rows=100000 loops=1)
+                 Buckets: 1024  Batches: 128  Memory Usage: 106kB
+                 ->  Seq Scan on a  (cost=0.00..2667.00 rows=100000 width=105) (actual time=0.003..24.719 rows=100000 loops=1)
+         Planning time: 0.085 ms
+         Execution time: 1706.022 ms
+        (8 rows)
+        
+
+Теперь число корзин хэш-таблицы уменьшилось и для соединения пришлось
+использовать 128 пакетов.
+
+.......................................................................
+
+В журнале сообщений обнаруживаем записи о временных файлах
+(показаны только несколько последних):
+
+
+tail -n 10 /home/postgres/logfile 
+LOG:  temporary file: path "base/pgsql_tmp/pgsql_tmp11618.218", size 1003090
+STATEMENT:  explain analyze select * from a join b on a.id = b.id;
+LOG:  temporary file: path "base/pgsql_tmp/pgsql_tmp11618.98", size 97526
+STATEMENT:  explain analyze select * from a join b on a.id = b.id;
+LOG:  temporary file: path "base/pgsql_tmp/pgsql_tmp11618.225", size 975260
+STATEMENT:  explain analyze select * from a join b on a.id = b.id;
+LOG:  temporary file: path "base/pgsql_tmp/pgsql_tmp11618.124", size 87725
+STATEMENT:  explain analyze select * from a join b on a.id = b.id;
+LOG:  temporary file: path "base/pgsql_tmp/pgsql_tmp11618.251", size 877250
+STATEMENT:  explain analyze select * from a join b on a.id = b.id;
+
+По размеру видно, что часть файлов относится к первой таблице
+(они меньше), а часть - ко второй (они больше).
+
+.......................................................................
+
+А теперь обманем планировщик: сделаем вид, что во второй таблице
+мало строк. Для этого удалим почти все строки, соберем статистику,
+а затем вставим новые строки. Поскольку размер файла не изменится
+значительно, планировщик не заподозрит подвох:
+
+        => delete from b where random() < 0.99;
+        DELETE 989990
+
+        => vacuum analyze b;
+        VACUUM
+
+        => insert into b select s.id/10, repeat('a',100) from generate_series(0,999999) s(id);
+        INSERT 0 1000000
+
+.......................................................................
+
+Выполняем запрос:
+
+        => explain analyze select * from a join b on a.id = b.id;
+                                                               QUERY PLAN                                                        
+        -------------------------------------------------------------------------------------------------------------------------
+         Hash Join  (cost=17224.47..24004.57 rows=10110 width=210) (actual time=802.765..2536.334 rows=1010010 loops=1)
+           Hash Cond: (a.id = b.id)
+           ->  Seq Scan on a  (cost=0.00..2667.00 rows=100000 width=105) (actual time=0.022..55.199 rows=100000 loops=1)
+           ->  Hash  (cost=16935.10..16935.10 rows=10110 width=105) (actual time=795.731..795.731 rows=1010010 loops=1)
+                 Buckets: 1024 (originally 1024)  Batches: 2048 (originally 16)  Memory Usage: 125kB
+                 ->  Seq Scan on b  (cost=0.00..16935.10 rows=10110 width=105) (actual time=0.006..278.931 rows=1010010 loops=1)
+         Planning time: 0.163 ms
+         Execution time: 2717.079 ms
+        (8 rows)
+        
+
+Планировщик начал с большой таблицы, считая, что она маленькая.
+Ему пришлось динамически увеличивать число пакетов, что негативно
+сказалась на скорости выполнения запроса.
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+        => \q

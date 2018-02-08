@@ -1,0 +1,229 @@
+
+ПРОЦЕСС КОНТРОЛЬНОЙ ТОЧКИ
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Заглянем в статистику:
+
+        => \x
+        Expanded display is on.
+
+        => select * from pg_stat_bgwriter;
+        -[ RECORD 1 ]---------+------------------------------
+        checkpoints_timed     | 0
+        checkpoints_req       | 2
+        checkpoint_write_time | 1
+        checkpoint_sync_time  | 3
+        buffers_checkpoint    | 3
+        buffers_clean         | 2917
+        maxwritten_clean      | 3
+        buffers_backend       | 117
+        buffers_backend_fsync | 0
+        buffers_alloc         | 3942
+        stats_reset           | 2016-05-27 21:26:10.997355+03
+        
+
+* checkpoints_timed     - контрольные точки по расписанию (checkpoint_timeout);
+* checkpoints_req       - контрольные точки по требованию (max_wal_level);
+* checkpoint_write_time - общее время записи на диск, мс;
+* checkpoint_sync_time  - общее время синхронизации с диском, мс;
+* buffers_checkpoint    - число страниц, записанных при контрольных точках.
+
+.......................................................................
+
+УПРАВЛЯЮЩИЙ ФАЙЛ
+~~~~~~~~~~~~~~~~
+
+Заглянем в управляющий файл $PGDATA/global/pg_control.
+Это можно сделать с помощью утилиты pg_controldata.
+Мы увидим много справочной информации, а также данное о последней контрольной точке.
+Обратите внимание и на статус кластера: "in production".
+
+.......................................................................
+
+pg_controldata 
+pg_control version number:            942
+Catalog version number:               201510051
+Database system identifier:           6286408245735415780
+Database cluster state:               in production
+pg_control last modified:             Пт. 27 мая 2016 21:26:50
+Latest checkpoint location:           0/2EE3BEC
+Prior checkpoint location:            0/2EE3390
+Latest checkpoint's REDO location:    0/2EE3BEC
+Latest checkpoint's REDO WAL file:    000000010000000000000002
+Latest checkpoint's TimeLineID:       1
+Latest checkpoint's PrevTimeLineID:   1
+Latest checkpoint's full_page_writes: off
+Latest checkpoint's NextXID:          0/3812
+Latest checkpoint's NextOID:          16597
+Latest checkpoint's NextMultiXactId:  2
+Latest checkpoint's NextMultiOffset:  3
+Latest checkpoint's oldestXID:        656
+Latest checkpoint's oldestXID's DB:   1
+Latest checkpoint's oldestActiveXID:  0
+Latest checkpoint's oldestMultiXid:   1
+Latest checkpoint's oldestMulti's DB: 1
+Latest checkpoint's oldestCommitTsXid:0
+Latest checkpoint's newestCommitTsXid:0
+Time of latest checkpoint:            Пт. 27 мая 2016 21:26:49
+Fake LSN counter for unlogged rels:   0/1
+Minimum recovery ending location:     0/0
+Min recovery ending loc's timeline:   0
+Backup start location:                0/0
+Backup end location:                  0/0
+End-of-backup record required:        no
+wal_level setting:                    minimal
+wal_log_hints setting:                off
+max_connections setting:              100
+max_worker_processes setting:         8
+max_prepared_xacts setting:           0
+max_locks_per_xact setting:           64
+track_commit_timestamp setting:       off
+Maximum data alignment:               4
+Database block size:                  8192
+Blocks per segment of large relation: 131072
+WAL block size:                       8192
+Bytes per WAL segment:                16777216
+Maximum length of identifiers:        64
+Maximum columns in an index:          32
+Maximum size of a TOAST chunk:        2000
+Size of a large-object chunk:         2048
+Date/time type storage:               64-bit integers
+Float4 argument passing:              by value
+Float8 argument passing:              by reference
+Data page checksum version:           0
+
+.......................................................................
+
+Выполним вручную контрольную точку и посмотрим, как это отражается в журнале
+и управляющем файле.
+
+        => select pg_current_xlog_location() as start_lsn \gset
+
+        => \setenv START_LSN :start_lsn
+
+        => select pg_xlogfile_name(:'start_lsn') as start_seg \gset
+
+        => \setenv START_SEG :start_seg
+
+        => checkpoint;
+        CHECKPOINT
+
+        => select pg_current_xlog_location() as end_lsn \gset
+
+        => \setenv END_LSN :end_lsn
+
+.......................................................................
+
+В журнал попадает отметка о том, что контрольная точка начата:
+
+        => \! pg_xlogdump -p $PGDATA/pg_xlog -s $START_LSN -e $END_LSN $START_SEG
+        first record is after 0/2EE4000, at 0/2EE53A0, skipping over 5024 bytes
+        rmgr: XLOG        len (rec/tot):     76/   102, tx:          0, lsn: 0/02EE53A0, prev 0/02EE3C88, desc: CHECKPOINT_ONLINE redo 0/2EE53A0; tli 1; prev tli 1; fpw true; xid 0/3812; oid 16597; multi 2; offset 3; oldest xid 656 in DB 1; oldest multi 1 in DB 1; oldest/newest commit timestamp xid: 0/0; oldest running xid 0; online
+
+.......................................................................
+
+Сравним с данными управляющего файла:
+
+Latest checkpoint's REDO location:    0/2EE53A0
+Latest checkpoint's REDO WAL file:    000000010000000000000002
+
+Данные о LSN, очевидно, совпадают.
+
+.......................................................................
+
+ВОССТАНОВЛЕНИЕ
+~~~~~~~~~~~~~~
+
+Теперь эмулируем сбой. Для этого создадим таблицу и принудительно выключим сервер.
+
+        => create database db9;
+        CREATE DATABASE
+
+        => \c db9
+        You are now connected to database "db9" as user "postgres".
+
+        => create table test(t text);
+        CREATE TABLE
+
+        => insert into test values ('Перед сбоем');
+        INSERT 0 1
+
+        => \q
+
+pg_ctl stop -w -m immediate 
+waiting for server to shut down... done
+server stopped
+
+.......................................................................
+
+Сейчас на диске находятся журнальные записи, но табличная страница (как и страницы
+системного каталога) не были сброшены на диск.
+
+Проверим состояние кластера:
+
+Database cluster state:               in production
+
+Оно не изменилось - при запуске PostgreSQL поймет, что имеет место рассогласование
+данных и выполнит восстановление.
+
+.......................................................................
+
+pg_ctl start -w -l /home/postgres/logfile 
+waiting for server to start.... done
+server started
+
+
+
+tail -n 10 /home/postgres/logfile 
+HINT:  In a moment you should be able to reconnect to the database and repeat your command.
+LOG:  database system was interrupted; last known up at 2016-05-27 21:26:52 MSK
+LOG:  database system was not properly shut down; automatic recovery in progress
+LOG:  redo starts at 0/2EE6220
+LOG:  invalid record length at 0/2F01A84
+LOG:  redo done at 0/2F01A60
+LOG:  last completed transaction was at log time 2016-05-27 21:26:52.420383+03
+LOG:  MultiXact member wraparound protections are now enabled
+LOG:  database system is ready to accept connections
+LOG:  autovacuum launcher started
+
+.......................................................................
+
+        psql 
+
+        => \c db9
+        You are now connected to database "db9" as user "postgres".
+
+        => select * from test;
+              t      
+        -------------
+         Перед сбоем
+        (1 row)
+        
+
+Как видим, таблица и данные восстановлены.
+
+.......................................................................
+
+Теперь остановим экземпляр с выполнением контрольной точки:
+
+        => \q
+
+pg_ctl stop -w -m fast 
+waiting for server to shut down.... done
+server stopped
+
+Проверим состояние кластера:
+
+Database cluster state:               shut down
+
+Теперь оно - "shut down", что соответствует корректной остановке.
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+pg_ctl start -w -l /home/postgres/logfile 
+waiting for server to start.... done
+server started

@@ -1,0 +1,447 @@
+
+NESTED LOOP
+~~~~~~~~~~~
+
+Создадим базу данных и две таблицы:
+
+  => create database db16;
+  CREATE DATABASE
+
+  => \c db16
+  You are now connected to database "db16" as user "postgres".
+
+  => create table a(id integer);
+  CREATE TABLE
+
+  => create table b(id integer, s text);
+  CREATE TABLE
+
+.......................................................................
+
+  => insert into a select gen.id from generate_series(1,1000) as gen(id) order by gen.id;
+  INSERT 0 1000
+
+  => insert into b select gen.id, v.s from generate_series(1,1000) as gen(id), (values ('a'),('b'),('c')) as v(s) order by gen.id;
+  INSERT 0 3000
+
+Обе таблицы содержат данные с идентификатором от 1 до 1000,
+при этом на каждую строчку первой таблицы во второй лежат три строчки.
+
+.......................................................................
+
+Проиндексируем и проанализируем данные.
+
+  => create index on a(id);
+  CREATE INDEX
+
+  => create index on b(id);
+  CREATE INDEX
+
+  => analyze a;
+  ANALYZE
+
+  => analyze b;
+  ANALYZE
+
+Чтобы планы запросов не загромождались сканированим битовой карты,
+мы не будем выполнять очистку.
+
+.......................................................................
+
+Так выглядит план для соединения вложенным циклом, которое оптимизатор
+предпочел для небольшой выборки:
+
+  => explain select * from a join b on (a.id = b.id) where a.id between 41 and 42;
+                                   QUERY PLAN                                  
+  -----------------------------------------------------------------------------
+   Nested Loop  (cost=0.56..16.66 rows=3 width=10)
+     ->  Index Only Scan using a_id_idx on a  (cost=0.28..8.29 rows=1 width=4)
+           Index Cond: ((id >= 41) AND (id <= 42))
+     ->  Index Scan using b_id_idx on b  (cost=0.28..8.33 rows=3 width=6)
+           Index Cond: (id = a.id)
+  (5 rows)
+  
+
+Узел Nested Loop обращается к первому дочернему узлу и просит выдать
+одну строку. Дочерний узел отрабатывает и возвращает строку (может
+оказаться, что для этого придется выбрать все строки).
+Далее узел Nested Loop обращается к второму дочернему узлу, и просит
+выдать строки, соответствующие строке первого набора.
+И так далее.
+
+.......................................................................
+
+Команда explain analyze позволяет узнать, сколько раз выполнялся
+вложенный цикл (loops) и сколько в среднем было выбрано строк (rows)
+и потрачено времени (time) за один раз.
+Таким образом, чтобы получить общее время, надо умножать loops*time.
+
+  => explain analyze select * from a join b on (a.id = b.id) where a.id between 41 and 42;
+                                                        QUERY PLAN                                                       
+  -----------------------------------------------------------------------------------------------------------------------
+   Nested Loop  (cost=0.56..16.66 rows=3 width=10) (actual time=0.009..0.016 rows=6 loops=1)
+     ->  Index Only Scan using a_id_idx on a  (cost=0.28..8.29 rows=1 width=4) (actual time=0.004..0.004 rows=2 loops=1)
+           Index Cond: ((id >= 41) AND (id <= 42))
+           Heap Fetches: 2
+     ->  Index Scan using b_id_idx on b  (cost=0.28..8.33 rows=3 width=6) (actual time=0.002..0.002 rows=3 loops=2)
+           Index Cond: (id = a.id)
+   Planning time: 0.204 ms
+   Execution time: 0.039 ms
+  (8 rows)
+  
+
+.......................................................................
+
+Существуют и вариации. Для левого соединения:
+
+  => explain (costs off)
+  => select * from a left join b on (a.id = b.id) where a.id between 41 and 42;
+                     QUERY PLAN                    
+  -------------------------------------------------
+   Nested Loop Left Join
+     ->  Index Only Scan using a_id_idx on a
+           Index Cond: ((id >= 41) AND (id <= 42))
+     ->  Index Scan using b_id_idx on b
+           Index Cond: (a.id = id)
+  (5 rows)
+  
+
+.......................................................................
+
+Для предиката not exists:
+
+  => explain (costs off)
+  => select a.id from a where a.id between 41 and 42
+  => and not exists (select * from b where b.id = a.id);
+                     QUERY PLAN                    
+  -------------------------------------------------
+   Nested Loop Anti Join
+     ->  Index Only Scan using a_id_idx on a
+           Index Cond: ((id >= 41) AND (id <= 42))
+     ->  Index Only Scan using b_id_idx on b
+           Index Cond: (id = a.id)
+  (5 rows)
+  
+
+.......................................................................
+
+Та же операция анти-соединения используется и для запроса,
+записанного несколько иначе:
+
+  => explain (costs off)
+  => select a.id from a left join b on (a.id = b.id)
+  => where a.id between 41 and 42 and b.id is null;
+                     QUERY PLAN                    
+  -------------------------------------------------
+   Nested Loop Anti Join
+     ->  Index Only Scan using a_id_idx on a
+           Index Cond: ((id >= 41) AND (id <= 42))
+     ->  Index Only Scan using b_id_idx on b
+           Index Cond: (id = a.id)
+  (5 rows)
+  
+
+.......................................................................
+
+Для предиката exists может использоваться полу-соединение:
+
+  => explain (costs off)
+  => select a.id from a where a.id between 41 and 42
+  => and exists (select * from b where b.id = a.id);
+                     QUERY PLAN                    
+  -------------------------------------------------
+   Nested Loop Semi Join
+     ->  Index Only Scan using a_id_idx on a
+           Index Cond: ((id >= 41) AND (id <= 42))
+     ->  Index Only Scan using b_id_idx on b
+           Index Cond: (id = a.id)
+  (5 rows)
+  
+
+.......................................................................
+
+Обратите внимание: хотя в плане для таблицы b rows=3, на самом деле
+достаточно получить всего одну строку, чтобы понять значение предиката
+exists. PostgreSQL так и делает (actual rows):
+
+  => explain analyze select a.id from a where a.id between 41 and 42
+  => and exists (select * from b where b.id = a.id);
+                                                        QUERY PLAN                                                       
+  -----------------------------------------------------------------------------------------------------------------------
+   Nested Loop Semi Join  (cost=0.56..12.62 rows=1 width=4) (actual time=0.011..0.015 rows=2 loops=1)
+     ->  Index Only Scan using a_id_idx on a  (cost=0.28..8.29 rows=1 width=4) (actual time=0.005..0.007 rows=2 loops=1)
+           Index Cond: ((id >= 41) AND (id <= 42))
+           Heap Fetches: 2
+     ->  Index Only Scan using b_id_idx on b  (cost=0.28..8.33 rows=3 width=4) (actual time=0.002..0.002 rows=1 loops=2)
+           Index Cond: (id = a.id)
+           Heap Fetches: 2
+   Planning time: 0.186 ms
+   Execution time: 0.055 ms
+  (9 rows)
+  
+
+.......................................................................
+
+Заметим, что модификации Nested Loop Full Join не бывает,
+так как алгоритм не предусматривает полный проход по второму
+набору строк.
+
+.......................................................................
+
+HASH JOIN
+~~~~~~~~~
+
+Для большой выборки оптимизатор предпочтет соединение хэшированием:
+
+  => explain select * from a join b on (a.id = b.id);
+                             QUERY PLAN                            
+  -----------------------------------------------------------------
+   Hash Join  (cost=26.50..111.75 rows=3000 width=10)
+     Hash Cond: (b.id = a.id)
+     ->  Seq Scan on b  (cost=0.00..44.00 rows=3000 width=6)
+     ->  Hash  (cost=14.00..14.00 rows=1000 width=4)
+           ->  Seq Scan on a  (cost=0.00..14.00 rows=1000 width=4)
+  (5 rows)
+  
+
+Узел Hash Join начинает с того, что обращается к дочернему узлу Hash.
+Этот узел получает от своего дочернего узла весь набор строк
+и строит хэш-таблицу. Затем Hash Join обращается к второму дочернему
+узлу и соединяет строки, постепенно возвращая полученные результаты.
+
+.......................................................................
+
+Обратите внимание на строку Hash Cond: она содержит предикаты,
+участвующие в соединении. Условие может включать и такие предикаты,
+которые не могут использоваться механизмом соединения, но должны
+учитываться. Такие предикаты отображаются в отдельной строке:
+
+  => explain (costs off)
+  => select * from a join b
+  => on (a.id = b.id and a.id + b.id < 100);
+                QUERY PLAN              
+  --------------------------------------
+   Hash Join
+     Hash Cond: (b.id = a.id)
+     Join Filter: ((a.id + b.id) < 100)
+     ->  Seq Scan on b
+     ->  Hash
+           ->  Seq Scan on a
+  (6 rows)
+  
+
+.......................................................................
+
+Модификации Hash Join включают уже рассмотренные Left (Right),
+Anti, Semi, а также Full для полного соединения:
+
+  => explain (costs off)
+  => select * from a full join b on (a.id = b.id);
+           QUERY PLAN         
+  ----------------------------
+   Hash Full Join
+     Hash Cond: (b.id = a.id)
+     ->  Seq Scan on b
+     ->  Hash
+           ->  Seq Scan on a
+  (5 rows)
+  
+
+.......................................................................
+
+MERGE JOIN
+~~~~~~~~~~
+
+Если результат необходим в отсортированном виде, оптимизатор
+может предпочесть соединение слиянием:
+
+  => explain select * from a join b on (a.id = b.id)
+  => order by a.id;
+                                     QUERY PLAN                                    
+  ---------------------------------------------------------------------------------
+   Merge Join  (cost=0.56..180.56 rows=3000 width=10)
+     Merge Cond: (a.id = b.id)
+     ->  Index Only Scan using a_id_idx on a  (cost=0.28..42.27 rows=1000 width=4)
+     ->  Index Scan using b_id_idx on b  (cost=0.28..98.28 rows=3000 width=6)
+  (4 rows)
+  
+
+На руку играет и то, что данные от дочерних узлов поступают
+уже отсортированные.
+
+.......................................................................
+
+ГРУППИРОВКА И DISTINCT
+~~~~~~~~~~~~~~~~~~~~~~
+
+Посмотрим еще операцию, не связанную напрямую с соединениями:
+группировку. Для нее есть два способа выполнения. Один подразумевает
+сортировку значений и устранение дубликатов.
+
+  => set enable_hashagg=off;
+  SET
+
+  => explain select s, count(*) from b group by s;
+                             QUERY PLAN                            
+  -----------------------------------------------------------------
+   GroupAggregate  (cost=217.26..239.79 rows=3 width=2)
+     Group Key: s
+     ->  Sort  (cost=217.26..224.76 rows=3000 width=2)
+           Sort Key: s
+           ->  Seq Scan on b  (cost=0.00..44.00 rows=3000 width=2)
+  (5 rows)
+  
+
+.......................................................................
+
+То же самое справедливо и для предложения distinct:
+
+  => explain select distinct s from b;
+                             QUERY PLAN                            
+  -----------------------------------------------------------------
+   Unique  (cost=217.26..232.26 rows=3 width=2)
+     ->  Sort  (cost=217.26..224.76 rows=3000 width=2)
+           Sort Key: s
+           ->  Seq Scan on b  (cost=0.00..44.00 rows=3000 width=2)
+  (4 rows)
+  
+
+Побочный эффект такого способы выполнения состоит в том, что результат
+также получается отсортированным. Тем не менее, всегда указывайте
+предложение order by явно, если результат должен быть отсортирован.
+
+.......................................................................
+
+Второй способ состоит в том, чтобы построить хэш-таблицу значений
+(примерно так же, как и при соединении хэшированием) и устранить
+дубликаты с помощью нее.
+
+  => set enable_hashagg=on;
+  SET
+
+  => explain select s, count(*) from b group by s;
+                          QUERY PLAN                         
+  -----------------------------------------------------------
+   HashAggregate  (cost=59.00..59.03 rows=3 width=2)
+     Group Key: s
+     ->  Seq Scan on b  (cost=0.00..44.00 rows=3000 width=2)
+  (3 rows)
+  
+
+В данном случае у нас нет индекса по полю s и хэш-таблица
+побеждает по стоимости.
+На эффективность также влияет количество уникальных значений -
+при очень больших объемах сортировка работает лучше.
+
+.......................................................................
+
+То же самое и с distinct:
+
+  => explain select distinct s from b;
+                          QUERY PLAN                         
+  -----------------------------------------------------------
+   HashAggregate  (cost=51.50..51.53 rows=3 width=2)
+     Group Key: s
+     ->  Seq Scan on b  (cost=0.00..44.00 rows=3000 width=2)
+  (3 rows)
+  
+
+Группировка с помощью хэш-функции, разумеется, выдает данные
+неотсортированными.
+
+.......................................................................
+
+ОПЕРАЦИИ С МНОЖЕСТВАМИ
+~~~~~~~~~~~~~~~~~~~~~~
+
+Соединения наборов строк всегда выполняются попарно, но в плане
+можно встретить узлы с тремя и более дочерними узлами.
+Это такие операции, как union, except, intersect.
+Посмотрим пример:
+
+  => create table c(id integer);
+  CREATE TABLE
+
+  => explain
+  => select id from a union all
+  => select id from b union all
+  => select id from c;
+                          QUERY PLAN                         
+  -----------------------------------------------------------
+   Append  (cost=0.00..93.50 rows=6550 width=4)
+     ->  Seq Scan on a  (cost=0.00..14.00 rows=1000 width=4)
+     ->  Seq Scan on b  (cost=0.00..44.00 rows=3000 width=4)
+     ->  Seq Scan on c  (cost=0.00..35.50 rows=2550 width=4)
+  (4 rows)
+  
+
+Это не значит, что происходит одновременное объединение
+нескольких наборов строк - но в плане все операции собраны
+под одним родительским узлом.
+
+.......................................................................
+
+  => explain
+  => select id from a union
+  => select id from b union
+  => select id from c;
+                             QUERY PLAN                            
+  -----------------------------------------------------------------
+   HashAggregate  (cost=175.38..240.88 rows=6550 width=4)
+     Group Key: a.id
+     ->  Append  (cost=0.00..159.00 rows=6550 width=4)
+           ->  Seq Scan on a  (cost=0.00..14.00 rows=1000 width=4)
+           ->  Seq Scan on b  (cost=0.00..44.00 rows=3000 width=4)
+           ->  Seq Scan on c  (cost=0.00..35.50 rows=2550 width=4)
+  (6 rows)
+  
+
+В этом примере требуется устранение дубликатов, поэтому
+появляется еще один узел.
+
+.......................................................................
+
+БОЛЕЕ СЛОЖНЫЕ ПЛАНЫ
+~~~~~~~~~~~~~~~~~~~
+
+В завершение рассмотрим пример соединения нескольких таблиц.
+Воспользуемся системным представлением:
+
+  => explain (costs off) select * from pg_tables;
+                    QUERY PLAN                   
+  -----------------------------------------------
+   Hash Left Join
+     Hash Cond: (c.reltablespace = t.oid)
+     ->  Hash Left Join
+           Hash Cond: (c.relnamespace = n.oid)
+           ->  Seq Scan on pg_class c
+                 Filter: (relkind = 'r'::"char")
+           ->  Hash
+                 ->  Seq Scan on pg_namespace n
+     ->  Hash
+           ->  Seq Scan on pg_tablespace t
+  (10 rows)
+  
+
+.......................................................................
+
+Любой самый сложный запрос является деревом, состоящим из
+уже рассмотренных узлов (и некоторых не рассмотренных, но похожих).
+Зная, как читать соединения и методы доступа, и понимая рекурсию,
+можно разобраться в любом плане.
+
+Конец демонстрации.
+
+.......................................................................
+
+  => alter system reset all;
+  ALTER SYSTEM
+
+  => select pg_reload_conf();
+   pg_reload_conf 
+  ----------------
+   t
+  (1 row)
+  
+
+  => \q

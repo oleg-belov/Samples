@@ -1,0 +1,1259 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+Функции без параметров
+</h1>
+<p class="C">
+Начнем с примера простой функции без параметров и возвращаемого значения.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">void</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  relation "t" does not exist
+LINE 2: INSERT INTO t
+                    ^
+</pre></div>
+<p class="C">
+Ой. Таблица-то еще не создана.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Исправляемся.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">t</span><span style="color:#323232">(</span>a <span style="color:#a00050">float</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">void</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Вызвать такую функцию в SQL можно из запроса:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+ 
+(1 row)
+
+</pre></div>
+<p class="C">
+Не вернуть совсем ничего запрос в данном случае не может, поэтому возвращается
+NULL.  Собственно результат работы виден в таблице:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+         a          
+--------------------
+  0.441176869440824
+   0.75137481931597
+ 0.0908906785771251
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Добавим возвращаемое значение:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">bigint</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<p class="C">
+Получится?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Увы, таким образом нельзя переопределить тип возвращаемого значения.
+
+</p>
+<div class="R1"><pre class="R1">
+ERROR:  cannot change return type of existing function
+HINT:  Use DROP FUNCTION fill() first.
+</pre></div>
+<p class="C">
+Нужно удалить функцию и создать заново:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">bigint</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Вот как она теперь работает:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+    6
+(1 row)
+
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+    9
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+А если мы хотим, чтобы таблица предварительно очищалась?  Изменить логику
+можно, не удаляя функцию:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">bigint</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+    3
+(1 row)
+
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+    3
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В общем случае тело функции может состоять из нескольких операторов SQL.
+В качестве значения функции возвращается значение из первой строки, которую
+вернул последний оператор.
+</p>
+<p class="C">
+В нашем случае последний оператор - SELECT, и он возвращает единственную
+строку.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Не все команды SQL можно использовать в функции.
+</p>
+<p class="C">
+Запрещены:
+</p>
+<ul class="U">
+<li>команды управления транзакциями (BEGIN, COMMIT, ROLLBACK и т. п.),</li>
+<li>"нетранзакционные" команды (такие, как VACUUM или CREATE INDEX).</li>
+</ul>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">do_commit</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">void</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">COMMIT</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">do_commit</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  COMMIT is not allowed in a SQL function
+CONTEXT:  SQL function "do_commit" during startup
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Функции с входными параметрами
+</h1>
+<p class="C">
+Добавим параметр - число строк. В этом случае снова придется предварительно
+удалить функцию.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span>nrows <span style="color:#a00050">integer</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">bigint</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>nrows<span style="color:#323232">);</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Попробуем:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#1094a0">5</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+    5
+(1 row)
+
+</pre></div>
+<p class="C">
+Мы вызвали функцию, указав фактические параметры позиционным способом.  Можно
+указать параметр и по имени (хотя в данном случае это выглядит избыточно):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span>nrows <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">10</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+   10
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Можно определить параметр функции без имени; тогда позиционный способ будет
+единственно возможным. И внутри тела функции на параметры придется ссылаться
+по номеру:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">bigint</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#00a150">$1)</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+   10
+(1 row)
+
+</pre></div>
+<p class="C">
+Но так лучше не делать, это неудобно.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Функции с выходными параметрами
+</h1>
+<p class="C">
+Альтернативный способ вернуть значение - использовать выходной параметр.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span>nrows <span style="color:#3b6ac8">IN</span> <span style="color:#a00050">integer</span><span style="color:#323232">,</span> result <span style="color:#3b6ac8">OUT</span> <span style="color:#a00050">bigint</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>nrows<span style="color:#323232">);</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+   10
+(1 row)
+
+</pre></div>
+<p class="C">
+Результат тот же самый.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Можно использовать и RETURNS, и OUT-параметр вместе - результат снова будет
+тем же:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span>nrows <span style="color:#3b6ac8">IN</span> <span style="color:#a00050">integer</span><span style="color:#323232">,</span> result <span style="color:#3b6ac8">OUT</span> <span style="color:#a00050">bigint</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">bigint</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>nrows<span style="color:#323232">);</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+   10
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Или даже так (использовав параметр INOUT и приведение типов):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span>nrows <span style="color:#3b6ac8">INOUT</span> <span style="color:#a00050">integer</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>nrows<span style="color:#323232">);</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)::</span><span style="color:#a00050">integer</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ fill 
+------
+   10
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Интересно, что выходных параметров может быть несколько. Например, вернем
+не только количество строк, но и среднее значение.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span>nrows <span style="color:#3b6ac8">INOUT</span> <span style="color:#a00050">integer</span><span style="color:#323232">,</span> average <span style="color:#3b6ac8">OUT</span> <span style="color:#a00050">float</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">INSERT INTO</span> t
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>nrows<span style="color:#323232">);</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)::</span><span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#c73a69">avg</span><span style="color:#323232">(</span>a<span style="color:#323232">)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Отметим, что при удалении функции не надо указывать выходные параметры.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+          fill          
+------------------------
+ (10,0.457188270380721)
+(1 row)
+
+</pre></div>
+<p class="C">
+Действительно, наша функция вернула не одно значение, а несколько.  Подробнее о
+такой возможности и составных типах мы будем говорить позже.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Еще один важный момент: функции интерпретируются. Это значит, что большинство
+ошибок будет выявлено только во время выполнения.
+</p>
+<p class="C">
+Когда мы создавали функцию первый раз, PostgreSQL проверил наличие таблицы,
+на которую мы ссылаемся. Но сейчас мы можем ее удалить - нам никто не помешает:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP TABLE</span> t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP TABLE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Ошибка возникнет только во время выполнения:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fill</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  relation "t" does not exist
+LINE 3: INSERT INTO t
+                    ^
+QUERY:  
+TRUNCATE t;
+INSERT INTO t
+    SELECT random() FROM generate_series(1,nrows);
+SELECT count(*)::integer, avg(a) FROM t;
+
+CONTEXT:  SQL function "fill" during startup
+</pre></div>
+<p class="C">
+Единственный способ заметить такие ошибки заранее - тестирование.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Перегруженные функции
+</h1>
+<p class="C">
+Напишем функцию, возвращающую большее из двух целых чисел.  (Похожая функция
+есть в SQL и называется greatest, но мы сделаем ее сами.)
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span>a <span style="color:#a00050">integer</span><span style="color:#323232">,</span> b <span style="color:#a00050">integer</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">integer</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT CASE WHEN</span> a <span style="color:#323232">&gt;</span> b <span style="color:#3b6ac8">THEN</span> a <span style="color:#3b6ac8">ELSE</span> b <span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Проверим:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">,</span><span style="color:#1094a0">20</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ maximum 
+---------
+      20
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Допустим, мы решили сделать аналогичную функцию для трех чисел. Благодаря
+перегрузке, не надо придумывать для нее какое-то новое название:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span>a <span style="color:#a00050">integer</span><span style="color:#323232">,</span> b <span style="color:#a00050">integer</span><span style="color:#323232">,</span> c <span style="color:#a00050">integer</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">integer</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT CASE WHEN</span> a <span style="color:#323232">&gt;</span> b <span style="color:#3b6ac8">THEN</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span>a<span style="color:#323232">,</span>c<span style="color:#323232">)</span> <span style="color:#3b6ac8">ELSE</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span>b<span style="color:#323232">,</span>c<span style="color:#323232">)</span> <span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь у нас две функции с одним именем, но разным числом параметров:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\df</span> maximum
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                               List of functions
+ Schema |  Name   | Result data type |       Argument data types       |  Type  
+--------+---------+------------------+---------------------------------+--------
+ public | maximum | integer          | a integer, b integer            | normal
+ public | maximum | integer          | a integer, b integer, c integer | normal
+(2 rows)
+
+</pre></div>
+<p class="C">
+И обе работают:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">,</span><span style="color:#1094a0">20</span><span style="color:#323232">),</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">,</span><span style="color:#1094a0">20</span><span style="color:#323232">,</span><span style="color:#1094a0">30</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ maximum | maximum 
+---------+---------
+      20 |      30
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Пусть наша функция работает не только для целых чисел, но и для вещественных.
+</p>
+<p class="C">
+Как этого добиться? Можно было бы определить еще такую функцию:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span>a <span style="color:#a00050">real</span><span style="color:#323232">,</span> b <span style="color:#a00050">real</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">real</span> <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT CASE WHEN</span> a <span style="color:#323232">&gt;</span> b <span style="color:#3b6ac8">THEN</span> a <span style="color:#3b6ac8">ELSE</span> b <span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь у нас три функции с одинаковым именем:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\df</span> maximum
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                               List of functions
+ Schema |  Name   | Result data type |       Argument data types       |  Type  
+--------+---------+------------------+---------------------------------+--------
+ public | maximum | integer          | a integer, b integer            | normal
+ public | maximum | integer          | a integer, b integer, c integer | normal
+ public | maximum | real             | a real, b real                  | normal
+(3 rows)
+
+</pre></div>
+<p class="C">
+Две из них отличаются типами входных параметров:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">,</span><span style="color:#1094a0">20</span><span style="color:#323232">),</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">1.1</span><span style="color:#323232">,</span><span style="color:#1094a0">2.2</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ maximum | maximum 
+---------+---------
+      20 |     2.2
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Но дальше нам придется определить функции для всех остальных типов данных,
+и повторить все то же самое для трех параметров. При том, что тело функции
+не меняется!
+</p>
+<h1>
+Полиморфные функции
+</h1>
+<p class="C">
+Здесь нам поможет полиморфный тип anyelement.
+</p>
+<p class="C">
+Удалим все три наши функции и затем создадим новую:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#a00050">real</span><span style="color:#323232">,</span> <span style="color:#a00050">real</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span>a <span style="color:#a00050">anyelement</span><span style="color:#323232">,</span> b <span style="color:#a00050">anyelement</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">anyelement</span> <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT CASE WHEN</span> a <span style="color:#323232">&gt;</span> b <span style="color:#3b6ac8">THEN</span> a <span style="color:#3b6ac8">ELSE</span> b <span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Такая функция должна принимать любой тип данных (а работать будет с любым
+типом, для которого определен оператор "больше").
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">'B'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<p class="C">
+Получится?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+
+<div class="R1"><pre class="R1">
+ERROR:  could not determine polymorphic type because input has type "unknown"
+</pre></div>
+<p class="C">
+Увы, нет. В данном случае строковые литералы могут быть типа char, varchar,
+text - конкретный тип нам неизвестен. Но можно применить явное приведение
+типов:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">::</span><span style="color:#a00050">text</span><span style="color:#323232">,</span><span style="color:#1094a0">'B'</span><span style="color:#323232">::</span><span style="color:#a00050">text</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ maximum 
+---------
+ B
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Еще пример с другим типом:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#c73a69">now</span><span style="color:#323232">(),</span> <span style="color:#c73a69">now</span><span style="color:#323232">() +</span> <span style="color:#3b6ac8">interval</span> <span style="color:#1094a0">'1 day'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+            maximum            
+-------------------------------
+ 2017-07-23 23:39:10.513437+03
+(1 row)
+
+</pre></div>
+<p class="C">
+Тип результата функции всегда будет тот же, что и тип параметров.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Важно, чтобы типы обоих параметров совпадали, иначе будет ошибка:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">'A'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  invalid input syntax for integer: "A"
+LINE 1: SELECT maximum(1,'A');
+                         ^
+</pre></div>
+<p class="C">
+В этом примере такое ограничение выглядит естественно, хотя в некоторых
+случаях оно может оказаться и неудобным.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Значение по умолчанию для параметров
+</h1>
+<p class="C">
+Определим теперь функцию с тремя параметрами, но так, чтобы третий можно
+было не указывать.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span>a <span style="color:#a00050">anyelement</span><span style="color:#323232">,</span> b <span style="color:#a00050">anyelement</span><span style="color:#323232">,</span> c <span style="color:#a00050">anyelement</span> <span style="color:#3b6ac8">default null</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">anyelement</span> <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT CASE</span>
+               <span style="color:#3b6ac8">WHEN</span> c <span style="color:#3b6ac8">IS NULL THEN</span>
+                   x
+               <span style="color:#3b6ac8">ELSE</span>
+                   <span style="color:#3b6ac8">CASE WHEN</span> x <span style="color:#323232">&gt;</span> c <span style="color:#3b6ac8">THEN</span> x <span style="color:#3b6ac8">ELSE</span> c <span style="color:#3b6ac8">END</span>
+           <span style="color:#3b6ac8">END</span>
+    <span style="color:#3b6ac8">FROM</span> <span style="color:#323232">(</span>
+        <span style="color:#3b6ac8">SELECT CASE WHEN</span> a <span style="color:#323232">&gt;</span> b <span style="color:#3b6ac8">THEN</span> a <span style="color:#3b6ac8">ELSE</span> b <span style="color:#3b6ac8">END</span>
+    <span style="color:#323232">)</span> <span style="color:#c73a69">max2</span><span style="color:#323232">(</span>x<span style="color:#323232">);</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Попробуем:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">,</span><span style="color:#1094a0">20</span><span style="color:#323232">,</span><span style="color:#1094a0">30</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ maximum 
+---------
+      30
+(1 row)
+
+</pre></div>
+<p class="C">
+Так работает. А так?
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">,</span><span style="color:#1094a0">20</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+
+<div class="R1"><pre class="R1">
+ERROR:  function maximum(integer, integer) is not unique
+LINE 1: SELECT maximum(10,20);
+               ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+</pre></div>
+<p class="C">
+А так произошел конфликт перегруженных функций:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\df</span> maximum
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                                               List of functions
+ Schema |  Name   | Result data type |                      Argument data types                       |  Type  
+--------+---------+------------------+----------------------------------------------------------------+--------
+ public | maximum | anyelement       | a anyelement, b anyelement                                     | normal
+ public | maximum | anyelement       | a anyelement, b anyelement, c anyelement DEFAULT NULL::unknown | normal
+(2 rows)
+
+</pre></div>
+<p class="C">
+Невозможно понять, имеем ли мы в виду функцию с двумя параметрами, или с тремя
+(но просто не указали последний).
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Мы решим этот конфликт просто - удалим первую функцию за ненадобностью.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#a00050">anyelement</span><span style="color:#323232">,</span> <span style="color:#a00050">anyelement</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">,</span><span style="color:#1094a0">20</span><span style="color:#323232">),</span> <span style="color:#c73a69">maximum</span><span style="color:#323232">(</span><span style="color:#1094a0">10</span><span style="color:#323232">,</span><span style="color:#1094a0">20</span><span style="color:#323232">,</span><span style="color:#1094a0">30</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ maximum | maximum 
+---------+---------
+      20 |      30
+(1 row)
+
+</pre></div>
+<p class="C">
+Теперь все работает.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Категории изменчивости и изоляция
+</h1>
+<p class="C">
+В целом использование функций внутри запросов не нарушает установленный
+уровень изоляции транзакции, но есть два момента, о которых полезно знать.
+</p>
+<p class="C">
+Во-первых, функции с изменчивостью volatile на уровне изоляции read committed
+приводят к рассогласованию данных внутри одного запроса.
+</p>
+<p class="C">
+Сделаем функцию, возвращающую число строк в таблице:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">t</span><span style="color:#323232">(</span>n <span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">), (</span><span style="color:#1094a0">2</span><span style="color:#323232">), (</span><span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 3
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">cnt</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">bigint</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">VOLATILE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь вызовем ее несколько раз с задержкой, а в параллельном сеансе вставим
+в таблицу дополнительную строку.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">BEGIN ISOLATION LEVEL READ COMMITTED</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+BEGIN
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">),</span> <span style="color:#c73a69">cnt</span><span style="color:#323232">(),</span> <span style="color:#c73a69">pg_sleep</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">4</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">$ <span style="color:#00a150">sleep</span> <span style="color:#1094a0">1</span>
+</pre>
+</div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">4</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+INSERT 0 1
+
+</pre></div>
+<div class="R1"><pre class="R1">
+ count | cnt | pg_sleep 
+-------+-----+----------
+     3 |   3 | 
+     3 |   3 | 
+     3 |   4 | 
+     3 |   4 | 
+(4 rows)
+
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+COMMIT
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+При изменчивости stable или immutable, или либо использовании более строгих
+уровней изоляции, такого не происходит.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER FUNCTION</span> <span style="color:#c73a69">cnt</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">STABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+TRUNCATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">BEGIN ISOLATION LEVEL READ COMMITTED</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+BEGIN
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">),</span> <span style="color:#c73a69">cnt</span><span style="color:#323232">(),</span> <span style="color:#c73a69">pg_sleep</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">4</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">$ <span style="color:#00a150">sleep</span> <span style="color:#1094a0">1</span>
+</pre>
+</div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">4</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+INSERT 0 1
+
+</pre></div>
+<div class="R1"><pre class="R1">
+ count | cnt | pg_sleep 
+-------+-----+----------
+     0 |   0 | 
+     0 |   0 | 
+     0 |   0 | 
+     0 |   0 | 
+(4 rows)
+
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+COMMIT
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Второй момент связан с видимостью изменений, сделанных собственной транзакцией.
+</p>
+<p class="C">
+Функции с изменчивостью volatile видят все изменения, в том числе сделанные
+текущим, еще не завершенным оператором SQL.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER FUNCTION</span> <span style="color:#c73a69">cnt</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">VOLATILE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+TRUNCATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">cnt</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">5</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 5
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ n 
+---
+ 0
+ 1
+ 2
+ 3
+ 4
+(5 rows)
+
+</pre></div>
+<p class="C">
+Это верно для любых уровней изоляции.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Функции с изменчивостью stable или immutable видят изменения только уже
+завершенных операторов.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER FUNCTION</span> <span style="color:#c73a69">cnt</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">STABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">TRUNCATE</span> t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+TRUNCATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">cnt</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">5</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 5
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ n 
+---
+ 0
+ 0
+ 0
+ 0
+ 0
+(5 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Категории изменчивости и оптимизация
+</h1>
+<p class="C">
+Благодаря дополнительной информации о поведении функции, которую дает указание
+категории изменчивости, оптимизатор может сэкономить на вызовах функции.
+</p>
+<p class="C">
+Для экспериментов создадим функцию, возвращающую случайное число:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">float</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">random</span><span style="color:#323232">();</span>
+$$ <span style="color:#3b6ac8">VOLATILE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Проверим план выполнения следующего запроса:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN</span><span style="color:#323232">(</span>COSTS <span style="color:#3b6ac8">OFF</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">10</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">WHERE</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">() &gt;</span> <span style="color:#1094a0">0.5</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                   QUERY PLAN                   
+------------------------------------------------
+ Function Scan on generate_series
+   Filter: (random() > '0.5'::double precision)
+(2 rows)
+
+</pre></div>
+<p class="C">
+В этом курсе мы не рассматриваем подробно планы запросов, но из общих
+соображений мы видим здесь "честное" обращение к функции generate_series;
+каждая строка результата сравнивается со случайным числом и при необходимости
+отбрасывается фильтром.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В этом можно убедиться и воочию (ожидаем в среднем получить 5 строк):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">10</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">WHERE</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">() &gt;</span> <span style="color:#1094a0">0.5</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ generate_series 
+-----------------
+               1
+               3
+               4
+               6
+               7
+               8
+               9
+              10
+(8 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Функция с изменчивостью stable будет вызвана всего один раз - поскольку мы
+фактически указали, что ее значение не может измениться в пределах оператора:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER FUNCTION</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">STABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN</span><span style="color:#323232">(</span>COSTS <span style="color:#3b6ac8">OFF</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">10</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">WHERE</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">() &gt;</span> <span style="color:#1094a0">0.5</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                      QUERY PLAN                      
+------------------------------------------------------
+ Result
+   One-Time Filter: (rnd() > '0.5'::double precision)
+   ->  Function Scan on generate_series
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Наконец, изменчивость immutable позволяет вычислить функции еще на этапе
+планирования, поэтому во время выполнения никакие фильтры не нужны:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER FUNCTION</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">IMMUTABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN</span><span style="color:#323232">(</span>COSTS <span style="color:#3b6ac8">OFF</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">10</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">WHERE</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">() &gt;</span> <span style="color:#1094a0">0.5</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+        QUERY PLAN        
+--------------------------
+ Result
+   One-Time Filter: false
+(2 rows)
+
+</pre></div>
+<p class="C">
+Ответственность "за дачу заведомо ложных показаний" лежит на разработчике.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Подстановка тела функции в SQL-запрос
+</h1>
+<p class="C">
+В некоторых (очень простых) случаях тело функции на языке SQL может быть
+подставлено прямо в основной SQL-оператор на этапе разбора запроса. В этом
+случае время на вызов функции не тратится.
+</p>
+<p class="C">
+Упрощенно требуется выполнение следующих условий:
+</p>
+<ul class="U">
+<li>Тело функции состоит из одного оператора SELECT,</li>
+<li>Нет обращений к таблицам, подзапросов, группировок и т. п.</li>
+<li>Возвращаемое значение должно быть одно,</li>
+<li>Вызываемые функции не должны противоречить указанной категории изменчивости.</li>
+</ul>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Пример мы уже видели: наша функция rnd(), объявленная volatile.
+</p>
+<p class="C">
+Посмотрим еще раз.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER FUNCTION</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">VOLATILE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN</span><span style="color:#323232">(</span>COSTS <span style="color:#3b6ac8">OFF</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">10</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">WHERE</span> <span style="color:#c73a69">rnd</span><span style="color:#323232">() &gt;</span> <span style="color:#1094a0">0.5</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                   QUERY PLAN                   
+------------------------------------------------
+ Function Scan on generate_series
+   Filter: (random() > '0.5'::double precision)
+(2 rows)
+
+</pre></div>
+<p class="C">
+В фильтре упоминается функция random(), но не rnd(). Она будет вызываться
+напрямую, минуя "обертку" в виде функции rnd().
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Конец демонстрации.
+</p>
+</body>
+</html>

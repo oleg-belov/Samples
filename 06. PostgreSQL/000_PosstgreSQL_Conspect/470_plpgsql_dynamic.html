@@ -1,0 +1,359 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+EXECUTE. Простой вариант динамической команды
+</h1>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">'CREATE TABLE city_msk (id SERIAL, qty INT, d DATE)'</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">EXECUTE</span> cmd<span style="color:#323232">;</span> <span style="color:#969696">-- таблица для Москвы</span>
+
+    cmd <span style="color:#323232">:=</span> <span style="color:#3b6ac8">replace</span><span style="color:#323232">(</span>cmd<span style="color:#323232">,</span> <span style="color:#1094a0">'city_msk'</span><span style="color:#323232">,</span> <span style="color:#1094a0">'city_brn'</span><span style="color:#323232">);</span>
+    <span style="color:#3b6ac8">EXECUTE</span> cmd<span style="color:#323232">;</span> <span style="color:#969696">-- таблица для Барнаула</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DO
+</pre></div>
+<p class="C">
+Создаем две таблицы с одинаковой структурой. Для этого текст команд CREATE
+TABLE передаем в качестве строки в EXECUTE.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Убедимся, что таблицы созданы:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dt</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+          List of relations
+ Schema |   Name   | Type  |  Owner  
+--------+----------+-------+---------
+ public | city_brn | table | student
+ public | city_msk | table | student
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+EXECUTE..INTO. Возврат одной строки
+</h1>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">'INSERT INTO city_msk (qty,d) </span>
+<span style="color:#1094a0">                 VALUES (round(random()*100), current_date)</span>
+<span style="color:#1094a0">                 RETURNING id, qty, d'</span><span style="color:#323232">;</span>
+    rec <span style="color:#a00050">record</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">EXECUTE</span> cmd <span style="color:#3b6ac8">INTO</span> rec<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'id : %, qty: %, d: %'</span><span style="color:#323232">,</span> rec.id<span style="color:#323232">,</span> rec.qty<span style="color:#323232">,</span> rec.d<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  id : 1, qty: 16, d: 2017-07-22
+DO
+</pre></div>
+<p class="C">
+Фраза INTO позволяет вернуть ровно одну строку (первую если несколько).
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Для проверки результата выполнения динамической команды можно использовать
+FOUND и GET DIAGNOSTICS, как и в случае статических команд.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    <span style="color:#969696">-- Добавим в таблицу Барнаула по строке за каждый день года</span>
+    s <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">to_char</span><span style="color:#323232">(</span><span style="color:#3b6ac8">current_date</span><span style="color:#323232">,</span> <span style="color:#1094a0">'YYYY'</span><span style="color:#323232">)</span> || <span style="color:#1094a0">'-01-01'</span><span style="color:#323232">;</span>
+    e <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">to_char</span><span style="color:#323232">(</span><span style="color:#3b6ac8">current_date</span><span style="color:#323232">,</span> <span style="color:#1094a0">'YYYY'</span><span style="color:#323232">)</span> || <span style="color:#1094a0">'-12-31'</span><span style="color:#323232">;</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">format</span><span style="color:#323232">(</span>
+            <span style="color:#1094a0">'INSERT INTO city_brn (qty,d) </span>
+<span style="color:#1094a0">             SELECT round(random()*100), y.d</span>
+<span style="color:#1094a0">             FROM   generate_series(</span>
+<span style="color:#1094a0">                        %L::timestamp,%L::timestamp,%L::interval</span>
+<span style="color:#1094a0">                    ) as y(d)'</span><span style="color:#323232">,</span>
+        s<span style="color:#323232">,</span> e<span style="color:#323232">,</span> <span style="color:#1094a0">'1 day'</span><span style="color:#323232">);</span>
+    cmd_count <span style="color:#a00050">bigint</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">EXECUTE</span> cmd<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">GET DIAGNOSTICS</span> cmd_count <span style="color:#323232">=</span> ROW_COUNT<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'Добавлено строк: %'</span><span style="color:#323232">,</span> cmd_count<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  Добавлено строк: 365
+DO
+</pre></div>
+<p class="C">
+Для вставки литералов используются спецификаторы %L функции format.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+EXECUTE..USING. Параметры
+</h1>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">'SELECT id, qty FROM city_brn WHERE d = $1';</span>
+<span style="color:#1094a0">    query_date1 date := current_date;</span>
+<span style="color:#1094a0">    query_date2 date := current_date - '</span><span style="color:#1094a0">1</span> <span style="color:#3b6ac8">day</span><span style="color:#1094a0">'::interval;</span>
+<span style="color:#1094a0">    rec record;</span>
+<span style="color:#1094a0">BEGIN</span>
+<span style="color:#1094a0">    EXECUTE cmd INTO rec USING query_date1;</span>
+<span style="color:#1094a0">    RAISE NOTICE '</span><span style="color:#323232">%:</span> id <span style="color:#323232">: %,</span> qty<span style="color:#323232">: %</span><span style="color:#1094a0">', query_date1, rec.id, rec.qty;</span>
+<span style="color:#1094a0"></span>
+<span style="color:#1094a0">    EXECUTE cmd INTO rec USING query_date2;</span>
+<span style="color:#1094a0">    RAISE NOTICE '</span><span style="color:#323232">%:</span> id <span style="color:#323232">: %,</span> qty<span style="color:#323232">: %</span><span style="color:#1094a0">', query_date2, rec.id, rec.qty;</span>
+<span style="color:#1094a0">END;</span>
+<span style="color:#1094a0">$$;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  2017-07-22: id : 203, qty: 33
+NOTICE:  2017-07-21: id : 202, qty: 26
+DO
+</pre></div>
+<p class="C">
+Если динамический запрос использует параметры, то нужно использовать фразу
+USING.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Этот же запрос можно выполнить с функцией format вместо параметра (USING).
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    query_date <span style="color:#a00050">date</span> <span style="color:#323232">:=</span> <span style="color:#3b6ac8">current_date</span><span style="color:#323232">;</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">format</span><span style="color:#323232">(</span>
+        <span style="color:#1094a0">'SELECT id, qty FROM city_brn WHERE d = %L::date'</span><span style="color:#323232">,</span> query_date<span style="color:#323232">::</span><span style="color:#a00050">text</span>
+    <span style="color:#323232">);</span>
+    rec <span style="color:#a00050">record</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">EXECUTE</span> cmd <span style="color:#3b6ac8">INTO</span> rec<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'%: id : %, qty: %'</span><span style="color:#323232">,</span> query_date<span style="color:#323232">,</span> rec.id<span style="color:#323232">,</span> rec.qty<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  2017-07-22: id : 203, qty: 33
+DO
+</pre></div>
+<p class="C">
+Но отказ от использования параметров вынуждает выполнить два лишних приведения
+типов. Сначала переменная типа DATE приводится к строке, а затем, на этапе
+выполнения, строка обратно приводится к DATE.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Имена объектов в тексте команды
+</h1>
+<p class="C">
+Фразу USING нельзя использовать для имен объектов (названия таблиц, столбцов,
+пр.) в динамической команде. Поэтому используем спецификатор %I функции
+format для вставки имени таблицы.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">get_qty</span> <span style="color:#323232">(</span>tab <span style="color:#a00050">text</span><span style="color:#323232">,</span> d <span style="color:#a00050">date</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">int</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">format</span><span style="color:#323232">(</span><span style="color:#1094a0">'SELECT qty FROM %I WHERE d = $1', get_qty.tab);</span>
+<span style="color:#1094a0">    retval int;</span>
+<span style="color:#1094a0">BEGIN</span>
+<span style="color:#1094a0">    EXECUTE cmd INTO retval USING get_qty.d;</span>
+<span style="color:#1094a0">    RETURN retval;</span>
+<span style="color:#1094a0">END;</span>
+<span style="color:#1094a0">$$ LANGUAGE plpgsql;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">select</span> <span style="color:#c73a69">get_qty</span><span style="color:#323232">(</span><span style="color:#1094a0">'city_msk'</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">current_date</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">as</span> qty_msk<span style="color:#323232">,</span>
+          <span style="color:#c73a69">get_qty</span><span style="color:#323232">(</span><span style="color:#1094a0">'city_brn'</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">current_date</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">as</span> qty_brn<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ qty_msk | qty_brn 
+---------+---------
+      16 |      33
+(1 row)
+
+</pre></div>
+<p class="C">
+Теперь имя таблицы можно указывать при вызове функции.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+FOR..EXECUTE. Обработка результата в цикле
+</h1>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $<span style="color:#3b6ac8">do</span>$
+<span style="color:#3b6ac8">DECLARE</span>
+    <span style="color:#969696">-- Формируем строку, используя экранирование знаками $$</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> $cmd$<span style="color:#3b6ac8">SELECT</span>   <span style="color:#c73a69">date_trunc</span><span style="color:#323232">(</span><span style="color:#1094a0">'quarter'</span><span style="color:#323232">,</span> d<span style="color:#323232">)::</span><span style="color:#a00050">date</span> <span style="color:#3b6ac8">AS</span> quarter<span style="color:#323232">,</span> 
+                              <span style="color:#c73a69">sum</span><span style="color:#323232">(</span>qty<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> sum_qty 
+                     <span style="color:#3b6ac8">FROM</span>     city_brn 
+                     <span style="color:#3b6ac8">GROUP BY</span> <span style="color:#c73a69">date_trunc</span><span style="color:#323232">(</span><span style="color:#1094a0">'quarter'</span><span style="color:#323232">,</span> d<span style="color:#323232">)</span> 
+                     <span style="color:#3b6ac8">ORDER BY</span> <span style="color:#1094a0">1</span>$cmd$<span style="color:#323232">;</span> 
+    rec <span style="color:#a00050">record</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">FOR</span> rec <span style="color:#3b6ac8">IN EXECUTE</span> cmd
+    <span style="color:#3b6ac8">LOOP</span>
+        <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'quarter %: sum_qty: %'</span><span style="color:#323232">,</span> rec.quarter<span style="color:#323232">,</span> rec.sum_qty<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END LOOP</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$<span style="color:#3b6ac8">do</span>$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  quarter 2017-01-01: sum_qty: 4448
+NOTICE:  quarter 2017-04-01: sum_qty: 4425
+NOTICE:  quarter 2017-07-01: sum_qty: 5234
+NOTICE:  quarter 2017-10-01: sum_qty: 4266
+DO
+</pre></div>
+<p class="C">
+Результат динамического запроса можно обработать в цикле FOR.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Этот же пример с использованием курсора.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $<span style="color:#3b6ac8">do</span>$
+<span style="color:#3b6ac8">DECLARE</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> $cmd$<span style="color:#3b6ac8">SELECT</span>   <span style="color:#c73a69">date_trunc</span><span style="color:#323232">(</span><span style="color:#1094a0">'quarter'</span><span style="color:#323232">,</span> d<span style="color:#323232">)::</span><span style="color:#a00050">date</span> <span style="color:#3b6ac8">AS</span> quarter<span style="color:#323232">,</span> 
+                              <span style="color:#c73a69">sum</span><span style="color:#323232">(</span>qty<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> sum_qty 
+                     <span style="color:#3b6ac8">FROM</span>     city_brn 
+                     <span style="color:#3b6ac8">GROUP BY</span> <span style="color:#c73a69">date_trunc</span><span style="color:#323232">(</span><span style="color:#1094a0">'quarter'</span><span style="color:#323232">,</span> d<span style="color:#323232">)</span> 
+                     <span style="color:#3b6ac8">ORDER BY</span> <span style="color:#1094a0">1</span>$cmd$<span style="color:#323232">;</span> 
+    cur REFCURSOR<span style="color:#323232">;</span>
+    rec <span style="color:#a00050">record</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    OPEN cur <span style="color:#3b6ac8">FOR EXECUTE</span> cmd<span style="color:#323232">;</span>
+
+    <span style="color:#3b6ac8">FETCH</span> cur <span style="color:#3b6ac8">INTO</span> rec<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'quarter %: sum_qty: %'</span><span style="color:#323232">,</span> rec.quarter<span style="color:#323232">,</span> rec.sum_qty<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">FETCH</span> cur <span style="color:#3b6ac8">INTO</span> rec<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'quarter %: sum_qty: %'</span><span style="color:#323232">,</span> rec.quarter<span style="color:#323232">,</span> rec.sum_qty<span style="color:#323232">;</span>
+    <span style="color:#969696">-- и т.д.</span>
+
+    <span style="color:#3b6ac8">CLOSE</span> cur<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$<span style="color:#3b6ac8">do</span>$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  quarter 2017-01-01: sum_qty: 4448
+NOTICE:  quarter 2017-04-01: sum_qty: 4425
+DO
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+RETURN QUERY EXECUTE. Возврат строк из функции
+</h1>
+<p class="C">
+Оператор RETURN QUERY для возврата строк из функции также может использовать
+динамические запросы.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">sel_city</span> <span style="color:#323232">(</span>tab <span style="color:#a00050">text</span><span style="color:#323232">,</span> lmt <span style="color:#a00050">bigint</span> <span style="color:#323232">=</span> <span style="color:#1094a0">0</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">off</span> <span style="color:#a00050">bigint</span> <span style="color:#323232">=</span> <span style="color:#1094a0">0</span><span style="color:#323232">)</span>
+    <span style="color:#3b6ac8">RETURNS SETOF</span> <span style="color:#a00050">record</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    cmd <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">format</span><span style="color:#323232">(</span><span style="color:#1094a0">'SELECT * FROM %I ORDER BY 1 LIMIT $1 OFFSET $2', tab);</span>
+<span style="color:#1094a0">BEGIN</span>
+<span style="color:#1094a0">    RETURN QUERY EXECUTE cmd USING lmt, off;</span>
+<span style="color:#1094a0">END;</span>
+<span style="color:#1094a0">$$ LANGUAGE plpgsql;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Функция возвращает набор записей неопределенной структуры, поэтому такой
+вызов вернет ошибку:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">sel_city</span> <span style="color:#323232">(</span><span style="color:#1094a0">'city_brn'</span><span style="color:#323232">,</span> <span style="color:#1094a0">5</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  a column definition list is required for functions returning "record"
+LINE 1: SELECT * FROM sel_city ('city_brn', 5);
+                      ^
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+При вызове мы должны явно указать столбцы и типы данных, возвращаемые функцией:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">sel_city</span> <span style="color:#323232">(</span><span style="color:#1094a0">'city_brn'</span><span style="color:#323232">,</span> <span style="color:#1094a0">5</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">as</span> <span style="color:#c73a69">brn</span><span style="color:#323232">(</span>id <span style="color:#a00050">int</span><span style="color:#323232">,</span> qty <span style="color:#a00050">int</span><span style="color:#323232">,</span> d <span style="color:#a00050">date</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id | qty |     d      
+----+-----+------------
+  1 |  75 | 2017-01-01
+  2 |  21 | 2017-01-02
+  3 |  69 | 2017-01-03
+  4 |  75 | 2017-01-04
+  5 |  10 | 2017-01-05
+(5 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">sel_city</span> <span style="color:#323232">(</span><span style="color:#1094a0">'city_brn'</span><span style="color:#323232">,</span> <span style="color:#1094a0">5</span><span style="color:#323232">,</span> <span style="color:#1094a0">5</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">as</span> <span style="color:#c73a69">brn</span><span style="color:#323232">(</span>id <span style="color:#a00050">int</span><span style="color:#323232">,</span> qty <span style="color:#a00050">int</span><span style="color:#323232">,</span> d <span style="color:#a00050">date</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ id | qty |     d      
+----+-----+------------
+  6 |  92 | 2017-01-06
+  7 |  28 | 2017-01-07
+  8 |  41 | 2017-01-08
+  9 |   7 | 2017-01-09
+ 10 |  53 | 2017-01-10
+(5 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Конец демонстрации.
+</p>
+</body>
+</html>

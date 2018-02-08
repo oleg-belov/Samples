@@ -1,0 +1,959 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+Роли и подключение
+</h1>
+<p class="C">
+Начнем с создания роли и базы данных. Чтобы роль смогла подключиться, она
+должна иметь:
+</p>
+<ul class="U">
+<li>разрешение в pg_hba.conf;</li>
+<li>атрибут LOGIN;</li>
+<li>привилегию CONNECT к базе.</li>
+</ul>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Посмотрим на pg_hba.conf (только не закомментированные строки):
+</p>
+<div class="E">
+<pre style="color:#323232; background-color:#ffffff;  ">postgres$ <span style="color:#00a150">egrep</span> <span style="color:#1094a0">'^[^#]'</span> <span style="color:#323232">/</span>etc<span style="color:#323232">/</span>postgresql<span style="color:#323232">/</span><span style="color:#1094a0">9.6</span><span style="color:#323232">/</span>main<span style="color:#323232">/</span>pg_hba.conf
+</pre>
+</div>
+<div class="R"><pre class="R">
+local   all             postgres                                peer
+local   all             all                                     peer
+host    all             all             127.0.0.1/32            md5
+host    all             all             ::1/128                 md5
+</pre></div>
+<p class="C">
+(В зависимости от сборки содержимое файла может отличаться.)
+</p>
+<p class="C">
+Мы будем использовать подключение по TCP/IP (host) и установим пользователю
+пароль.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Создаем роль и базу данных. В этой теме нам важно, от имени какой роли
+выполняются команды, поэтому имя текущей роли вынесено в приглашение.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#3b6ac8">CREATE ROLE</span> r1 LOGIN <span style="color:#3b6ac8">PASSWORD</span> <span style="color:#1094a0">'r1pass'</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE ROLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#3b6ac8">CREATE DATABASE</span> access_overview<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE DATABASE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Осталось разобраться с привилегией CONNECT. Ее наличие можно проверить с
+помощью функции:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">has_database_privilege</span><span style="color:#323232">(</span><span style="color:#1094a0">'r1'</span><span style="color:#323232">,</span><span style="color:#1094a0">'access_overview'</span><span style="color:#323232">,</span><span style="color:#1094a0">'connect'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ has_database_privilege 
+------------------------
+ t
+(1 row)
+
+</pre></div>
+<p class="C">
+Оказывается, привилегия есть. Откуда она появилась, ведь базу данных мы
+создали только что?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Проверим доступы для базы данных (столбец Access privileges):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#00a150">\l</span> access_overview
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                                  List of databases
+      Name       |  Owner  | Encoding |   Collate   |    Ctype    | Access privileges 
+-----------------+---------+----------+-------------+-------------+-------------------
+ access_overview | student | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+(1 row)
+
+</pre></div>
+<p class="C">
+Поле пустое. Это неудобная особенность PostgreSQL: пустое поле означает
+"привилегии по умолчанию", но какие конкретно это привилегии, нужно просто
+знать.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Немного схитрим: выдадим и отзовем какую-нибудь привилегию для базы, которой
+точно не было. Например, так:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#3b6ac8">GRANT</span> CONNECT <span style="color:#3b6ac8">ON DATABASE</span> access_overview <span style="color:#3b6ac8">TO</span> r1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+GRANT
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#3b6ac8">REVOKE</span> CONNECT <span style="color:#3b6ac8">ON DATABASE</span> access_overview <span style="color:#3b6ac8">FROM</span> r1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+REVOKE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь посмотрим "проявившиеся" привилегии еще раз:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#00a150">\l</span> access_overview
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                                   List of databases
+      Name       |  Owner  | Encoding |   Collate   |    Ctype    |  Access privileges  
+-----------------+---------+----------+-------------+-------------+---------------------
+ access_overview | student | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =Tc/student        +
+                 |         |          |             |             | student=CTc/student
+(1 row)
+
+</pre></div>
+<p class="C">
+Привилегии отображаются в формате: роль=привилегии/кем_предоставлены. Каждая
+привилегия кодируется одним символом, в частности:
+</p>
+<ul class="U">
+<li>C = create;</li>
+<li>c = connect;</li>
+<li>T = temporary.</li>
+</ul>
+<p class="C">
+Если имя роли опущено, то имеется в виду псевдороль public.
+</p>
+<p class="C">
+Как видно, полный доступ к БД имеет ее владелец (столбец Owner), а кроме
+того, public может подключаться и создавать временные таблицы. Эти привилегии
+public автоматически получает каждый раз, когда создается новая база.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь понятно, откуда у r1 привилегия CONNECT - она получена от групповой
+роли public. Попробуем подключиться:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#00a150">\c</span> <span style="color:#1094a0">&quot;host=localhost user=r1 dbname=access_overview password=r1pass&quot;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+You are now connected to database "access_overview" as user "r1" on host "localhost" at port "5432".
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Создание объектов
+</h1>
+<p class="C">
+Пусть теперь роль r1 создаст одноименную схему и несколько объектов в ней.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE SCHEMA</span> r1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  permission denied for database access_overview
+</pre></div>
+<p class="C">
+В чем проблема?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+У роли нет привилегии для создания схем в БД. Выдадим ее:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\c</span> <span style="color:#1094a0">&quot;dbname=access_overview&quot;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+You are now connected to database "access_overview" as user "student" via socket in "/var/run/postgresql" at port "5432".
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#3b6ac8">GRANT CREATE ON DATABASE</span> access_overview <span style="color:#3b6ac8">TO</span> r1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+GRANT
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Пробуем еще раз:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#00a150">\c</span> <span style="color:#1094a0">&quot;host=localhost user=r1 dbname=access_overview password=r1pass&quot;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+You are now connected to database "access_overview" as user "r1" on host "localhost" at port "5432".
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE SCHEMA</span> r1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE SCHEMA
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь, поскольку роль r1 является владельцем своей схемы, она имеет все
+привилегии на нее и может создавать в ней любые объекты. По умолчанию будет
+использоваться именно эта схема:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">current_schemas</span><span style="color:#323232">(</span><span style="color:#3b6ac8">true</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+    current_schemas     
+------------------------
+ {pg_catalog,r1,public}
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Создадим две таблицы.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">t1</span><span style="color:#323232">(</span>n <span style="color:#a00050">numeric</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t1 <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">42</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">t2</span><span style="color:#323232">(</span>n <span style="color:#a00050">numeric</span><span style="color:#323232">,</span> who <span style="color:#a00050">text</span> <span style="color:#3b6ac8">DEFAULT current_user</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> <span style="color:#c73a69">t2</span><span style="color:#323232">(</span>n<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Доступ к объектам
+</h1>
+<p class="C">
+Теперь создадим роль r2, из-под которой будем обращаться к объектам,
+принадлежащим r1.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\c</span> <span style="color:#1094a0">&quot;dbname=access_overview&quot;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+You are now connected to database "access_overview" as user "student" via socket in "/var/run/postgresql" at port "5432".
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#3b6ac8">CREATE ROLE</span> r2 LOGIN <span style="color:#3b6ac8">PASSWORD</span> <span style="color:#1094a0">'r2pass'</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE ROLE
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#00a150">\c</span> <span style="color:#1094a0">&quot;host=localhost user=r2 dbname=access_overview password=r2pass&quot;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+You are now connected to database "access_overview" as user "r2" on host "localhost" at port "5432".
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Попробуем обратиться к таблице t1.
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ERROR:  permission denied for schema r1
+LINE 1: SELECT * FROM r1.t1;
+                      ^
+</pre></div>
+<p class="C">
+В чем причина ошибки?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Нет доступа к схеме, так как мы не суперпользователь и не владелец.
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dn</span><span style="color:#323232">+</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+                          List of schemas
+  Name  |  Owner   |  Access privileges   |      Description       
+--------+----------+----------------------+------------------------
+ public | postgres | postgres=UC/postgres+| standard public schema
+        |          | =UC/postgres         | 
+ r1     | r1       |                      | 
+(2 rows)
+
+</pre></div>
+<p class="C">
+Формат вывода привилегий нам уже знаком, единственная новая привилегия здесь:
+</p>
+<ul class="U">
+<li>U = usage.</li>
+</ul>
+<p class="C">
+Кстати, видно, что псевдороль public имеет доступ к схеме public.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Предоставим доступ к схеме для r2. Это может сделать r1, как владелец.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">student<span style="color:#323232">=</span># <span style="color:#00a150">\c</span> <span style="color:#1094a0">&quot;host=localhost user=r1 dbname=access_overview password=r1pass&quot;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+You are now connected to database "access_overview" as user "r1" on host "localhost" at port "5432".
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">GRANT CREATE</span><span style="color:#323232">,</span> USAGE <span style="color:#3b6ac8">ON SCHEMA</span> r1 <span style="color:#3b6ac8">TO</span> r2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+GRANT
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Попробуем снова обратиться к таблице:
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ERROR:  permission denied for relation t1
+</pre></div>
+<p class="C">
+В чем причина ошибки?
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+На этот раз у нас есть доступ к схеме, но нет доступа к самой таблице.
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dp</span> r1.t1
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+                            Access privileges
+ Schema | Name | Type  | Access privileges | Column privileges | Policies 
+--------+------+-------+-------------------+-------------------+----------
+ r1     | t1   | table |                   |                   | 
+(1 row)
+
+</pre></div>
+<p class="C">
+И снова видим пустое поле, которое обозначает "привилегии по умолчанию". В
+данном случае это означает, что доступ есть только у владельца.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Предоставим доступ на чтение и изменение:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">GRANT SELECT</span><span style="color:#323232">,</span><span style="color:#3b6ac8">UPDATE ON</span> r1.t1 <span style="color:#3b6ac8">TO</span> r2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+GRANT
+</pre></div>
+<p class="C">
+А для второй таблицы - доступ на вставку и чтение одного столбца:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">GRANT SELECT</span><span style="color:#323232">(</span>n<span style="color:#323232">),</span><span style="color:#3b6ac8">INSERT ON</span> r1.t2 <span style="color:#3b6ac8">TO</span> r2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+GRANT
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Посмотрим, как изменились привилегии:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dp</span> r1.<span style="color:#323232">*</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                            Access privileges
+ Schema | Name | Type  | Access privileges | Column privileges | Policies 
+--------+------+-------+-------------------+-------------------+----------
+ r1     | t1   | table | r1=arwdDxt/r1    +|                   | 
+        |      |       | r2=rw/r1          |                   | 
+ r1     | t2   | table | r1=arwdDxt/r1    +| n:               +| 
+        |      |       | r2=a/r1           |   r2=r/r1         | 
+(2 rows)
+
+</pre></div>
+<p class="C">
+Новые обозначения (иногда не вполне очевидные) для привилегий:
+</p>
+<ul class="U">
+<li>a = insert</li>
+<li>r = select</li>
+<li>w = update</li>
+<li>d = delete</li>
+<li>D = truncate</li>
+<li>x = reference</li>
+<li>t = trigger</li>
+</ul>
+<p class="C">
+Привилегии для столбцов отображаются отдельно.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+На этот раз обращение увенчается успехом.
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">UPDATE</span> r1.t1 <span style="color:#3b6ac8">SET</span> n <span style="color:#323232">=</span> n <span style="color:#323232">+</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+UPDATE 1
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ n  
+----
+ 43
+(1 row)
+
+</pre></div>
+<p class="C">
+Другие операции по-прежнему запрещены:
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DELETE FROM</span> r1.t1<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ERROR:  permission denied for relation t1
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+И вторая таблица:
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> r1.<span style="color:#c73a69">t2</span><span style="color:#323232">(</span>n<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+INSERT 0 1
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> n <span style="color:#3b6ac8">FROM</span> r1.t2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ n 
+---
+ 1
+ 2
+(2 rows)
+
+</pre></div>
+<p class="C">
+А чтение другого столбца запрещено:
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ERROR:  permission denied for relation t2
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Передача управления привилегиями
+</h1>
+<p class="C">
+Привилегию можно выдать с правом управления привилегией (дальнейшей ее
+перевыдачи третьим ролям). Попробуем:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">GRANT SELECT</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">DELETE ON</span> t2 <span style="color:#3b6ac8">TO</span> r2 <span style="color:#3b6ac8">WITH GRANT OPTION</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+GRANT
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В списке привилегий право управления обозначается звездочкой справа от
+символа самой привилегии.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dp</span> t2
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                            Access privileges
+ Schema | Name | Type  | Access privileges | Column privileges | Policies 
+--------+------+-------+-------------------+-------------------+----------
+ r1     | t2   | table | r1=arwdDxt/r1    +| n:               +| 
+        |      |       | r2=ar*d*/r1       |   r2=r/r1         | 
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Право управления можно отозвать отдельно от привилегии:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">REVOKE GRANT OPTION FOR DELETE ON</span> t2 <span style="color:#3b6ac8">FROM</span> r2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+REVOKE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dp</span> t2
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                            Access privileges
+ Schema | Name | Type  | Access privileges | Column privileges | Policies 
+--------+------+-------+-------------------+-------------------+----------
+ r1     | t2   | table | r1=arwdDxt/r1    +| n:               +| 
+        |      |       | r2=ar*d/r1        |   r2=r/r1         | 
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+При отзыве самой привилегии, право управления, конечно, тоже отзывается:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">REVOKE SELECT ON</span> t2 <span style="color:#3b6ac8">FROM</span> r2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+REVOKE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dp</span> t2
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                            Access privileges
+ Schema | Name | Type  | Access privileges | Column privileges | Policies 
+--------+------+-------+-------------------+-------------------+----------
+ r1     | t2   | table | r1=arwdDxt/r1    +|                   | 
+        |      |       | r2=ad/r1          |                   | 
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Функции
+</h1>
+<p class="C">
+Единственная привилегия для функций - выполнение. Создадим какую-нибудь
+функцию:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">f</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">integer</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)::</span><span style="color:#a00050">integer</span> <span style="color:#3b6ac8">FROM</span> r1.t2<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">VOLATILE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Тонкий момент: псевдороль public автоматически получает эту привилегию для
+любой создаваемой функции. Поэтому, например, r2 может выполнить функцию,
+которую мы только что создали.
+</p>
+<p class="C">
+Отчасти такая "дыра" компенсируется тем, что по умолчанию функция выполняется
+с правами вызывающего:
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> r1.<span style="color:#c73a69">f</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ERROR:  permission denied for relation t2
+CONTEXT:  SQL function "f" statement 1
+</pre></div>
+<p class="C">
+Поэтому роль r2 не сможет получить доступ к объектам, на которые ей не
+выданы привилегии.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Более того, функция вызывается в окружении вызывающей роли, включая путь
+поиска. Это свойство позволяет писать "универсальные" функции. Уберем явное
+имя схемы:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">f</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">integer</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)::</span><span style="color:#a00050">integer</span> <span style="color:#3b6ac8">FROM</span> t2<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">SECURITY INVOKER VOLATILE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Фраза SECURITY INVOKER подразумевается по умолчанию.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Если r2 создаст свою таблицу t2, функция будет работать с любой из них,
+в зависимости от вызвавшего:
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">t2</span><span style="color:#323232">(</span>n <span style="color:#a00050">numeric</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+CREATE TABLE
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> r1.<span style="color:#c73a69">f</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ f 
+---
+ 0
+(1 row)
+
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> r1.<span style="color:#c73a69">f</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ f 
+---
+ 2
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Другой доступный вариант - объявить функцию, как работающую с правами
+создавшего (SECURITY DEFINER):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OR REPLACE FUNCTION</span> <span style="color:#c73a69">f</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">integer</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">count</span><span style="color:#323232">(*)::</span><span style="color:#a00050">integer</span> <span style="color:#3b6ac8">FROM</span> t2<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">SECURITY DEFINER VOLATILE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В этом случае функция работает в контексте создавшей ее роли, независимо от
+того, кто ее вызывает:
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> r1.<span style="color:#c73a69">f</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ f 
+---
+ 2
+(1 row)
+
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> r1.<span style="color:#c73a69">f</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ f 
+---
+ 2
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В таком случае, конечно, надо внимательно следить за выданными
+привилегиями. Скорее всего, потребуется отозвать EXECUTE у роли public и
+выдавать ее явно только нужным ролям.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA</span> r1 <span style="color:#3b6ac8">FROM</span> public<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+REVOKE
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> r1.<span style="color:#c73a69">f</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ERROR:  permission denied for function f
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Дело осложняется тем, что привилегия на выполнение автоматически выдается роли
+public на каждую вновь создаваемую функцию, и это поведение нельзя изменить.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">f_new</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">integer</span> <span style="color:#3b6ac8">AS</span> $$ <span style="color:#3b6ac8">SELECT</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span> $$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> r1.<span style="color:#c73a69">f_new</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ f_new 
+-------
+     1
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Однако можно автоматически отзывать эту привилегию с помощью механизма
+привилегий по умолчанию:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER DEFAULT PRIVILEGES</span>
+<span style="color:#3b6ac8">FOR ROLE</span> r1
+<span style="color:#3b6ac8">REVOKE EXECUTE ON FUNCTIONS FROM</span> public<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER DEFAULT PRIVILEGES
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#00a150">\ddp</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+           Default access privileges
+ Owner | Schema |   Type   | Access privileges 
+-------+--------+----------+-------------------
+ r1    |        | function | r1=X/r1
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">f_new</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">f_new</span><span style="color:#323232">()</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">integer</span> <span style="color:#3b6ac8">AS</span> $$ <span style="color:#3b6ac8">SELECT</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span> $$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> r1.<span style="color:#c73a69">f_new</span><span style="color:#323232">();</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ERROR:  permission denied for function f_new
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Политики защиты строк
+</h1>
+<p class="C">
+Политики защиты позволяют разграничить доступ к таблице по строкам в
+зависимости от текущей роли.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ n | who 
+---+-----
+ 1 | r1
+ 2 | r2
+(2 rows)
+
+</pre></div>
+<p class="C">
+Для примера сделаем так, чтобы роль, читающая таблицу, могла видеть только
+"свои" строки, в которых поле who содержит имя текущей роли.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE POLICY</span> who_policy <span style="color:#3b6ac8">ON</span> r1.t2
+<span style="color:#3b6ac8">USING</span> <span style="color:#323232">(</span>who <span style="color:#323232">=</span> <span style="color:#3b6ac8">current_user</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE POLICY
+</pre></div>
+<p class="C">
+Чтобы защита начала работать, ее необходимо включить:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER TABLE</span> r1.t2 <span style="color:#3b6ac8">ENABLE ROW LEVEL SECURITY</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER TABLE
+</pre></div>
+<p class="C">
+И вернем роли r2 доступ к таблице на чтение:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">GRANT SELECT ON</span> r1.t2 <span style="color:#3b6ac8">TO</span> r2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+GRANT
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь роль r2 видит только "свои" строки. Фактически, при выполнении запроса
+каждая строка проверяется на выполнение указанного в политике предиката.
+</p>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ n | who 
+---+-----
+ 2 | r2
+(1 row)
+
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> r1.<span style="color:#c73a69">t2</span><span style="color:#323232">(</span>n<span style="color:#323232">)</span> <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+INSERT 0 1
+</pre></div>
+<div class="S2">
+<pre style="color:#323232; background-color:#ffffff;  ">r2<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R2"><pre class="R2">
+ n | who 
+---+-----
+ 2 | r2
+ 3 | r2
+(2 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+На владельца таблицы политики защиты строк обычно не действуют:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ n | who 
+---+-----
+ 1 | r1
+ 2 | r2
+ 3 | r2
+(3 rows)
+
+</pre></div>
+<p class="C">
+Но можно ограничить и самого себя:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER TABLE</span> r1.t2 <span style="color:#3b6ac8">FORCE ROW LEVEL SECURITY</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  ">r1<span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> r1.t2<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ n | who 
+---+-----
+ 1 | r1
+(1 row)
+
+</pre></div>
+<p class="C">
+Конец демонстрации.
+</p>
+</body>
+</html>

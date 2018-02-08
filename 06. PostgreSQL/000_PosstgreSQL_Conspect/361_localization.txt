@@ -1,0 +1,677 @@
+
+ЛОКАЛИЗАЦИЯ
+~~~~~~~~~~~
+
+Убедимся, в ОС сервера установлены локали с поддержкой русского языка
+
+locale -a|grep ru
+ru_RU.koi8r
+ru_RU.utf8
+
+.......................................................................
+
+По умолчанию новая БД получает параметры локализации
+такие же как у шаблона template1
+
+        => create database db21_utf8;
+        CREATE DATABASE
+
+        => \list db21_utf8
+                                       List of databases
+           Name    |  Owner   | Encoding |  Collate   |   Ctype    | Access privileges 
+        -----------+----------+----------+------------+------------+-------------------
+         db21_utf8 | postgres | UTF8     | ru_RU.utf8 | ru_RU.utf8 | 
+        (1 row)
+        
+
+        => \list template1
+                                         List of databases
+           Name    |  Owner   | Encoding |  Collate   |   Ctype    |   Access privileges   
+        -----------+----------+----------+------------+------------+-----------------------
+         template1 | postgres | UTF8     | ru_RU.utf8 | ru_RU.utf8 | =c/postgres          +
+                   |          |          |            |            | postgres=CTc/postgres
+        (1 row)
+        
+
+.......................................................................
+
+Установленные категории локали
+
+        => select name, setting, context from pg_settings where name like 'lc%';
+            name     |  setting   |  context  
+        -------------+------------+-----------
+         lc_collate  | ru_RU.utf8 | internal
+         lc_ctype    | ru_RU.utf8 | internal
+         lc_messages | en_US.utf8 | superuser
+         lc_monetary | ru_RU.utf8 | user
+         lc_numeric  | ru_RU.utf8 | user
+         lc_time     | ru_RU.utf8 | user
+        (6 rows)
+        
+
+lc_collate и lc_ctype изменить нельзя, они задаются только при создании БД
+
+.......................................................................
+
+ИНИЦИАЛИЗАЦИЯ КЛАСТЕРА
+~~~~~~~~~~~~~~~~~~~~~~
+
+Такая конфигурация была получена при инициализации кластера командой
+
+$ initdb --locale=ru_RU.utf8 --lc-messages=en_US.utf8
+
+
+.......................................................................
+
+Если в initdb не указывать параметры локализации, то будут использованы те,
+что установлены в ОС
+
+locale 
+LANG=en_US.UTF-8
+LANGUAGE=
+LC_CTYPE="en_US.UTF-8"
+LC_NUMERIC=ru_RU.UTF-8
+LC_TIME=ru_RU.UTF-8
+LC_COLLATE="en_US.UTF-8"
+LC_MONETARY=ru_RU.UTF-8
+LC_MESSAGES=en_US.UTF8
+LC_PAPER=ru_RU.UTF-8
+LC_NAME=ru_RU.UTF-8
+LC_ADDRESS=ru_RU.UTF-8
+LC_TELEPHONE=ru_RU.UTF-8
+LC_MEASUREMENT=ru_RU.UTF-8
+LC_IDENTIFICATION=ru_RU.UTF-8
+LC_ALL=
+
+.......................................................................
+
+Видим, что в ОС поддерживается больше категорий локалей, чем в PostgreSQL
+Также есть переменные, имеющие особое значение:
+   LC_ALL   - если установлена, то используется для всех категорий локалей,
+              даже если те заданы
+   LANG     - используется для тех категорий локалей,
+              для которых значение не задано
+   LANGUAGE - может использоваться вместо LC_MESSAGES (пример ниже)
+
+Каждый серверный процесс при старте сбрасывает значение LC_ALL и устанавливает
+переменные для категорий локали в соответсвии с параметрами lc%
+
+.......................................................................
+
+РАБОТА КЛИЕНТА И СЕРВЕРА В РАЗНЫХ КОДИРОВКАХ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Для демонстрации работы клиента с кодировкой отличной от кодировки БД,
+создадим БД в кодировке KOI8R, а клиент останется в UTF8.
+Чтобы база данных успешно создалась нужно учесть следующее:
+ 1. В ОС установлена локаль с нужной кодировкой символов
+ 2. Использовать шаблон БД template0
+
+        => create database db21_koi8r
+        =>    encoding = 'KOI8R'
+        =>    lc_collate = 'ru_RU.koi8r'
+        =>    lc_ctype = 'ru_RU.koi8r'
+        =>    template = template0;
+        CREATE DATABASE
+
+        => \l db21_*
+                                        List of databases
+            Name    |  Owner   | Encoding |   Collate   |    Ctype    | Access privileges 
+        ------------+----------+----------+-------------+-------------+-------------------
+         db21_koi8r | postgres | KOI8R    | ru_RU.koi8r | ru_RU.koi8r | 
+         db21_utf8  | postgres | UTF8     | ru_RU.utf8  | ru_RU.utf8  | 
+        (2 rows)
+        
+
+.......................................................................
+
+Последовательно подключимся к базам db21_utf8 и db_koi8r и убедимся,
+что работает автоматическая перекодировка символов
+
+        => \c db21_utf8
+        You are now connected to database "db21_utf8" as user "postgres".
+
+Кодировка клиента и сервера
+Кодировку клиента можно устанавливать меняя значение параметра client_encoding
+
+        => select name, setting, context from pg_settings where name like '%encoding';
+              name       | setting | context  
+        -----------------+---------+----------
+         client_encoding | UTF8    | user
+         server_encoding | UTF8    | internal
+        (2 rows)
+        
+
+        => create table tab as select 'БД с кодировкой UTF8'::text as col;
+        SELECT 1
+
+        => select * from tab;
+                 col          
+        ----------------------
+         БД с кодировкой UTF8
+        (1 row)
+        
+
+.......................................................................
+
+        => \c db21_koi8r
+        You are now connected to database "db21_koi8r" as user "postgres".
+
+Кодировка клиента и сервера
+Кодировку клиента psql можно посмотреть и установить командой \encoding
+
+        => \encoding
+        KOI8R
+
+        => \encoding UTF8
+
+        => select pg_client_encoding(), getdatabaseencoding();
+         pg_client_encoding | getdatabaseencoding 
+        --------------------+---------------------
+         UTF8               | KOI8R
+        (1 row)
+        
+
+        => create table tab as select 'БД с кодировкой KOI8R'::text as col;
+        SELECT 1
+
+        => select * from tab;
+                  col          
+        -----------------------
+         БД с кодировкой KOI8R
+        (1 row)
+        
+
+.......................................................................
+
+Перекодировка из UTF8 в KOI8R работает.
+Список доступных перекодировок для koi8
+
+        => \dcS *koi8*
+                                      List of conversions
+           Schema   |          Name          |    Source     |  Destination  | Default? 
+        ------------+------------------------+---------------+---------------+----------
+         pg_catalog | iso_8859_5_to_koi8_r   | ISO_8859_5    | KOI8R         | yes
+         pg_catalog | koi8_r_to_iso_8859_5   | KOI8R         | ISO_8859_5    | yes
+         pg_catalog | koi8_r_to_mic          | KOI8R         | MULE_INTERNAL | yes
+         pg_catalog | koi8_r_to_utf8         | KOI8R         | UTF8          | yes
+         pg_catalog | koi8_r_to_windows_1251 | KOI8R         | WIN1251       | yes
+         pg_catalog | koi8_r_to_windows_866  | KOI8R         | WIN866        | yes
+         pg_catalog | koi8_u_to_utf8         | KOI8U         | UTF8          | yes
+         pg_catalog | mic_to_koi8_r          | MULE_INTERNAL | KOI8R         | yes
+         pg_catalog | utf8_to_koi8_r         | UTF8          | KOI8R         | yes
+         pg_catalog | utf8_to_koi8_u         | UTF8          | KOI8U         | yes
+         pg_catalog | windows_1251_to_koi8_r | WIN1251       | KOI8R         | yes
+         pg_catalog | windows_866_to_koi8_r  | WIN866        | KOI8R         | yes
+        (12 rows)
+        
+
+.......................................................................
+
+        => \c db21_utf8
+        You are now connected to database "db21_utf8" as user "postgres".
+
+СООБЩЕНИЯ СЕРВЕРА
+~~~~~~~~~~~~~~~~~
+
+Сообщения сервера можно выводить на разных языках
+Предварительно нужно убедиться, что PostgreSQL собран с поддержкой NLS
+
+        => \! pg_config --configure
+        '--prefix=/usr/local/pgsql' '--with-pgport=5432' '--enable-nls'
+
+.......................................................................
+
+Список доступных языков и файлы сообщений здесь:
+
+        => \! ls -l /usr/local/pgsql/share/locale
+        total 72
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 cs
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 de
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 es
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 fr
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 id
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 it
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 ja
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 ko
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 nb
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 pl
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 pt_BR
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 ro
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 ru
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 sv
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 ta
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 tr
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 zh_CN
+        drwxr-xr-x 3 root root 4096 мая   19 17:34 zh_TW
+
+.......................................................................
+
+Для записи в журнал будем использовать ошибочную команду
+
+        => select1;
+        ERROR:  syntax error at or near "select1"
+        LINE 1: select1;
+                ^
+
+        => \! tail -n 2 ~postgres/logfile
+        ERROR:  syntax error at or near "select1" at character 1
+        STATEMENT:  select1;
+
+В журнал сервера записывается такое же сообщение об ошибке и
+сама ошибочная команда
+
+.......................................................................
+
+Для вывода сообщений на русском языке изменим параметр LC_MESSAGES.
+Глобально это можно сделать в конфигурационном файле,
+но для целей демонстрации установим на уровне сессии суперпользователя
+
+        => set lc_messages to 'ru_RU.UTF8';
+        SET
+
+        => select1;
+        ОШИБКА:  ошибка синтаксиса (примерное положение: "select1")
+        LINE 1: select1;
+                ^
+
+        => \! tail -n 2 ~postgres/logfile
+        ОШИБКА:  ошибка синтаксиса (примерное положение: "select1") (символ 1)
+        ОПЕРАТОР:  select1;
+
+Теперь сообщение выводится клиенту и в журнал на русском языке
+
+А почему осталась одна строка на английском языке?
+
+.......................................................................
+
+Эту строку выводит клиент psql
+Язык сообщений клиента определяется переменной ОС LC_MESSAGES
+
+        => \q
+LC_MESSAGES=en_US.UTF8
+
+Для полной русификации установим русский язык и для сообщений клиента.
+Мы используем клиент (psql) поставляемый c сервером, поэтому можно не проверять,
+что клиент собран с поддержкой NLS.
+
+export LC_MESSAGES=ru_RU.UTF8 
+
+.......................................................................
+
+        psql 
+
+        => set lc_messages to 'ru_RU.UTF8';
+        SET
+
+        => select1;
+        ОШИБКА:  ошибка синтаксиса (примерное положение: "select1")
+        СТРОКА 1: select1;
+                  ^
+
+Теперь все сообщения на русском языке.
+
+.......................................................................
+
+Переменная LANGUAGE при запуске сервера
+Если при старте сервера установлена переменная LANGUAGE,
+то сообщения сервера будут выдаваться именно на этом языке.
+Параметр LC_MESSAGES будет игнорироваться.
+
+        => \q
+
+pg_ctl stop -m f 
+ожидание завершения работы сервера.... готово
+сервер остановлен
+export LANGUAGE=en 
+pg_ctl start -w -l /home/postgres/logfile 
+waiting for server to start.... done
+server started
+        psql 
+
+.......................................................................
+
+        => set lc_messages to 'ru_RU.UTF8';
+        SET
+
+        => show lc_messages;
+         lc_messages 
+        -------------
+         ru_RU.UTF8
+        (1 row)
+        
+
+        => select1;
+        ERROR:  syntax error at or near "select1"
+        LINE 1: select1;
+                ^
+
+        => \! tail -n 2 ~postgres/logfile
+        ERROR:  syntax error at or near "select1" at character 1
+        STATEMENT:  select1;
+
+Несмотря на то, что мы задали русский язык для вывода сообщений,
+эта установка не действует, т.к. при старте сервера переменная LANGUAGE
+была установлена в английский язык
+
+.......................................................................
+
+ПРАВИЛА СОРТИРОВКИ (COLLATION)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим таблицу с текстовым столбцом и заполним её строками,
+которые представляют собой произвольные числа
+
+        => \c db21_utf8
+        You are now connected to database "db21_utf8" as user "postgres".
+
+        => create table t (code text);
+        CREATE TABLE
+
+        => insert into t 
+        =>    select round(random()*10000000000)::text
+        =>      from generate_series (1,100000);
+        INSERT 0 100000
+
+        => select * from t limit 5;
+            code    
+        ------------
+         2616244182
+         9517870611
+         541770789
+         9997336478
+         8198368405
+        (5 rows)
+        
+
+.......................................................................
+
+Проиндексируем столбец code
+
+        => create index i1 on t (code);
+        CREATE INDEX
+
+        => vacuum analyze t;
+        VACUUM
+
+.......................................................................
+
+Проверим использование индекса в запросах
+
+        => explain (costs off) select * from t where code = '1234567890';
+                        QUERY PLAN                 
+        -------------------------------------------
+         Index Only Scan using i1 on t
+           Index Cond: (code = '1234567890'::text)
+        (2 rows)
+        
+
+        => explain (costs off) select * from t
+        =>    where code between '0000000000' and '0100000000';
+                                          QUERY PLAN                                   
+        -------------------------------------------------------------------------------
+         Index Only Scan using i1 on t
+           Index Cond: ((code >= '0000000000'::text) AND (code <= '0100000000'::text))
+        (2 rows)
+        
+
+Индекс ожидаемо используется
+
+.......................................................................
+
+        => explain (costs off) select * from t where code like '12345%';
+                     QUERY PLAN             
+        ------------------------------------
+         Seq Scan on t
+           Filter: (code ~~ '12345%'::text)
+        (2 rows)
+        
+
+Но в запросе с условием like '12345%' индекс не работает.
+Это неприятная особенность использования локалей отличных от C
+
+.......................................................................
+
+Есть два способа заставить PostgreSQL использовать индекс
+для подобных запросов
+
+1. Использовать индекс с классами операторов:
+   text_pattern_ops, varchar_pattern_ops, bpchar_pattern_ops
+
+        => drop index i1;
+        DROP INDEX
+
+        => create index i2 on t (code text_pattern_ops);
+        CREATE INDEX
+
+        => vacuum analyze t;
+        VACUUM
+
+        => explain (costs off) select * from t where code like '12345%';
+                                       QUERY PLAN                               
+        ------------------------------------------------------------------------
+         Index Only Scan using i2 on t
+           Index Cond: ((code ~>=~ '12345'::text) AND (code ~<~ '12346'::text))
+           Filter: (code ~~ '12345%'::text)
+        (3 rows)
+        
+
+.......................................................................
+
+Обратная сторона этого подхода в том, что теперь индекс не будет
+использоваться там, где использовался раньше
+
+        => explain (costs off) select * from t
+        =>    where code between '0000000000' and '0100000000';
+                                        QUERY PLAN                                 
+        ---------------------------------------------------------------------------
+         Seq Scan on t
+           Filter: ((code >= '0000000000'::text) AND (code <= '0100000000'::text))
+        (2 rows)
+        
+
+Можно использовать оба индекса одновременно,
+но это значительные накладные расходы.
+
+.......................................................................
+
+2. Использовать правило сортировки "C" для столбца code
+
+        => drop table t;
+        DROP TABLE
+
+        => create table t (code text collate "C");
+        CREATE TABLE
+
+        => insert into t 
+        =>    select round(random()*10000000000)::text
+        =>      from generate_series (1,100000);
+        INSERT 0 100000
+
+        => create index i3 on t (code);
+        CREATE INDEX
+
+        => vacuum analyze t;
+        VACUUM
+
+При создании таблицы мы явно указали использовать локаль C
+для столбца code.
+
+.......................................................................
+
+        => explain (costs off) select * from t where code like '12345%';
+                                     QUERY PLAN                             
+        --------------------------------------------------------------------
+         Index Only Scan using i3 on t
+           Index Cond: ((code >= '12345'::text) AND (code < '12346'::text))
+           Filter: (code ~~ '12345%'::text)
+        (3 rows)
+        
+
+        => explain (costs off) select * from t
+        =>    where code between '0000000000' and '0100000000';
+                                          QUERY PLAN                                   
+        -------------------------------------------------------------------------------
+         Index Only Scan using i3 on t
+           Index Cond: ((code >= '0000000000'::text) AND (code <= '0100000000'::text))
+        (2 rows)
+        
+
+Теперь индекс используется во всех случаях.
+Обратная сторона этого подхода в том, что сортировка по столбцу code
+может работать неверно с точки зрения локали ru_RU
+
+Также отметим, что таблица pg_stats использует локаль БД.
+Поэтому collation у значений столбцов в таблице и в собранной статистике будет разный.
+Это может повлиять на построение планов запросов.
+
+.......................................................................
+
+РАБОТА С ДАТАМИ, ЧИСЛАМИ И ДЕНЕЖНЫМИ ЕДИНИЦАМИ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Параметры конфигурации, отвечающие за соответствующие категории локали
+
+        => set lc_time = 'ru_RU.UTF8';
+        SET
+
+        => set lc_numeric = 'ru_RU.UTF8';
+        SET
+
+        => set lc_monetary = 'ru_RU.UTF8';
+        SET
+
+        => select name, setting from pg_settings 
+        =>  where name in ('lc_time','lc_numeric','lc_monetary');
+            name     |  setting   
+        -------------+------------
+         lc_monetary | ru_RU.UTF8
+         lc_numeric  | ru_RU.UTF8
+         lc_time     | ru_RU.UTF8
+        (3 rows)
+        
+
+.......................................................................
+
+Даты и LC_TIME
+~~~~~~~~~~~~~~
+
+Для использования названий месяцев, дней недели на русском языке
+в форматной маске функции to_char используется префикс TM
+
+        => select to_char(now(), 'TMDay, DD TMMonth YYYY');
+               to_char        
+        ----------------------
+         Пятница, 27 Май 2016
+        (1 row)
+        
+
+Тоже самое для американского английского
+
+        => set lc_time = 'en_US.UTF8';
+        SET
+
+        => select to_char(now(), 'TMDay, DD TMMonth YYYY');
+               to_char       
+        ---------------------
+         Friday, 27 May 2016
+        (1 row)
+        
+
+.......................................................................
+
+Будьте внимательны при преобразовании строки в дату.
+Что вернет такой вызов?
+
+        => select to_date('2016-13-32', 'YYYY-MM-DD');
+.......................................................................
+          to_date   
+        ------------
+         2017-02-01
+        (1 row)
+        
+
+Функция to_date не проверяет корректность строки
+Для проверки на допустимые значения нужно использовать приведение типов
+
+        => select '2016-13-32'::date;
+        ERROR:  date/time field value out of range: "2016-13-32"
+        LINE 1: select '2016-13-32'::date;
+                       ^
+        HINT:  Perhaps you need a different "datestyle" setting.
+
+        => select '2016-12-31'::date;
+            date    
+        ------------
+         2016-12-31
+        (1 row)
+        
+
+.......................................................................
+
+Числа и LC_NUMERIC
+~~~~~~~~~~~~~~~~~~
+
+Разделители групп разрядов (G), а также целой и дробной части (D)
+принятые в России
+
+        => select to_char('12345'::numeric, '999G999D00');
+           to_char   
+        -------------
+           12 345,00
+        (1 row)
+        
+
+Тоже для США
+
+        => set lc_numeric = 'en_US.UTF8';
+        SET
+
+        => select to_char('12345'::numeric, '999G999D00');
+           to_char   
+        -------------
+           12,345.00
+        (1 row)
+        
+
+.......................................................................
+
+Денежные единицы и LC_MONETARY
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Денежный тип данных MONEY добавляет к сумме код валюты
+
+        => create table s as select '12345'::money as m;
+        SELECT 1
+
+        => select * from s;
+               m       
+        ---------------
+         12 345.00 руб
+        (1 row)
+        
+
+Но нужно учитывать, что в таблице с таким типом можно хранить
+только одну валюту, и та будет меняться вместе с LC_MONETARY
+
+        => set lc_monetary = 'en_US.UTF8';
+        SET
+
+        => select * from s;
+             m      
+        ------------
+         $12,345.00
+        (1 row)
+        
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+        => \q
+ожидание завершения работы сервера.... готово
+сервер остановлен
+ожидание запуска сервера.... готово
+сервер запущен

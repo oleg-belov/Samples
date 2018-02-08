@@ -1,0 +1,819 @@
+
+ПОДГОТОВКА
+~~~~~~~~~~
+
+Создадим БД, установим некоторые параметры и подключим расширение
+pg_stat_statements, с помощью которого будем строить профиль.
+
+        => create database db19;
+        CREATE DATABASE
+
+        => \c db19
+        You are now connected to database "db19" as user "postgres".
+
+        => alter system set work_mem = '128MB';
+        ALTER SYSTEM
+
+        => create extension pg_stat_statements;
+        CREATE EXTENSION
+
+        => alter system set shared_preload_libraries = 'pg_stat_statements';
+        ALTER SYSTEM
+
+.......................................................................
+
+Подключение библиотеки требует перезагрузки.
+
+        => \q
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+
+        psql 
+
+        => \c db19
+        You are now connected to database "db19" as user "postgres".
+
+.......................................................................
+
+Создадим и наполним тестовыми данными таблицы.
+В нашем примере мы будем иметь дело с клиентами (таблица clients):
+
+        => create table clients(id serial primary key, vip boolean)
+        => with (fillfactor = 50);
+        CREATE TABLE
+
+Обычно таблицы содержат больше полей; чтобы немного приблизить пример
+к реальности, увеличим fillfactor - так таблица будет занимать больше
+страниц на диске.
+
+        => insert into clients(vip)
+        => select false from generate_series(1,10000*2);
+        INSERT 0 20000
+
+.......................................................................
+
+Сделаем первого клиента VIP-ом, пусть порадуется.
+
+        => update clients set vip=true where id = 1;
+        UPDATE 1
+
+.......................................................................
+
+Клиенты делают заказы:
+
+        => create table orders(id serial primary key, client_id integer, date_ordered timestamp, active boolean)
+        => with (fillfactor = 50);
+        CREATE TABLE
+
+Заказы распределены случайно, в пределах 10 лет.
+
+        => insert into orders(client_id, date_ordered, active)
+        => select trunc(random()*10000*2)::integer+1,
+        =>        now() - make_interval(days => trunc(random()*365*10)::integer),
+        =>        false
+        => from   generate_series(1,100000*2) as gen(id);
+        INSERT 0 200000
+
+.......................................................................
+
+Заказы за последний год помечены флагом.
+
+        => update orders set active = true
+        => where date_ordered > now() - interval '1 year';
+        UPDATE 20022
+
+.......................................................................
+
+У заказа может быть несколько позиций со своей суммой:
+
+        => create table items(id serial primary key, order_id integer, amount numeric)
+        => with (fillfactor = 50);
+        CREATE TABLE
+
+        => insert into items(order_id, amount)
+        => select trunc(random()*100000*2)::integer+1,
+        =>        (random()*100)::integer
+        => from   generate_series(1,1000000*2) as gen(id);
+        INSERT 0 2000000
+
+.......................................................................
+
+После заполнения данных добавим ограничения ссылочной целостности.
+
+        => alter table orders add constraint orders_clients_fk
+        => foreign key (client_id) references clients(id); 
+        ALTER TABLE
+
+        => alter table items add constraint items_orders_fk
+        => foreign key (order_id) references items(id); 
+        ALTER TABLE
+
+.......................................................................
+
+И соберем статистику по всей базе.
+
+        => vacuum analyze;
+        VACUUM
+
+.......................................................................
+
+ПОЛНОЕ СКАНИРОВАНИЕ И ХЭШ-СОЕДИНЕНИЯ
+ВМЕСТО ИНДЕКСНОГО ДОСТУПА И ВЛОЖЕННЫХ ЦИКЛОВ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Начнем с примеров оптимизации отдельных запросов.
+Рассмотрим запрос, возвращающий информацию по заказам VIP-клиентов.
+
+        => explain analyze select *
+        => from clients c join orders o on (o.client_id = c.id)
+        => where c.vip;
+                                                              QUERY PLAN                                                       
+        -----------------------------------------------------------------------------------------------------------------------
+         Hash Join  (cost=377.01..5508.11 rows=10 width=22) (actual time=4.715..107.930 rows=10 loops=1)
+           Hash Cond: (o.client_id = c.id)
+           ->  Seq Scan on orders o  (cost=0.00..4381.00 rows=200000 width=17) (actual time=0.014..58.849 rows=200000 loops=1)
+           ->  Hash  (cost=377.00..377.00 rows=1 width=5) (actual time=2.811..2.811 rows=1 loops=1)
+                 Buckets: 1024  Batches: 1  Memory Usage: 5kB
+                 ->  Seq Scan on clients c  (cost=0.00..377.00 rows=1 width=5) (actual time=0.008..2.809 rows=1 loops=1)
+                       Filter: vip
+                       Rows Removed by Filter: 19999
+         Planning time: 0.257 ms
+         Execution time: 107.963 ms
+        (10 rows)
+        
+
+.......................................................................
+
+У нас только один клиент с флагом vip, но чтобы это понять, пришлось
+просканировать всю таблицу (Rows Removed by Filter).
+Поможет индекс:
+
+        => create index on clients(vip);
+        CREATE INDEX
+
+.......................................................................
+
+        => explain analyze select *
+        => from clients c join orders o on (o.client_id = c.id)
+        => where c.vip;
+                                                                      QUERY PLAN                                                               
+        ---------------------------------------------------------------------------------------------------------------------------------------
+         Hash Join  (cost=8.32..5139.42 rows=10 width=22) (actual time=0.584..89.363 rows=10 loops=1)
+           Hash Cond: (o.client_id = c.id)
+           ->  Seq Scan on orders o  (cost=0.00..4381.00 rows=200000 width=17) (actual time=0.002..41.166 rows=200000 loops=1)
+           ->  Hash  (cost=8.30..8.30 rows=1 width=5) (actual time=0.024..0.024 rows=1 loops=1)
+                 Buckets: 1024  Batches: 1  Memory Usage: 5kB
+                 ->  Index Scan using clients_vip_idx on clients c  (cost=0.29..8.30 rows=1 width=5) (actual time=0.021..0.021 rows=1 loops=1)
+                       Index Cond: (vip = true)
+                       Filter: vip
+         Planning time: 0.237 ms
+         Execution time: 89.393 ms
+        (10 rows)
+        
+
+.......................................................................
+
+Следующая проблема: мы вынуждены просканировать всю таблицу заказов,
+хотя нам требуются только данные по одному клиенту.
+Поможет еще один индекс:
+
+        => create index on orders(client_id);
+        CREATE INDEX
+
+.......................................................................
+
+        => explain analyze select *
+        => from clients c join orders o on (o.client_id = c.id)
+        => where c.vip;
+                                                                     QUERY PLAN                                                              
+        -------------------------------------------------------------------------------------------------------------------------------------
+         Nested Loop  (cost=4.79..51.08 rows=10 width=22) (actual time=0.022..0.043 rows=10 loops=1)
+           ->  Index Scan using clients_vip_idx on clients c  (cost=0.29..8.30 rows=1 width=5) (actual time=0.008..0.008 rows=1 loops=1)
+                 Index Cond: (vip = true)
+                 Filter: vip
+           ->  Bitmap Heap Scan on orders o  (cost=4.50..42.68 rows=10 width=17) (actual time=0.013..0.030 rows=10 loops=1)
+                 Recheck Cond: (client_id = c.id)
+                 Heap Blocks: exact=10
+                 ->  Bitmap Index Scan on orders_client_id_idx  (cost=0.00..4.50 rows=10 width=0) (actual time=0.007..0.007 rows=10 loops=1)
+                       Index Cond: (client_id = c.id)
+         Planning time: 0.302 ms
+         Execution time: 0.071 ms
+        (11 rows)
+        
+
+Вот теперь запрос выполняется эффективно.
+
+.......................................................................
+
+ИНДЕКСНЫЙ ДОСТУП И ВЛОЖЕННЫЕ ЦИКЛЫ
+ВМЕСТО ПОЛНОГО СКАНИРОВАНИЯ И ХЭШ-СОЕДИНЕНИЙ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Посмотрим, что может произойти при неправильной статистике.
+Пусть теперь все клиенты станут VIP-ами. Но мы изменим таблицу клиентов
+так, чтобы для нее не срабатывал автоанализ (иначе будет сложно
+"обмануть" планировщик).
+
+        => alter table clients set (autovacuum_analyze_threshold = 100000000);
+        ALTER TABLE
+
+        => update clients set vip = true;
+        UPDATE 20000
+
+.......................................................................
+
+        => explain analyze select *
+        => from clients c join orders o on (o.client_id = c.id)
+        => where c.vip;
+                                                                       QUERY PLAN                                                                
+        -----------------------------------------------------------------------------------------------------------------------------------------
+         Nested Loop  (cost=4.79..51.08 rows=10 width=22) (actual time=0.031..380.425 rows=200000 loops=1)
+           ->  Index Scan using clients_vip_idx on clients c  (cost=0.29..8.30 rows=1 width=5) (actual time=0.017..9.291 rows=20000 loops=1)
+                 Index Cond: (vip = true)
+                 Filter: vip
+           ->  Bitmap Heap Scan on orders o  (cost=4.50..42.68 rows=10 width=17) (actual time=0.005..0.014 rows=10 loops=20000)
+                 Recheck Cond: (client_id = c.id)
+                 Heap Blocks: exact=199610
+                 ->  Bitmap Index Scan on orders_client_id_idx  (cost=0.00..4.50 rows=10 width=0) (actual time=0.003..0.003 rows=10 loops=20000)
+                       Index Cond: (client_id = c.id)
+         Planning time: 0.255 ms
+         Execution time: 415.467 ms
+        (11 rows)
+        
+
+.......................................................................
+
+Теперь обратная ситуация: мы пытаемся перебирать строки в цикле,
+думая, что их мало. Это часто происходит, если оптимизатор ошибается
+в оценках в меньшую сторону.
+Проанализируем таблицу, чтобы актуализировать статистику:
+
+        => analyze clients;
+        ANALYZE
+
+.......................................................................
+
+        => explain analyze select *
+        => from clients c join orders o on (o.client_id = c.id)
+        => where c.vip;
+                                                               QUERY PLAN                                                        
+        -------------------------------------------------------------------------------------------------------------------------
+         Hash Join  (cost=627.00..7758.00 rows=200000 width=22) (actual time=12.671..181.859 rows=200000 loops=1)
+           Hash Cond: (o.client_id = c.id)
+           ->  Seq Scan on orders o  (cost=0.00..4381.00 rows=200000 width=17) (actual time=0.003..41.534 rows=200000 loops=1)
+           ->  Hash  (cost=377.00..377.00 rows=20000 width=5) (actual time=12.642..12.642 rows=20000 loops=1)
+                 Buckets: 32768  Batches: 1  Memory Usage: 617kB
+                 ->  Seq Scan on clients c  (cost=0.00..377.00 rows=20000 width=5) (actual time=0.006..5.333 rows=20000 loops=1)
+                       Filter: vip
+         Planning time: 0.548 ms
+         Execution time: 215.824 ms
+        (9 rows)
+        
+
+Теперь планировщик выбрал полное сканирование, что эффективнее.
+
+.......................................................................
+
+НЕВОЗМОЖНОСТЬ ИСПОЛЬЗОВАТЬ ИНДЕКС
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Индекс может быть использован для ускорения доступа, если условие
+сформулировано как "индексированное-поле оператор выражение".
+
+Например, создадим индекс по датам заказов:
+
+        => create index on orders(date_ordered);
+        CREATE INDEX
+
+.......................................................................
+
+Индекс будет использован:
+
+        => explain analyze
+        => select * from orders where date_ordered < now() - interval '9 year 11 month';
+                                                                      QUERY PLAN                                                               
+        ---------------------------------------------------------------------------------------------------------------------------------------
+         Bitmap Heap Scan on orders  (cost=27.59..2215.40 rows=1440 width=17) (actual time=0.635..2.050 rows=1524 loops=1)
+           Recheck Cond: (date_ordered < (now() - '9 years 11 mons'::interval))
+           Heap Blocks: exact=1134
+           ->  Bitmap Index Scan on orders_date_ordered_idx  (cost=0.00..27.23 rows=1440 width=0) (actual time=0.467..0.467 rows=1524 loops=1)
+                 Index Cond: (date_ordered < (now() - '9 years 11 mons'::interval))
+         Planning time: 0.190 ms
+         Execution time: 2.321 ms
+        (7 rows)
+        
+
+.......................................................................
+
+А вот так - нет:
+
+        => explain analyze
+        => select * from orders where date_ordered + interval '9 year 11 month' < now();
+                                                         QUERY PLAN                                                  
+        -------------------------------------------------------------------------------------------------------------
+         Seq Scan on orders  (cost=0.00..5881.00 rows=66667 width=17) (actual time=0.175..101.825 rows=1524 loops=1)
+           Filter: ((date_ordered + '9 years 11 mons'::interval) < now())
+           Rows Removed by Filter: 198476
+         Planning time: 0.052 ms
+         Execution time: 104.488 ms
+        (5 rows)
+        
+
+.......................................................................
+
+Если запрос нельзя переписать, поможет функциональный индекс:
+
+        => create index on orders((date_ordered + interval '9 year 11 month'));
+        CREATE INDEX
+
+        => explain analyze
+        => select * from orders where date_ordered + interval '9 year 11 month' < now();
+                                                                    QUERY PLAN                                                            
+        ----------------------------------------------------------------------------------------------------------------------------------
+         Bitmap Heap Scan on orders  (cost=1253.09..4800.76 rows=66667 width=17) (actual time=0.651..1.982 rows=1524 loops=1)
+           Recheck Cond: ((date_ordered + '9 years 11 mons'::interval) < now())
+           Heap Blocks: exact=1134
+           ->  Bitmap Index Scan on orders_expr_idx  (cost=0.00..1236.43 rows=66667 width=0) (actual time=0.482..0.482 rows=1524 loops=1)
+                 Index Cond: ((date_ordered + '9 years 11 mons'::interval) < now())
+         Planning time: 0.189 ms
+         Execution time: 2.252 ms
+        (7 rows)
+        
+
+.......................................................................
+
+УПРАВЛЕНИЕ ПОРЯДКОМ ВЫПОЛНЕНИЯ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Если планировщик выбирает неправильный порядок соединения таблиц,
+повлиять на это можно, например, с помощью CTE - Common Table Expression, -
+используя тот факт, что подзапросы CTE всегда материализуются, а не
+подставляются в основной запрос.
+
+Например:
+
+        => explain (costs off)
+        => with t as (
+        =>   select c.id client_id, o.id order_id
+        =>   from clients c join orders o on (o.client_id = c.id)
+        => )
+        => select t.client_id, t.order_id, i.id item_id
+        => from items i join t on (i.order_id = t.order_id);
+                        QUERY PLAN                 
+        -------------------------------------------
+         Hash Join
+           Hash Cond: (t.order_id = i.order_id)
+           CTE t
+             ->  Hash Join
+                   Hash Cond: (o.client_id = c.id)
+                   ->  Seq Scan on orders o
+                   ->  Hash
+                         ->  Seq Scan on clients c
+           ->  CTE Scan on t
+           ->  Hash
+                 ->  Seq Scan on items i
+        (11 rows)
+        
+
+.......................................................................
+
+Или так:
+
+        => explain (costs off)
+        => with t as (
+        =>   select o.id order_id, o.client_id, i.id item_id
+        =>   from orders o join items i on (i.order_id = o.id)
+        => )
+        => select c.id client_id, t.order_id, t.item_id
+        => from clients c join t on (c.id = t.client_id);
+                        QUERY PLAN                
+        ------------------------------------------
+         Hash Join
+           Hash Cond: (t.client_id = c.id)
+           CTE t
+             ->  Hash Join
+                   Hash Cond: (i.order_id = o.id)
+                   ->  Seq Scan on items i
+                   ->  Hash
+                         ->  Seq Scan on orders o
+           ->  CTE Scan on t
+           ->  Hash
+                 ->  Seq Scan on clients c
+        (11 rows)
+        
+
+.......................................................................
+
+КОРРЕЛИРОВАННЫЕ ПОДЗАПРОСЫ
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Коррелированные подзапросы могут ограничивать оптимизатор.
+Рассмотрим пример:
+
+        => explain (costs off)
+        => select c.id, (select count(*) from orders o where o.client_id = c.id) cnt
+        => from clients c;
+                                      QUERY PLAN                              
+        ----------------------------------------------------------------------
+         Seq Scan on clients c
+           SubPlan 1
+             ->  Aggregate
+                   ->  Index Only Scan using orders_client_id_idx on orders o
+                         Index Cond: (client_id = c.id)
+        (5 rows)
+        
+
+Здесь оптимизатор всегда выполняет подзапрос в цикле.
+
+.......................................................................
+
+Если же раскрыть подзапрос с помощью соединения, свобода
+оптимизатора увеличивается:
+
+        => explain (costs off)
+        => select c.id, count(*) cnt
+        => from clients c left join orders o on (o.client_id = c.id)
+        => group by c.id;
+                       QUERY PLAN                
+        -----------------------------------------
+         HashAggregate
+           Group Key: c.id
+           ->  Hash Right Join
+                 Hash Cond: (o.client_id = c.id)
+                 ->  Seq Scan on orders o
+                 ->  Hash
+                       ->  Seq Scan on clients c
+        (7 rows)
+        
+
+Здесь было выбрано соединение хэшированием.
+
+.......................................................................
+
+А если ограничить число строк, будет выбрано соединение вложенными циклами:
+
+        => explain (costs off)
+        => select c.id, count(*) cnt
+        => from clients c left join orders o on (o.client_id = c.id)
+        => where c.id = 1
+        => group by c.id;
+                                     QUERY PLAN                             
+        --------------------------------------------------------------------
+         GroupAggregate
+           Group Key: c.id
+           ->  Nested Loop Left Join
+                 Join Filter: (o.client_id = c.id)
+                 ->  Index Only Scan using clients_pkey on clients c
+                       Index Cond: (id = 1)
+                 ->  Index Only Scan using orders_client_id_idx on orders o
+                       Index Cond: (client_id = 1)
+        (8 rows)
+        
+
+.......................................................................
+
+Тем не менее, коррелированные подзапросы из фразы WHERE обычно могут быть
+автоматически преобразованы в соединения. Например:
+
+        => explain (costs off)
+        => select o.*
+        => from orders o
+        => where exists (
+        =>   select 1 from items i
+        =>   where i.order_id = o.id and i.amount = 100
+        => );
+                              QUERY PLAN                       
+        -------------------------------------------------------
+         Hash Join
+           Hash Cond: (o.id = i.order_id)
+           ->  Seq Scan on orders o
+           ->  Hash
+                 ->  HashAggregate
+                       Group Key: i.order_id
+                       ->  Seq Scan on items i
+                             Filter: (amount = '100'::numeric)
+        (8 rows)
+        
+
+.......................................................................
+
+ОПЕРАЦИИ СО МНОЖЕСТВАМИ
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Операции со множествами не преобразуются в эквивалентные соединения.
+Например, запрос, выбирающий заказы без позиций, можно сформулировать так:
+
+        => explain (costs off)
+        => select o.id from orders o
+        => except
+        => select i.order_id from items i;
+                        QUERY PLAN                 
+        -------------------------------------------
+         HashSetOp Except
+           ->  Append
+                 ->  Subquery Scan on "*SELECT* 1"
+                       ->  Seq Scan on orders o
+                 ->  Subquery Scan on "*SELECT* 2"
+                       ->  Seq Scan on items i
+        (6 rows)
+        
+
+.......................................................................
+
+А можно иначе:
+
+        => explain (costs off)
+        => select o.id from orders o
+        => where not exists (select null from items i where i.order_id = o.id);
+                    QUERY PLAN            
+        ----------------------------------
+         Hash Anti Join
+           Hash Cond: (o.id = i.order_id)
+           ->  Seq Scan on orders o
+           ->  Hash
+                 ->  Seq Scan on items i
+        (5 rows)
+        
+
+Оптимизатор не будет сравнивать эти формы, так что выбор ложится на плечи
+автора запроса.
+
+.......................................................................
+
+ПРОФИЛЬ ВЫПОЛНЕНИЯ
+~~~~~~~~~~~~~~~~~~
+
+Теперь посмотрим, как построить профиль выполнения, чтобы найти тот запрос,
+который имеет смысл оптимизировать. Мы проделаем это с помощью расширения
+pg_stat_statements.
+Настроим его так, чтобы собиралась информация о всех запросах, в том числе
+вложенных.
+
+        => set pg_stat_statements.track = 'all';
+        SET
+
+.......................................................................
+
+Создадим представление, чтобы смотреть на статистику, собранную
+pg_stat_statements:
+
+        => create view statements_v as
+        => select substring(regexp_replace(query,' +',' ','g') for 50) as query,
+        =>        calls,
+        =>        round(total_time)/1000 as time_sec,
+        =>        shared_blks_hit + shared_blks_read + shared_blks_written as shared_blks
+        => from pg_stat_statements
+        => order by total_time desc;
+        CREATE VIEW
+
+.......................................................................
+
+Нам понадобится еще один индекс:
+
+        => create index on items(order_id);
+        CREATE INDEX
+
+И сбросим статистику.
+
+        => select pg_stat_statements_reset();
+         pg_stat_statements_reset 
+        --------------------------
+         
+        (1 row)
+        
+
+.......................................................................
+
+Теперь выполним следующий запрос:
+
+        => do $$
+        declare
+          l_max_orders integer;
+          l_max_amount numeric;
+          l_orders integer;
+          l_amount numeric;
+          l_amt numeric;
+          l_c record;
+          l_o record;
+        begin
+          select max(cnt) into l_max_orders
+          from (
+                 select o.client_id, count(*) cnt
+                 from orders o
+                 group by o.client_id
+          ) t;
+        
+          select max(amt) into l_max_amount
+          from (
+                 select o.client_id, sum(i.amount) amt
+                 from orders o join items i on (i.order_id = o.id)
+                 group by o.client_id
+          ) t;
+        
+          for l_c in (select id from clients) loop
+            select count(*) into l_orders
+            from orders o
+            where o.client_id = l_c.id;
+        
+            l_amount := 0;
+            for l_o in (select id from orders where client_id = l_c.id) loop
+              select sum(i.amount) into l_amt
+              from items i
+              where i.order_id = l_o.id;
+              l_amount := l_amount + l_amt;
+            end loop;
+        
+            if l_orders = l_max_orders or l_amount = l_max_amount then
+              update clients set vip = true where id = l_c.id;
+            else
+              update clients set vip = false where id = l_c.id;
+            end if;
+          end loop;
+        end;
+        $$ language plpgsql;
+        DO
+
+.......................................................................
+
+На самом деле, это очень плохой запрос.
+Основная его проблема состоит в использовании циклов вместо соединений.
+Тем самым мы выполняем большое количество запросов к базе, и фактически
+используем аналог nested loops, хотя это далеко не всегда самый
+эффективный способ соединения.
+Другая проблема состоит в том, что одни и те же таблицы перебираются
+по нескольку раз, хотя то же самое можно было бы сделать за один проход.
+
+.......................................................................
+
+Посмотрим, какую статистику мы получили:
+
+        => \x
+        Expanded display is on.
+
+        => select * from statements_v;
+        -[ RECORD 1 ]-------------------------------------------------
+        query       | do $$                                           +
+                    | declare                                         +
+                    |  l_max_orders integer;                          +
+                    |  l_max_amount
+        calls       | 1
+        time_sec    | 15.555
+        shared_blks | 3230743
+        -[ RECORD 2 ]-------------------------------------------------
+        query       | select sum(i.amount) from items i               +
+                    |  where i.order_i
+        calls       | 200000
+        time_sec    | 8.24
+        shared_blks | 2615205
+        -[ RECORD 3 ]-------------------------------------------------
+        query       | select max(amt) from (                          +
+                    |  select o.client_id, sum(i.
+        calls       | 1
+        time_sec    | 2.274
+        shared_blks | 24121
+        -[ RECORD 4 ]-------------------------------------------------
+        query       | (select id from orders where client_id = l_c.id)
+        calls       | 20000
+        time_sec    | 0.794
+        shared_blks | 260149
+        -[ RECORD 5 ]-------------------------------------------------
+        query       | update clients set vip = ? where id = l_c.id
+        calls       | 20000
+        time_sec    | 0.384
+        shared_blks | 248144
+        -[ RECORD 6 ]-------------------------------------------------
+        query       | select count(*) from orders o                   +
+                    |  where o.client_id =
+        calls       | 20000
+        time_sec    | 0.151
+        shared_blks | 80479
+        -[ RECORD 7 ]-------------------------------------------------
+        query       | select max(cnt) from (                          +
+                    |  select o.client_id, count(
+        calls       | 1
+        time_sec    | 0.08
+        shared_blks | 2381
+        -[ RECORD 8 ]-------------------------------------------------
+        query       | (select id from clients)
+        calls       | 1
+        time_sec    | 0.007
+        shared_blks | 177
+        -[ RECORD 9 ]-------------------------------------------------
+        query       | select pg_stat_statements_reset();
+        calls       | 1
+        time_sec    | 0
+        shared_blks | 0
+        
+
+        => \x
+        Expanded display is off.
+
+Стоит отметить, что первым идет основной запрос, который расшифровывается
+ниже. К сожалению, нет признака, вложенный это запрос или внешний.
+
+Вторым идет запрос, который выполняемый много раз (он занимает половину
+всего времени выполнения). Если разделить общее время на число выполнений,
+то окажется, что отдельный запрос выполняется вполне эффективно.
+Обратите внимание и на число операций со страницами. Здесь через буферный
+кэш пришлось прогнать несколько миллионов страниц (по большей части -
+одних и тех же). При наличии конкуренции за доступ к кэшу ситуация
+существенно ухудшится.
+
+Таким образом, здесь бессмысленно заниматься оптимизацией отдельных
+запросов. Выход в том, чтобы переписать программу на SQL.
+
+.......................................................................
+
+        => select pg_stat_statements_reset();
+         pg_stat_statements_reset 
+        --------------------------
+         
+        (1 row)
+        
+
+        => update clients set vip = false where vip;
+        UPDATE 1
+
+        => with a as (
+          select client_id, cnt, amt, max(cnt) over () max_cnt, max(amt) over () max_amt
+          from (
+        	    select o.client_id, count(*) cnt, sum(i.amount) amt
+        		from orders o
+        		     join
+        			 (select order_id, sum(amount) amount from items group by order_id) i
+        			 on (i.order_id = o.id)
+        		group by o.client_id
+        	) b
+        )
+        update clients
+        set vip = true
+        where id in (
+        	  select client_id
+        	  from a
+        	  where cnt = max_cnt or amt = max_amt
+        );
+        UPDATE 1
+
+.......................................................................
+
+Посмотрим статистику теперь:
+
+        => \x
+        Expanded display is on.
+
+        => select * from statements_v;
+        -[ RECORD 1 ]---------------------------------------
+        query       | with a as (                           +
+                    |  select client_id, cnt, amt, max(cnt) 
+        calls       | 1
+        time_sec    | 1.927
+        shared_blks | 24133
+        -[ RECORD 2 ]---------------------------------------
+        query       | update clients set vip = ? where vip;
+        calls       | 1
+        time_sec    | 0.005
+        shared_blks | 350
+        -[ RECORD 3 ]---------------------------------------
+        query       | select pg_stat_statements_reset();
+        calls       | 1
+        time_sec    | 0
+        shared_blks | 0
+        
+
+        => \x
+        Expanded display is off.
+
+Обратите внимание, насколько меньше страниц пришлось прочитать за счет
+того, что оптимизатор выбрал полное сканирование и соединение хэшированием.
+
+.......................................................................
+
+Можно посчитать общее количество страниц во всех задействованных таблицах:
+
+        => select sum(relpages) from pg_class where relname in ('clients','orders','items');
+          sum  
+        -------
+         24298
+        (1 row)
+        
+
+Это число может служить грубой оценкой сверху для запроса: обработка
+существенно большего числа страниц может говорить о том, что данные
+перебираются по нескольку раз. Конечно, это не универсальное правило.
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+        => alter system reset all;
+        ALTER SYSTEM
+
+        => \q
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started

@@ -1,0 +1,356 @@
+
+СЕКЦИОНИРОВАНИЕ
+~~~~~~~~~~~~~~~
+
+Создадим таблицу city_msk в отдельной БД
+
+        => create database db20;
+        CREATE DATABASE
+
+        => \c db20
+        You are now connected to database "db20" as user "postgres".
+
+        => create sequence city_seq;
+        CREATE SEQUENCE
+
+        => create table city_msk (
+        =>    id   int default nextval('city_seq'::regclass)
+        =>   ,city text
+        =>   ,constraint check_city CHECK (city = 'MSK')
+        => );
+        CREATE TABLE
+
+        => insert into city_msk (city) values ('MSK');
+        INSERT 0 1
+
+Последовательность city_seq будем использовать для получения новых значений id.
+Столбец city и ограничение CHECK, допускающее только значение MSK,
+выглядят избыточными, но это заготовка под будущее секционирование
+
+.......................................................................
+
+ПАРАМЕТР CONSTRAINT_EXCLUSION
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Посмотрим план выполнения запроса
+
+        => explain (costs off) select * from city_msk where city = 'SPB';
+                   QUERY PLAN           
+        --------------------------------
+         Seq Scan on city_msk
+           Filter: (city = 'SPB'::text)
+        (2 rows)
+        
+
+Планировщик выбрал последовательное сканирование таблицы city_msk.
+Также заметим, что условие в запросе (where city = 'SPB')
+никогда не даст истину, ведь ограничение проверки гарантирует наличие 
+только значений 'MSK'.
+Т.е. при должных знаниях, планировщик мог бы в таблицу не смотреть вообще,
+а сразу выдать, что записи, удовлетворяющие условию запроса отсутствуют.
+
+.......................................................................
+
+И такая возможность есть. Можно указать планировщику учитывать 
+имеющиеся ограничения проверки при построении плана выполнения команды. 
+Это делается установкой конфигурационного параметра constraint_exclusion 
+в значение on:
+
+        => set constraint_exclusion to on;
+        SET
+
+        => explain (costs off) select * from city_msk where city = 'SPB';
+                QUERY PLAN        
+        --------------------------
+         Result
+           One-Time Filter: false
+        (2 rows)
+        
+
+Мы видим, что теперь в плане выполнения нет доступа к таблице,
+а сразу возвращается ложь.
+
+.......................................................................
+
+Вернем constraint_exclusion в исходное состояние
+и посмотрим список доступных значений
+
+        => reset constraint_exclusion;
+        RESET
+
+        => select name, setting, enumvals from pg_settings
+        =>  where name = 'constraint_exclusion';
+                 name         |  setting  |      enumvals      
+        ----------------------+-----------+--------------------
+         constraint_exclusion | partition | {partition,on,off}
+        (1 row)
+        
+
+.......................................................................
+
+СЕКЦИОНИРОВАНИЕ НА ОСНОВЕ ПРЕДСТАВЛЕНИЯ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Создадим вторую таблицу, теперь для Санкт-Петербурга
+
+        => create table city_spb (
+        =>    id int default nextval('city_seq'::regclass)
+        =>   ,city text
+        =>   ,constraint check_city CHECK (city = 'SPB')
+        => );
+        CREATE TABLE
+
+        => insert into city_spb (city) values ('SPB');
+        INSERT 0 1
+
+И представление cities_v объединяющее обе таблицы
+
+        => create view cities_v (id, city)
+        => as
+        =>    select id, city from city_msk
+        =>    union all
+        =>    select id, city from city_spb;
+        CREATE VIEW
+
+.......................................................................
+
+Посмотрим на работу планировщика при доступе к данным разных городов:
+
+        => explain (costs off) select * from cities_v where city = 'SPB';
+                      QUERY PLAN              
+        --------------------------------------
+         Append
+           ->  Seq Scan on city_spb
+                 Filter: (city = 'SPB'::text)
+        (3 rows)
+        
+
+        => explain (costs off) select * from cities_v where city = 'KEM';
+                QUERY PLAN        
+        --------------------------
+         Result
+           One-Time Filter: false
+        (2 rows)
+        
+
+Сканируется только та таблица, ограничение CHECK для которой,
+не противоречит условию запроса.
+
+.......................................................................
+
+НАСЛЕДОВАНИЕ
+~~~~~~~~~~~~
+
+Дополним наш пример таблицей cities.
+А таблицы city_msk и city_spb сделаем дочерними по отношению к ней.
+
+        => create table cities (
+        =>   id int default nextval('city_seq'::regclass)
+        =>  ,city text
+        =>  ,constraint dummy_check check (city = '') no inherit
+        => );
+        CREATE TABLE
+
+Можно добавить фиктивное ограничение check и на родительскую таблицу.
+Тогда планировщик сможет и её исключить из плана.
+Но ограничение должно быть создано как no inherit, иначе оно будет
+наследоваться во все дочерние таблицы.
+
+        => alter table city_msk inherit cities;
+        ALTER TABLE
+
+        => alter table city_spb inherit cities;
+        ALTER TABLE
+
+.......................................................................
+
+Также создадим новую (тоже дочернюю) таблицу city_kem для Кемерово.
+Убедимся, что у city_kem точно такой же набор столбцов,
+что и у родительской таблицы, хотя при создании они не указаны:
+
+        => create table city_kem() inherits (cities);
+        CREATE TABLE
+
+        => insert into city_kem (city) values ('KEM');
+        INSERT 0 1
+
+        => \d city_kem
+                         Table "public.city_kem"
+         Column |  Type   |               Modifiers               
+        --------+---------+---------------------------------------
+         id     | integer | default nextval('city_seq'::regclass)
+         city   | text    | 
+        Inherits: cities
+        
+
+.......................................................................
+
+Проверим, что запрос к таблице cities возвращает данные из всех дочерних таблиц:
+
+        => select * from cities;
+         id | city 
+        ----+------
+          1 | MSK
+          2 | SPB
+          3 | KEM
+        (3 rows)
+        
+
+.......................................................................
+
+Хотя сама таблица cities пустая. Чтобы обратиться только к ней
+нужно использовать ключевое слово ONLY:
+
+        => select * from ONLY cities;
+         id | city 
+        ----+------
+        (0 rows)
+        
+
+.......................................................................
+
+СЕКЦИОНИРОВАНИЕ НА ОСНОВЕ НАСЛЕДОВАНИЯ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Посмотрим на планы запросов при обращении к родительской таблице
+по ключу секционирования:
+
+        => explain (costs off) select * from cities where city = 'SPB';
+                      QUERY PLAN              
+        --------------------------------------
+         Append
+           ->  Seq Scan on city_spb
+                 Filter: (city = 'SPB'::text)
+           ->  Seq Scan on city_kem
+                 Filter: (city = 'SPB'::text)
+        (5 rows)
+        
+
+Видим сканирование таблицы city_spb, таблицы cities, city_msk пропущены.
+
+Но почему тогда не пропущена таблица city_kem?
+
+.......................................................................
+
+При создании таблицы city_kem не было создано ограничение проверки.
+Добавим его и проверим еще раз:
+
+        => alter table city_kem add constraint check_city check (city = 'KEM');
+        ALTER TABLE
+
+        => explain (costs off) delete from cities where city = 'SPB';
+                      QUERY PLAN              
+        --------------------------------------
+         Delete on cities
+           Delete on city_spb
+           ->  Seq Scan on city_spb
+                 Filter: (city = 'SPB'::text)
+        (4 rows)
+        
+
+Теперь все работает как нужно.
+Сканируется пустая таблица cities (это недорогая операция),
+а также таблица city_spb, т.к. запрошены данные только по ней.
+Отметим и то, что вместо SELECT используется DELETE.
+Для UPDATE также сработает отбор только нужных секций.
+
+.......................................................................
+
+Для вставки записей нужно создать триггер
+
+        => create function city_ins () returns trigger as $$
+        => begin
+        =>    if new.city = 'MSK' then
+        =>       insert into city_msk select new.*;
+        =>    elsif new.city = 'SPB' then
+        =>       insert into city_spb select new.*;
+        =>    elsif new.city = 'KEM' then
+        =>       insert into city_kem select new.*;
+        =>    end if;
+        =>    return null;
+        => end; $$ language plpgsql;
+        CREATE FUNCTION
+
+Сначала создаем триггерную функцию
+
+.......................................................................
+
+И сам триггер
+
+        => create trigger city_partition_ins
+        =>    before insert on cities
+        =>    for each row
+        =>    execute procedure city_ins();
+        CREATE TRIGGER
+
+.......................................................................
+
+Проверим как работает вставка записей
+
+        => insert into cities (city) values ('MSK'), ('SPB'), ('KEM');
+        INSERT 0 0
+
+        => select tableoid::regclass, * from cities;
+         tableoid | id | city 
+        ----------+----+------
+         city_msk |  1 | MSK
+         city_msk |  4 | MSK
+         city_spb |  2 | SPB
+         city_spb |  5 | SPB
+         city_kem |  3 | KEM
+         city_kem |  6 | KEM
+        (6 rows)
+        
+
+Новые записи добавились в соответствующие дочерние таблицы
+В саму cities ничего не попало.
+
+        => select * from ONLY cities;
+         id | city 
+        ----+------
+        (0 rows)
+        
+
+.......................................................................
+
+Информацию о секционировании можно получить командой \d
+
+        => \d+ cities
+                                              Table "public.cities"
+         Column |  Type   |               Modifiers               | Storage  | Stats target | Description 
+        --------+---------+---------------------------------------+----------+--------------+-------------
+         id     | integer | default nextval('city_seq'::regclass) | plain    |              | 
+         city   | text    |                                       | extended |              | 
+        Check constraints:
+            "dummy_check" CHECK (city = ''::text) NO INHERIT
+        Triggers:
+            city_partition_ins BEFORE INSERT ON cities FOR EACH ROW EXECUTE PROCEDURE city_ins()
+        Child tables: city_kem,
+                      city_msk,
+                      city_spb
+        
+
+Выводится информация о всех секциях и триггере
+
+.......................................................................
+
+Если какая-то секция больше не нужна, то её можно отключить
+
+        => alter table city_kem no inherit cities;
+        ALTER TABLE
+
+А если не нужны и данные, то теперь таблицу можно удалить
+
+        => drop table city_kem;
+        DROP TABLE
+
+При этом нужно не забыть поправить триггер на вставку,
+чтобы данные больше не вставлялись в удаленную таблицу
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+        => \q

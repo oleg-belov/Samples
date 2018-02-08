@@ -1,0 +1,445 @@
+
+POSTGRESQL 9.4
+~~~~~~~~~~~~~~
+
+Система предыдущей версии установлена в /usr/local/pgsql4
+под пользователем postgres4.
+
+postgres4> ls -l /usr/local/pgsql4 
+total 20
+drwxr-xr-x  2 root      root 4096 мая   19 17:47 bin
+drwx------ 18 postgres4 root 4096 мая   27 21:29 data
+drwxr-xr-x  6 root      root 4096 мая   19 17:47 include
+drwxr-xr-x  4 root      root 4096 мая   19 17:47 lib
+drwxr-xr-x  9 root      root 4096 мая   19 17:47 share
+
+.......................................................................
+
+Создадим табличное пространство и базу данных.
+
+postgres4> rm -rf /home/postgres4/ts_dir 
+postgres4> mkdir /home/postgres4/ts_dir 
+        psql -h localhost -p 5435 -U postgres
+
+        => create tablespace ts location '/home/postgres4/ts_dir';
+        CREATE TABLESPACE
+
+        => create database db22;
+        CREATE DATABASE
+
+        => \c db22
+        You are now connected to database "db22" as user "postgres".
+
+.......................................................................
+
+Создадим таблицу и установим расширение.
+
+        => create table test(id serial, s text) tablespace ts;
+        CREATE TABLE
+
+        => insert into test(s) values ('Привет от 9.4!');
+        INSERT 0 1
+
+        => create extension pgcrypto;
+        CREATE EXTENSION
+
+.......................................................................
+
+На этом останавливаем систему.
+
+        => \q
+
+postgres4> pg_ctl -w stop -m fast 
+waiting for server to shut down.... done
+server stopped
+
+.......................................................................
+
+PostgreSQL версии 9.5 собран, но еще не установлен.
+Каталог установки - /usr/local/pgsql4, при этом новая версия
+будет пересекаться со старой.
+Поэтому сначала надо перенести 9.4 в другой каталог, а после
+этого можно устанавливать 9.5.
+
+sudo rm -rf /usr/local/pgsql4_9.4 
+sudo mv /usr/local/pgsql4/ /usr/local/pgsql4_9.4/ 
+
+Команда отрабатывает быстро независимо от размера файлов.
+
+.......................................................................
+
+Заметим, что табличные пространства переносить не надо.
+После перемещения мы по-прежнему можем запустить сервер
+либо изменив переменную PGDATA, либо явно указав пути.
+Однако потребуется явно указать путь к библиотекам.
+
+postgres4> bash -c "export LD_LIBRARY_PATH=/usr/local/pgsql4_9.4/lib/; /usr/local/pgsql4_9.4/bin/pg_ctl -w start -l /home/postgres4/logfile -D /usr/local/pgsql4_9.4/data" 
+waiting for server to start.... done
+server started
+        psql -h localhost -p 5435 -U postgres
+
+        => select version();
+                                                      version                                               
+        ----------------------------------------------------------------------------------------------------
+         PostgreSQL 9.4.8 on i686-pc-linux-gnu, compiled by gcc (Ubuntu 4.8.4-2ubuntu1~14.04) 4.8.4, 32-bit
+        (1 row)
+        
+
+        => \q
+
+postgres4> bash -c "export LD_LIBRARY_PATH=/usr/local/pgsql4_9.4/lib/; /usr/local/pgsql4_9.4/bin/pg_ctl -w stop -m fast -D /usr/local/pgsql4_9.4/data" 
+waiting for server to shut down.... done
+server stopped
+
+.......................................................................
+
+POSTGRESQL 9.5
+~~~~~~~~~~~~~~
+
+Устанавливаем новую версию PostgreSQL 9.5.
+
+sudo sh -c "make -C /home/student/postgresql-9.5.3 install > /dev/null" 
+
+.......................................................................
+
+Попробуем запустить новую систему со старым кластером.
+
+postgres4> pg_ctl -w start -l /home/postgres4/logfile -D /usr/local/pgsql4_9.4/data 
+waiting for server to start.... stopped waiting
+pg_ctl: could not start server
+Examine the log output.
+
+Сервер не запустился: основные версии не совместимы.
+
+postgres4> tail -n 2 /home/postgres4/logfile 
+FATAL:  database files are incompatible with server
+DETAIL:  The data directory was initialized by PostgreSQL version 9.4, which is not compatible with this version 9.5.3.
+
+.......................................................................
+
+Инициализируем кластер 9.5.
+
+sudo mkdir /usr/local/pgsql4 
+mkdir: cannot create directory ‘/usr/local/pgsql4’: File exists
+sudo chown postgres4 /usr/local/pgsql4 
+postgres4> pg_ctl -o "-U postgres" initdb 
+The files belonging to this database system will be owned by user "postgres4".
+This user must also own the server process.
+
+The database cluster will be initialized with locales
+  COLLATE:  en_US.UTF-8
+  CTYPE:    en_US.UTF-8
+  MESSAGES: en_US.UTF-8
+  MONETARY: ru_RU.UTF-8
+  NUMERIC:  ru_RU.UTF-8
+  TIME:     ru_RU.UTF-8
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+creating directory /usr/local/pgsql4/data ... ok
+creating subdirectories ... ok
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting dynamic shared memory implementation ... posix
+creating configuration files ... ok
+creating template1 database in /usr/local/pgsql4/data/base/1 ... ok
+initializing pg_authid ... ok
+initializing dependencies ... ok
+creating system views ... ok
+loading system objects' descriptions ... ok
+creating collations ... ok
+creating conversions ... ok
+creating dictionaries ... ok
+setting privileges on built-in objects ... ok
+creating information schema ... ok
+loading PL/pgSQL server-side language ... ok
+vacuuming database template1 ... ok
+copying template1 to template0 ... ok
+copying template1 to postgres ... ok
+syncing data to disk ... ok
+
+WARNING: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success. You can now start the database server using:
+
+    /usr/local/pgsql4/bin/pg_ctl -D /usr/local/pgsql4/data -l logfile start
+
+
+.......................................................................
+
+Убедимся, что версия 9.5 работает:
+
+postgres4> pg_ctl -w start -l /home/postgres4/logfile 
+waiting for server to start.... done
+server started
+        psql -h localhost -p 5435 -U postgres
+
+        => select version();
+                                                      version                                               
+        ----------------------------------------------------------------------------------------------------
+         PostgreSQL 9.5.3 on i686-pc-linux-gnu, compiled by gcc (Ubuntu 4.8.4-2ubuntu1~14.04) 4.8.4, 32-bit
+        (1 row)
+        
+
+        => \q
+
+postgres4> pg_ctl -w stop 
+waiting for server to shut down.... done
+server stopped
+
+.......................................................................
+
+Попробуем запустить pg_upgrade в режиме проверки.
+Мы должны указать пути к исполняемым файлам и к данным
+как для старой версии, так и для новой.
+
+postgres4> pg_upgrade --check --link -b /usr/local/pgsql4_9.4/bin -B /usr/local/pgsql4/bin -d /usr/local/pgsql4_9.4/data -D /usr/local/pgsql4/data 
+Performing Consistency Checks
+-----------------------------
+Checking cluster versions                                   ok
+Checking database user is the install user                  ok
+Checking database connection settings                       ok
+Checking for prepared transactions                          ok
+Checking for reg* system OID user data types                ok
+Checking for contrib/isn with bigint-passing mismatch       ok
+Checking for presence of required libraries                 fatal
+
+Your installation references loadable libraries that are missing from the
+new installation.  You can add these libraries to the new installation,
+or remove the functions using them from the old installation.  A list of
+problem libraries is in the file:
+    loadable_libraries.txt
+
+Failure, exiting
+
+Утилита обнаружила проблему: в новом кластере не хватает библиотек.
+
+.......................................................................
+
+Посмотрим список:
+
+postgres4> cat loadable_libraries.txt 
+Could not load library "$libdir/pgcrypto"
+ERROR:  could not access file "$libdir/pgcrypto": No such file or directory
+
+
+.......................................................................
+
+Это библиотека установленного нами расширения. Ее необходимо
+установить и в новом кластере.
+
+sudo sh -c "make -C /home/student/postgresql-9.5.3/contrib/pgcrypto install > /dev/null" 
+
+.......................................................................
+
+Проверяем еще раз.
+
+postgres4> pg_upgrade --check --link -b /usr/local/pgsql4_9.4/bin -B /usr/local/pgsql4/bin -d /usr/local/pgsql4_9.4/data -D /usr/local/pgsql4/data 
+Performing Consistency Checks
+-----------------------------
+Checking cluster versions                                   ok
+Checking database user is the install user                  ok
+Checking database connection settings                       ok
+Checking for prepared transactions                          ok
+Checking for reg* system OID user data types                ok
+Checking for contrib/isn with bigint-passing mismatch       ok
+Checking for presence of required libraries                 ok
+Checking database user is the install user                  ok
+Checking for prepared transactions                          ok
+
+*Clusters are compatible*
+
+Теперь кластеры совместимы, обновление возможно.
+
+.......................................................................
+
+Выполняем обновление в режиме создания ссылок.
+
+postgres4> pg_upgrade --link -b /usr/local/pgsql4_9.4/bin -B /usr/local/pgsql4/bin -d /usr/local/pgsql4_9.4/data -D /usr/local/pgsql4/data 
+Performing Consistency Checks
+-----------------------------
+Checking cluster versions                                   ok
+Checking database user is the install user                  ok
+Checking database connection settings                       ok
+Checking for prepared transactions                          ok
+Checking for reg* system OID user data types                ok
+Checking for contrib/isn with bigint-passing mismatch       ok
+Creating dump of global objects                             ok
+Creating dump of database schemas
+  db22
+  postgres
+  template1
+                                                            ok
+Checking for presence of required libraries                 ok
+Checking database user is the install user                  ok
+Checking for prepared transactions                          ok
+
+If pg_upgrade fails after this point, you must re-initdb the
+new cluster before continuing.
+
+Performing Upgrade
+------------------
+Analyzing all rows in the new cluster                       ok
+Freezing all rows on the new cluster                        ok
+Deleting files from new pg_clog                             ok
+Copying old pg_clog to new server                           ok
+Setting next transaction ID and epoch for new cluster       ok
+Deleting files from new pg_multixact/offsets                ok
+Copying old pg_multixact/offsets to new server              ok
+Deleting files from new pg_multixact/members                ok
+Copying old pg_multixact/members to new server              ok
+Setting next multixact ID and offset for new cluster        ok
+Resetting WAL archives                                      ok
+Setting frozenxid and minmxid counters in new cluster       ok
+Restoring global objects in the new cluster                 ok
+Restoring database schemas in the new cluster
+  db22
+  postgres
+  template1
+                                                            ok
+Adding ".old" suffix to old global/pg_control               ok
+
+If you want to start the old cluster, you will need to remove
+the ".old" suffix from /usr/local/pgsql4_9.4/data/global/pg_control.old.
+Because "link" mode was used, the old cluster cannot be safely
+started once the new cluster has been started.
+
+Linking user relation files
+  /usr/local/pgsql4_9.4/data/base/16385/12134
+  /usr/local/pgsql4_9.4/data/base/16385/12136
+  /usr/local/pgsql4_9.4/data/base/16385/11996
+  /usr/local/pgsql4_9.4/data/base/16385/11998
+  /usr/local/pgsql4_9.4/data/base/16385/16386
+  /home/postgres4/ts_dir/PG_9.4_201409291/16385/16388
+  /home/postgres4/ts_dir/PG_9.4_201409291/16385/16392
+  /home/postgres4/ts_dir/PG_9.4_201409291/16385/16394
+  /usr/local/pgsql4_9.4/data/base/12177/12134
+  /usr/local/pgsql4_9.4/data/base/12177/12136
+  /usr/local/pgsql4_9.4/data/base/12177/11996
+  /usr/local/pgsql4_9.4/data/base/12177/11998
+  /usr/local/pgsql4_9.4/data/base/1/12134
+  /usr/local/pgsql4_9.4/data/base/1/12136
+  /usr/local/pgsql4_9.4/data/base/1/11996
+  /usr/local/pgsql4_9.4/data/base/1/11998
+                                                            ok
+Setting next OID for new cluster                            ok
+Sync data directory to disk                                 ok
+Creating script to analyze new cluster                      ok
+Creating script to delete old cluster                       ok
+
+Upgrade Complete
+----------------
+Optimizer statistics are not transferred by pg_upgrade so,
+once you start the new server, consider running:
+    ./analyze_new_cluster.sh
+
+Running this script will delete the old cluster's data files:
+    ./delete_old_cluster.sh
+
+.......................................................................
+
+Проверим результат.
+
+postgres4> pg_ctl -w start -l /home/postgres4/logfile 
+waiting for server to start.... done
+server started
+        psql -h localhost -p 5435 -U postgres
+
+        => select version();
+                                                      version                                               
+        ----------------------------------------------------------------------------------------------------
+         PostgreSQL 9.5.3 on i686-pc-linux-gnu, compiled by gcc (Ubuntu 4.8.4-2ubuntu1~14.04) 4.8.4, 32-bit
+        (1 row)
+        
+
+.......................................................................
+
+        => \c db22
+        You are now connected to database "db22" as user "postgres".
+
+        => select * from test;
+         id |       s        
+        ----+----------------
+          1 | Привет от 9.4!
+        (1 row)
+        
+
+Обновление успешно: нам доступно содержимое старого кластера.
+
+.......................................................................
+
+Посмотрим на табличное пространство:
+
+postgres4> tree /home/postgres4/ts_dir --inodes 
+/home/postgres4/ts_dir
+├── [1074991]  PG_9.4_201409291
+│   └── [1075232]  16385
+│       ├── [1075233]  16388
+│       ├── [1075234]  16392
+│       └── [1075235]  16394
+└── [1075565]  PG_9.5_201510051
+    └── [1075566]  16401
+        ├── [1075233]  16388
+        ├── [1075234]  16392
+        └── [1075235]  16394
+
+4 directories, 6 files
+
+Во-первых, внутри каталога создается подкаталог для каждой
+версии, поэтому пересечения по файлам не происходит.
+Во-вторых, как видно по числу в квадратных скобках (inode),
+файлы в двух табличных пространствах на самом деле разделяют
+общее содержимое.
+
+.......................................................................
+
+Заглянем в сгенерированные pg_upgrade-ом скрипты.
+Скрипт для сбора статистики:
+
+postgres4> cat analyze_new_cluster.sh 
+#!/bin/sh
+
+echo 'This script will generate minimal optimizer statistics rapidly'
+echo 'so your system is usable, and then gather statistics twice more'
+echo 'with increasing accuracy.  When it is done, your system will'
+echo 'have the default level of optimizer statistics.'
+echo
+
+echo 'If you have used ALTER TABLE to modify the statistics target for'
+echo 'any tables, you might want to remove them and restore them after'
+echo 'running this script because they will delay fast statistics generation.'
+echo
+
+echo 'If you would like default statistics as quickly as possible, cancel'
+echo 'this script and run:'
+echo '    "/usr/local/pgsql4/bin/vacuumdb" --all --analyze-only'
+echo
+
+"/usr/local/pgsql4/bin/vacuumdb" --all --analyze-in-stages
+echo
+
+echo 'Done'
+
+.......................................................................
+
+Скрипт для удаления старых данных:
+
+postgres4> cat delete_old_cluster.sh 
+#!/bin/sh
+
+rm -rf '/usr/local/pgsql4_9.4/data'
+rm -rf '/home/postgres4/ts_dir/PG_9.4_201409291'
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+postgres4> pg_ctl stop 
+waiting for server to shut down.... done
+server stopped

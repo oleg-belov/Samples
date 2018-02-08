@@ -1,0 +1,914 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+Явное объявление составного типа
+</h1>
+<p class="C">
+Первый способ ввести составной тип - явным образом объявить его.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TYPE</span> currency <span style="color:#3b6ac8">AS</span> <span style="color:#323232">(</span>
+    amount <span style="color:#a00050">numeric</span><span style="color:#323232">,</span>
+    code   <span style="color:#a00050">text</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TYPE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dT</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+       List of data types
+ Schema |   Name   | Description 
+--------+----------+-------------
+ public | currency | 
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Такой тип можно использовать точно так же, как любой другой тип SQL. Мы
+можем создать таблицу с полем такого типа:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">transactions</span><span style="color:#323232">(</span>
+    account_id   <span style="color:#a00050">integer</span><span style="color:#323232">,</span>
+    debit        currency<span style="color:#323232">,</span>
+    credit       currency<span style="color:#323232">,</span>
+    date_entered <span style="color:#a00050">date</span> <span style="color:#3b6ac8">DEFAULT current_date</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Значения составного типа можно формировать либо в виде строки, внутри которой
+в скобках перечислены значения:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> transactions <span style="color:#3b6ac8">VALUES</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">NULL</span><span style="color:#323232">,</span> <span style="color:#1094a0">'(100.00,&quot;RUR&quot;)'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<p class="C">
+Либо с помощью табличного конструктора ROW:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> transactions <span style="color:#3b6ac8">VALUES</span><span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">ROW</span><span style="color:#323232">(</span><span style="color:#1094a0">80.00</span><span style="color:#323232">,</span><span style="color:#1094a0">'RUR'</span><span style="color:#323232">),</span> <span style="color:#3b6ac8">NULL</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<p class="C">
+Если составной тип содержит более одного поля, то слово ROW можно опустить:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> transactions <span style="color:#3b6ac8">VALUES</span><span style="color:#323232">(</span><span style="color:#1094a0">3</span><span style="color:#323232">, (</span><span style="color:#1094a0">20.00</span><span style="color:#323232">,</span><span style="color:#1094a0">'RUR'</span><span style="color:#323232">),</span> <span style="color:#3b6ac8">NULL</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 1
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> transactions<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ account_id |    debit    |    credit    | date_entered 
+------------+-------------+--------------+--------------
+          1 |             | (100.00,RUR) | 2017-07-22
+          2 | (80.00,RUR) |              | 2017-07-22
+          3 | (20.00,RUR) |              | 2017-07-22
+(3 rows)
+
+</pre></div>
+<p class="C">
+Чтобы обратиться к отдельному атрибуту, составное значение необходимо взять
+в скобки, чтобы отличать атрибут записи от столбца таблицы:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">(</span>t.debit<span style="color:#323232">)</span>.amount<span style="color:#323232">, (</span>t.credit<span style="color:#323232">)</span>.amount <span style="color:#3b6ac8">FROM</span> transactions t<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ amount | amount 
+--------+--------
+        | 100.00
+  80.00 |       
+  20.00 |       
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Дальше мы можем создать функции для работы с этим типом. Например:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">multiply</span><span style="color:#323232">(</span>factor <span style="color:#a00050">numeric</span><span style="color:#323232">,</span> cur currency<span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> currency <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT ROW</span><span style="color:#323232">(</span>factor <span style="color:#323232">*</span> cur.amount<span style="color:#323232">,</span> cur.code<span style="color:#323232">)::</span><span style="color:#a00050">currency</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">IMMUTABLE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> account_id<span style="color:#323232">,</span> <span style="color:#c73a69">multiply</span><span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span>debit<span style="color:#323232">),</span> <span style="color:#c73a69">multiply</span><span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span>credit<span style="color:#323232">),</span> date_entered <span style="color:#3b6ac8">FROM</span> transactions<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ account_id |   multiply   |   multiply   | date_entered 
+------------+--------------+--------------+--------------
+          1 | (,)          | (200.00,RUR) | 2017-07-22
+          2 | (160.00,RUR) | (,)          | 2017-07-22
+          3 | (40.00,RUR)  | (,)          | 2017-07-22
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Хотелось бы, чтобы такая функция не превращала неопределенное значение в
+пустую запись. Для этого можно либо явно выполнить необходимую проверку,
+либо указать для функции свойство STRICT:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER FUNCTION</span> <span style="color:#c73a69">multiply</span><span style="color:#323232">(</span><span style="color:#a00050">numeric</span><span style="color:#323232">,</span> currency<span style="color:#323232">)</span> <span style="color:#3b6ac8">STRICT</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> account_id<span style="color:#323232">,</span> <span style="color:#c73a69">multiply</span><span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span>debit<span style="color:#323232">),</span> <span style="color:#c73a69">multiply</span><span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span>credit<span style="color:#323232">),</span> date_entered <span style="color:#3b6ac8">FROM</span> transactions<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ account_id |   multiply   |   multiply   | date_entered 
+------------+--------------+--------------+--------------
+          1 |              | (200.00,RUR) | 2017-07-22
+          2 | (160.00,RUR) |              | 2017-07-22
+          3 | (40.00,RUR)  |              | 2017-07-22
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Мы можем даже определить оператор умножения:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE OPERATOR</span> <span style="color:#323232">* (</span>
+    <span style="color:#3b6ac8">PROCEDURE</span> <span style="color:#323232">=</span> multiply<span style="color:#323232">,</span>
+    LEFTARG <span style="color:#323232">=</span> <span style="color:#a00050">numeric</span><span style="color:#323232">,</span>
+    RIGHTARG <span style="color:#323232">=</span> currency
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE OPERATOR
+</pre></div>
+<p class="C">
+И использовать его в выражениях:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> account_id<span style="color:#323232">,</span> <span style="color:#1094a0">2</span> <span style="color:#323232">*</span> debit<span style="color:#323232">,</span> <span style="color:#1094a0">2</span> <span style="color:#323232">*</span> credit<span style="color:#323232">,</span> date_entered <span style="color:#3b6ac8">FROM</span> transactions<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ account_id |   ?column?   |   ?column?   | date_entered 
+------------+--------------+--------------+--------------
+          1 |              | (200.00,RUR) | 2017-07-22
+          2 | (160.00,RUR) |              | 2017-07-22
+          3 | (40.00,RUR)  |              | 2017-07-22
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Нужно ли вводить новый тип и использовать его в таблицах - вопрос сложный,
+универсальных рецептов тут не существует. В каких-то случаях это может
+быть полезно; в каких-то удобнее действовать в реляционных рамках: выделить
+сущность, представляемую типом, в отдельную таблицу и ссылаться на нее.
+</p>
+<p class="C">
+В целом PostgreSQL обладает достаточно большим количеством встроенных типов
+данных, так что, вероятно, необходимость в создании собственного типа будет
+возникать не часто, если не сказать редко.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Составной тип как тип строки таблицы
+</h1>
+<p class="C">
+Другое, более полезное на практике применение составных типов - упрощение
+работы функций с таблицами.
+</p>
+<p class="C">
+При создании таблицы неявно создается одноименный тип (места, например,
+в кинотеатре):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">seats</span><span style="color:#323232">(</span>
+    line   <span style="color:#a00050">text</span><span style="color:#323232">,</span>
+    number <span style="color:#a00050">integer</span><span style="color:#323232">,</span>
+    vip    <span style="color:#a00050">boolean</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<p class="C">
+Команда \dT "прячет" такие неявные типы, но при желании их можно увидеть
+непосредственно в таблице pg_type.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Напишем функцию, возвращающую табличную строку по отдельным компонентам.
+</p>
+<p class="C">
+Ее можно объявить как RETURNS seats:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span>line <span style="color:#a00050">text</span><span style="color:#323232">,</span> number <span style="color:#a00050">integer</span><span style="color:#323232">,</span> vip <span style="color:#a00050">boolean</span> <span style="color:#3b6ac8">DEFAULT false</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> seats <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT ROW</span><span style="color:#323232">(</span>line<span style="color:#323232">,</span> number<span style="color:#323232">,</span> vip<span style="color:#323232">)::</span><span style="color:#a00050">seats</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">IMMUTABLE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ make_seat 
+-----------
+ (A,42,f)
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Другой вариант - объявить функцию как возвращающую псевдотип record, который
+обозначает составной тип "вообще", без уточнения его структуры.
+</p>
+<p class="C">
+Заодно отметим, что в запросе не обязательно собирать составной тип из
+отдельных полей - это будет проделано автоматически:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span><span style="color:#a00050">text</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">boolean</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span>line <span style="color:#a00050">text</span><span style="color:#323232">,</span> number <span style="color:#a00050">integer</span><span style="color:#323232">,</span> vip <span style="color:#a00050">boolean</span> <span style="color:#3b6ac8">DEFAULT false</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">record</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT</span> line<span style="color:#323232">,</span> number<span style="color:#323232">,</span> vip<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">IMMUTABLE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ make_seat 
+-----------
+ (A,42,f)
+(1 row)
+
+</pre></div>
+<p class="C">
+Результат примерно тот же, кроме того, что результирующая табличная строка
+получается анонимного составного типа - при необходимости ее придется
+приводить к нужному типу явным образом.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+И еще один вариант, который мы уже видели в предыдущей теме - объявить
+функцию с выходными параметрами:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span><span style="color:#a00050">text</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">boolean</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span>line <span style="color:#3b6ac8">INOUT</span> <span style="color:#a00050">text</span><span style="color:#323232">,</span> number <span style="color:#3b6ac8">INOUT</span> <span style="color:#a00050">integer</span><span style="color:#323232">,</span> vip <span style="color:#3b6ac8">INOUT</span> <span style="color:#a00050">boolean</span> <span style="color:#3b6ac8">DEFAULT false</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT</span> line<span style="color:#323232">,</span> number<span style="color:#323232">,</span> vip<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">IMMUTABLE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ make_seat 
+-----------
+ (A,42,f)
+(1 row)
+
+</pre></div>
+<p class="C">
+Снова в результате получаем анонимный составной тип.
+</p>
+<p class="C">
+Каким вариантом пользоваться - в основном дело вкуса.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Параметры составного типа
+</h1>
+<p class="C">
+Определим теперь функцию, принимающую значение составного типа и возвращающую
+текстовый номер места.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION no</span><span style="color:#323232">(</span>seat seats<span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">text</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">SELECT</span> seat.line || seat.number<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">IMMUTABLE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT no</span><span style="color:#323232">(</span><span style="color:#3b6ac8">ROW</span><span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">,</span><span style="color:#3b6ac8">false</span><span style="color:#323232">));</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ no  
+-----
+ A42
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Что удобно, такой функции можно передавать непосредственно строку таблицы.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> seats <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">,</span><span style="color:#3b6ac8">true</span><span style="color:#323232">), (</span><span style="color:#1094a0">'B'</span><span style="color:#323232">,</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#3b6ac8">false</span><span style="color:#323232">), (</span><span style="color:#1094a0">'C'</span><span style="color:#323232">,</span><span style="color:#1094a0">27</span><span style="color:#323232">,</span><span style="color:#3b6ac8">false</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 3
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> s.line<span style="color:#323232">,</span> s.number<span style="color:#323232">,</span> <span style="color:#3b6ac8">no</span><span style="color:#323232">(</span>s.<span style="color:#323232">*)</span> <span style="color:#3b6ac8">FROM</span> seats s<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | no  
+------+--------+-----
+ A    |     42 | A42
+ B    |      1 | B1
+ C    |     27 | C27
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Синтаксисом допускается обращение к функции как к столбцу таблицы (и наоборот,
+к столбцу как к функции).
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> s.line<span style="color:#323232">,</span> <span style="color:#c73a69">number</span><span style="color:#323232">(</span>s<span style="color:#323232">),</span> s.<span style="color:#3b6ac8">no FROM</span> seats s<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | no  
+------+--------+-----
+ A    |     42 | A42
+ B    |      1 | B1
+ C    |     27 | C27
+(3 rows)
+
+</pre></div>
+<p class="C">
+Таким образом можно использовать функции как "вычислимые поля" таблиц.
+</p>
+<p class="C">
+Разумеется, такого же эффекта можно добиться, определив представление.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Операции над значениями составных типов
+</h1>
+<p class="C">
+Значения составных типов можно сравнивать между собой. Это происходит
+поэлементно (примерно так же, так строки сравниваются посимвольно):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> seats s <span style="color:#3b6ac8">WHERE</span> s <span style="color:#323232">&lt;</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span><span style="color:#1094a0">'B'</span><span style="color:#323232">,</span><span style="color:#1094a0">52</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | vip 
+------+--------+-----
+ A    |     42 | t
+ B    |      1 | f
+(2 rows)
+
+</pre></div>
+<p class="C">
+Осторожно: существует много тонкостей, связанных с неопределенными значениями
+внутри записей.
+</p>
+<p class="C">
+Также работает проверка на неопределенность IS [NOT] NULL и сравнение IS
+[NOT] DISTINCT FROM.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Составные типы можно использовать с подзапросами, что бывает очень удобно.
+</p>
+<p class="C">
+Добавим таблицу с билетами:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">tickets</span><span style="color:#323232">(</span>
+    line   <span style="color:#a00050">text</span><span style="color:#323232">,</span>
+    number <span style="color:#a00050">integer</span><span style="color:#323232">,</span>
+    <span style="color:#3b6ac8">start</span>  <span style="color:#a00050">date</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> tickets <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">,</span><span style="color:#3b6ac8">current_date</span><span style="color:#323232">), (</span><span style="color:#1094a0">'B'</span><span style="color:#323232">,</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#3b6ac8">current_date</span><span style="color:#323232">+</span><span style="color:#1094a0">1</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 2
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Теперь, например, можно написать такой запрос:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> seats <span style="color:#3b6ac8">WHERE</span> <span style="color:#323232">(</span>line<span style="color:#323232">,</span> number<span style="color:#323232">)</span> <span style="color:#3b6ac8">IN</span> <span style="color:#323232">(</span>
+    <span style="color:#3b6ac8">SELECT</span> line<span style="color:#323232">,</span> number <span style="color:#3b6ac8">FROM</span> tickets <span style="color:#3b6ac8">WHERE start</span> <span style="color:#323232">=</span> <span style="color:#3b6ac8">current_date</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | vip 
+------+--------+-----
+ A    |     42 | t
+(1 row)
+
+</pre></div>
+<p class="C">
+Иначе пришлось бы либо явно соединять таблицы, либо повторять подзапрос.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Функции, возвращающие множество строк (табличные функции)
+</h1>
+<p class="C">
+До этого мы вызывали функции там, где обычно встречаются выражения: списке
+выборки запроса или в условиях. Например:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ make_seat 
+-----------
+ (A,42,f)
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+На самом деле к функции можно обратиться и в предложении FROM, как к таблице:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">make_seat</span><span style="color:#323232">(</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | vip 
+------+--------+-----
+ A    |     42 | f
+(1 row)
+
+</pre></div>
+<p class="C">
+При этом мы получаем не один столбец составного типа, а строку (имена столбцов
+здесь названы по именам выходных параметров функции; если бы не указали имен,
+были бы column1, column2...).
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Точно так же можно вызвать и функцию, возвращающую не составной тип:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM no</span><span style="color:#323232">((</span><span style="color:#1094a0">'A'</span><span style="color:#323232">,</span><span style="color:#1094a0">42</span><span style="color:#323232">,</span><span style="color:#3b6ac8">true</span><span style="color:#323232">));</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ no  
+-----
+ A42
+(1 row)
+
+</pre></div>
+<p class="C">
+Вся разница в том, что столбец будет один.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Но, конечно, интереснее было бы иметь функции, которые могут вернуть
+множество строк.
+</p>
+<p class="C">
+Напишем функцию, возвращающую все места в зале заданного размера (и ближняя
+половина зала будет считаться vip-зоной).
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#a00050">integer</span><span style="color:#323232">,</span> max_number <span style="color:#a00050">integer</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">RETURNS SETOF</span> seats <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">chr</span><span style="color:#323232">(</span>line<span style="color:#323232">+</span><span style="color:#1094a0">64</span><span style="color:#323232">),</span> number<span style="color:#323232">,</span> line <span style="color:#323232">&lt;=</span> max_line<span style="color:#323232">/</span><span style="color:#1094a0">2</span>
+    <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>max_line<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">lines</span><span style="color:#323232">(</span>line<span style="color:#323232">),</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>max_number<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">numbers</span><span style="color:#323232">(</span>number<span style="color:#323232">);</span>
+$$ <span style="color:#3b6ac8">IMMUTABLE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Ключевое отличие - слово SETOF. В таком случае функция возвращает не первую
+строку последнего запроса, как обычно, а все строки последнего запроса.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">2</span><span style="color:#323232">,</span> max_number <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | vip 
+------+--------+-----
+ A    |      1 | t
+ A    |      2 | t
+ A    |      3 | t
+ B    |      1 | f
+ B    |      2 | f
+ B    |      3 | f
+(6 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Вместо "SETOF seats" можно использовать и "SETOF record". Но в этом случае
+при вызове функции придется уточнять анонимный тип записи:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#a00050">integer</span><span style="color:#323232">,</span> max_number <span style="color:#a00050">integer</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">RETURNS SETOF</span> <span style="color:#a00050">record</span> <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">chr</span><span style="color:#323232">(</span>line<span style="color:#323232">+</span><span style="color:#1094a0">64</span><span style="color:#323232">),</span> number<span style="color:#323232">,</span> line <span style="color:#323232">&lt;=</span> max_line<span style="color:#323232">/</span><span style="color:#1094a0">2</span>
+    <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>max_line<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">lines</span><span style="color:#323232">(</span>line<span style="color:#323232">),</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>max_number<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">numbers</span><span style="color:#323232">(</span>number<span style="color:#323232">);</span>
+$$ <span style="color:#3b6ac8">IMMUTABLE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">2</span><span style="color:#323232">,</span> max_number <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">3</span><span style="color:#323232">)</span>
+    <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">seats</span><span style="color:#323232">(</span>line <span style="color:#a00050">text</span><span style="color:#323232">,</span> number <span style="color:#a00050">integer</span><span style="color:#323232">,</span> vip <span style="color:#a00050">boolean</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | vip 
+------+--------+-----
+ A    |      1 | t
+ A    |      2 | t
+ A    |      3 | t
+ B    |      1 | f
+ B    |      2 | f
+ B    |      3 | f
+(6 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+А можно объявить функцию с выходными параметрами. Но SETOF record все равно
+придется написать, чтобы показать, что функция возвращает не одну строку,
+а множество:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#a00050">integer</span><span style="color:#323232">,</span> max_number <span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">OUT</span> line <span style="color:#a00050">text</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">OUT</span> number <span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">OUT</span> vip <span style="color:#a00050">boolean</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">RETURNS SETOF</span> <span style="color:#a00050">record</span> <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">chr</span><span style="color:#323232">(</span>line<span style="color:#323232">+</span><span style="color:#1094a0">64</span><span style="color:#323232">),</span> number<span style="color:#323232">,</span> line <span style="color:#323232">&lt;=</span> max_line<span style="color:#323232">/</span><span style="color:#1094a0">2</span>
+    <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>max_line<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">lines</span><span style="color:#323232">(</span>line<span style="color:#323232">),</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>max_number<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">numbers</span><span style="color:#323232">(</span>number<span style="color:#323232">);</span>
+$$ <span style="color:#3b6ac8">IMMUTABLE LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">2</span><span style="color:#323232">,</span> max_number <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | vip 
+------+--------+-----
+ A    |      1 | t
+ A    |      2 | t
+ A    |      3 | t
+ B    |      1 | f
+ B    |      2 | f
+ B    |      3 | f
+(6 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Еще один равнозначный (и к тому же описанный в стандарте SQL) способ объявить
+табличную функцию - указать слово TABLE:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DROP FUNCTION</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DROP FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#a00050">integer</span><span style="color:#323232">,</span> max_number <span style="color:#a00050">integer</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">RETURNS TABLE</span><span style="color:#323232">(</span>line <span style="color:#a00050">text</span><span style="color:#323232">,</span> number <span style="color:#a00050">integer</span><span style="color:#323232">,</span> vip <span style="color:#a00050">boolean</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> $$
+    <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">chr</span><span style="color:#323232">(</span>line<span style="color:#323232">+</span><span style="color:#1094a0">64</span><span style="color:#323232">),</span> number<span style="color:#323232">,</span> line <span style="color:#323232">&lt;=</span> max_line<span style="color:#323232">/</span><span style="color:#1094a0">2</span>
+    <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>max_line<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">lines</span><span style="color:#323232">(</span>line<span style="color:#323232">),</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>max_number<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#c73a69">numbers</span><span style="color:#323232">(</span>number<span style="color:#323232">);</span>
+$$ <span style="color:#3b6ac8">LANGUAGE SQL</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">2</span><span style="color:#323232">,</span> max_number <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | vip 
+------+--------+-----
+ A    |      1 | t
+ A    |      2 | t
+ A    |      3 | t
+ B    |      1 | f
+ B    |      2 | f
+ B    |      3 | f
+(6 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Иногда в запросах бывает полезно пронумеровать строки в том порядке, в
+котором они получены от функции. Для этого есть специальная конструкция:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span>max_line <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">2</span><span style="color:#323232">,</span> max_number <span style="color:#323232">=&gt;</span> <span style="color:#1094a0">3</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">WITH ORDINALITY</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ line | number | vip | ordinality 
+------+--------+-----+------------
+ A    |      1 | t   |          1
+ A    |      2 | t   |          2
+ A    |      3 | t   |          3
+ B    |      1 | f   |          4
+ B    |      2 | f   |          5
+ B    |      3 | f   |          6
+(6 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+При использовании функции в предложении FROM, перед ней неявно подразумевается
+ключевое слово LATERAL, что позволяет функции обращаться к столбцам таблиц,
+стоящих в запросе слева от нее. Иногда это позволяет упростить формулировку
+запросов. Например, для каждой строки таблицы вернем столько строк, какое
+число содержится в этой строке:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">WITH</span> <span style="color:#c73a69">t</span><span style="color:#323232">(</span>n<span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> <span style="color:#323232">(</span>
+    <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">), (</span><span style="color:#1094a0">2</span><span style="color:#323232">), (</span><span style="color:#1094a0">3</span><span style="color:#323232">)</span>
+<span style="color:#323232">)</span>
+<span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> t<span style="color:#323232">,</span> <span style="color:#c73a69">generate_series</span><span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span>t.n<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ n | generate_series 
+---+-----------------
+ 1 |               1
+ 2 |               1
+ 2 |               2
+ 3 |               1
+ 3 |               2
+ 3 |               3
+(6 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Интересно, что к функции, возвращающей множество строк, можно обратиться и
+в списке выборки запроса:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#1094a0">3</span><span style="color:#323232">,</span><span style="color:#1094a0">4</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ make_seats 
+------------
+ (A,1,t)
+ (A,2,t)
+ (A,3,t)
+ (A,4,t)
+ (B,1,f)
+ (B,2,f)
+ (B,3,f)
+ (B,4,f)
+ (C,1,f)
+ (C,2,f)
+ (C,3,f)
+ (C,4,f)
+(12 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В некоторых случаях это смотрится логично, но иногда результат может
+удивить. Например, сколько строк вернет такой запрос?
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">),</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span><span style="color:#1094a0">2</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+
+<div class="R1"><pre class="R1">
+ make_seats | make_seats 
+------------+------------
+ (A,1,t)    | (A,1,t)
+ (A,2,t)    | (A,2,t)
+ (A,3,t)    | (B,1,f)
+ (B,1,f)    | (B,2,f)
+ (B,2,f)    | (A,1,t)
+ (B,3,f)    | (A,2,t)
+ (A,1,t)    | (B,1,f)
+ (A,2,t)    | (B,2,f)
+ (A,3,t)    | (A,1,t)
+ (B,1,f)    | (A,2,t)
+ (B,2,f)    | (B,1,f)
+ (B,3,f)    | (B,2,f)
+(12 rows)
+
+</pre></div>
+<p class="C">
+В результате получается наименьшее общее кратное числа строк, возвращенных
+каждой функцией.
+</p>
+<p class="C">
+Еще хуже, что запрос может вернуть меньше строк, чем ожидалось, если функция
+не вернет ни одной строки при каком-то значении параметров.
+</p>
+<p class="C">
+Поэтому такой способ вызова не стоит использовать.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Функции как представления с параметрами
+</h1>
+<p class="C">
+Как мы видели, функцию можно использовать во фразе FROM как таблицу или
+представление. Но при этом мы дополнительно получаем возможность использовать
+параметры, что в ряде случаев бывает удобно.
+</p>
+<p class="C">
+Единственная сложность с таким подходом состоит в том, что при обращении
+к функции (Function Scan) запросы из нее сначала выполняются полностью,
+и только затем к результату применяются дополнительные условия из запроса.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#1094a0">3</span><span style="color:#323232">,</span><span style="color:#1094a0">4</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">WHERE</span> line <span style="color:#323232">=</span> <span style="color:#1094a0">'A'</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                           QUERY PLAN                            
+-----------------------------------------------------------------
+ Function Scan on make_seats  (cost=0.25..12.75 rows=5 width=37)
+   Filter: (line = 'A'::text)
+(2 rows)
+
+</pre></div>
+<p class="C">
+Если бы функция содержала сложный, долгий запрос, это могло бы стать проблемой.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В некоторых случаях тело функции может подставляться в вызывающий запрос. Для
+табличных функций ограничения более мягкие:
+</p>
+<ul class="U">
+<li>Функция написана на языке SQL;</li>
+<li>Функция сама не должна быть VOLATILE и не должна содержать вызовов таких функций;</li>
+<li>Функция не должна быть STRICT;</li>
+<li>Тело должно содержать единственный оператор SELECT (но он может быть сложным);</li>
+<li>И ряд других ограничений.</li>
+</ul>
+<p class="C">
+В нашем случае дело в том, что последний раз мы объявили функцию как VOLATILE,
+не указав категорию изменчивости явно.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">ALTER FUNCTION</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#a00050">integer</span><span style="color:#323232">,</span> <span style="color:#a00050">integer</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">IMMUTABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ALTER FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">EXPLAIN SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">make_seats</span><span style="color:#323232">(</span><span style="color:#1094a0">3</span><span style="color:#323232">,</span><span style="color:#1094a0">4</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">WHERE</span> line <span style="color:#323232">=</span> <span style="color:#1094a0">'A'</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                                      QUERY PLAN                                      
+--------------------------------------------------------------------------------------
+ Nested Loop  (cost=0.01..155.00 rows=5000 width=37)
+   ->  Function Scan on generate_series lines  (cost=0.00..17.50 rows=5 width=4)
+         Filter: (chr((line + 64)) = 'A'::text)
+   ->  Function Scan on generate_series numbers  (cost=0.00..10.00 rows=1000 width=4)
+(4 rows)
+
+</pre></div>
+<p class="C">
+Теперь нет вызова функции как такового, а условие подставлено внутрь запроса,
+что более эффективно.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Конец демонстрации.
+</p>
+</body>
+</html>

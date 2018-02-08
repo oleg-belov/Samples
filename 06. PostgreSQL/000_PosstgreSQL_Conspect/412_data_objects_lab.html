@@ -1,0 +1,95 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+Основные объекты БД
+</h1>
+<p class="C">
+Создаем таблицу:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">observations</span><span style="color:#323232">(</span>
+    date_taken  <span style="color:#a00050">date</span>    <span style="color:#3b6ac8">NOT NULL</span><span style="color:#323232">,</span>
+    temperature <span style="color:#a00050">numeric</span> <span style="color:#3b6ac8">CHECK</span><span style="color:#323232">(</span> temperature <span style="color:#3b6ac8">BETWEEN</span> <span style="color:#323232">-</span><span style="color:#1094a0">60</span> <span style="color:#3b6ac8">AND</span> <span style="color:#1094a0">60</span> <span style="color:#323232">)</span>
+<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<p class="C">
+Добавляем записи и проверяем ограничения:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> observations <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">current_date</span><span style="color:#323232">,</span> <span style="color:#1094a0">25</span><span style="color:#323232">), (</span><span style="color:#3b6ac8">current_date</span><span style="color:#323232">-</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span> <span style="color:#1094a0">22</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 2
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> observations <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">current_date</span><span style="color:#323232">,</span> <span style="color:#1094a0">70</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  new row for relation "observations" violates check constraint "observations_temperature_check"
+DETAIL:  Failing row contains (2017-07-22, 70).
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> observations <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">null</span><span style="color:#323232">,</span> <span style="color:#1094a0">20</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  null value in column "date_taken" violates not-null constraint
+DETAIL:  Failing row contains (null, 20).
+</pre></div>
+<p class="C">
+Создаем представление:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE VIEW</span> observ_fahrenheit <span style="color:#3b6ac8">AS</span>
+    <span style="color:#3b6ac8">SELECT</span> date_taken<span style="color:#323232">,</span> temperature <span style="color:#3b6ac8">AS</span> celsius<span style="color:#323232">,</span> <span style="color:#c73a69">round</span><span style="color:#323232">(</span>temperature<span style="color:#323232">*</span><span style="color:#1094a0">9</span><span style="color:#323232">/</span><span style="color:#1094a0">5</span><span style="color:#323232">+</span><span style="color:#1094a0">32</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">AS</span> fahrenheit
+    <span style="color:#3b6ac8">FROM</span> observations<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE VIEW
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> observ_fahrenheit<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ date_taken | celsius | fahrenheit 
+------------+---------+------------
+ 2017-07-22 |      25 |         77
+ 2017-07-21 |      22 |         72
+(2 rows)
+
+</pre></div>
+<p class="C">
+Индексируем:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE INDEX</span> observations_date <span style="color:#3b6ac8">ON</span> <span style="color:#c73a69">observations</span><span style="color:#323232">(</span>date_taken<span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE INDEX
+</pre></div>
+</body>
+</html>

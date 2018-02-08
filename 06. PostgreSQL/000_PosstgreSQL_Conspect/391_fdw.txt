@@ -1,0 +1,602 @@
+
+СТОРОННИЕ ДАННЫЕ
+~~~~~~~~~~~~~~~~
+
+Создадим отдельную базу данных
+
+  => create database db24;
+  CREATE DATABASE
+
+  => \c db24
+  You are now connected to database "db24" as user "postgres".
+
+Установим расширения: postgres_fdw и file_fdw
+
+  => create extension if not exists postgres_fdw;
+  CREATE EXTENSION
+
+  => create extension if not exists file_fdw;
+  CREATE EXTENSION
+
+.......................................................................
+
+Проверим установленные обертки сторонних данных
+
+  => \dew
+                        List of foreign-data wrappers
+       Name     |  Owner   |       Handler        |       Validator        
+  --------------+----------+----------------------+------------------------
+   file_fdw     | postgres | file_fdw_handler     | file_fdw_validator
+   postgres_fdw | postgres | postgres_fdw_handler | postgres_fdw_validator
+  (2 rows)
+  
+
+.......................................................................
+
+ДОСТУП К ЖУРНАЛУ СЕРВЕРА ЧЕРЕЗ ВНЕШНЮЮ ТАБЛИЦУ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Настроим недельную ротацию журнальных файлов.
+
+  => \c db24 postgres
+  You are now connected to database "db24" as user "postgres".
+
+  => alter system set logging_collector = 'on';
+  ALTER SYSTEM
+
+  => alter system set log_destination = 'csvlog';
+  ALTER SYSTEM
+
+  => alter system set log_directory = 'pg_log';
+  ALTER SYSTEM
+
+  => alter system set log_filename = 'postgresql-%a.log';
+  ALTER SYSTEM
+
+  => alter system set log_truncate_on_rotation = 'on';
+  ALTER SYSTEM
+
+  => alter system set log_rotation_size = '0';
+  ALTER SYSTEM
+
+  => alter system set log_rotation_age = '1440';
+  ALTER SYSTEM
+
+.......................................................................
+
+Настроим журналирование всех команд
+
+  => alter system set log_statement to 'all';
+  ALTER SYSTEM
+
+  => alter system set log_duration to off;
+  ALTER SYSTEM
+
+Перезапустим сервер для применения изменений
+
+  => \q
+rm: cannot remove ‘/usr/local/pgsql/data/pg_log/*’: No such file or directory
+
+pg_ctl -w restart 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start....LOG:  redirecting log output to logging collector process
+HINT:  Future log output will appear in directory "pg_log".
+ done
+server started
+  psql 
+
+  => \c db24
+  You are now connected to database "db24" as user "postgres".
+
+.......................................................................
+
+Проверим, что журнал сервера теперь в каталоге pg_log
+
+ls -l /usr/local/pgsql/data/pg_log 
+total 8
+-rw------- 1 postgres postgres 794 мая   27 21:30 postgresql-Fri.csv
+-rw------- 1 postgres postgres  96 мая   27 21:30 postgresql-Fri.log
+
+.......................................................................
+
+Таблицу для доступа к журнальным файлам не обязательно создавать на том же сервере.
+Это можно делать и на отдельном экземпляре PostgreSQL, важно чтобы был доступ
+к журнальным файлам
+
+  => create table pglog (
+  =>   log_time timestamp(3) with time zone,
+  =>   user_name text,
+  =>   database_name text,
+  =>   process_id integer,
+  =>   connection_from text,
+  =>   session_id text,
+  =>   session_line_num bigint,
+  =>   command_tag text,
+  =>   session_start_time timestamp with time zone,
+  =>   virtual_transaction_id text,
+  =>   transaction_id bigint,
+  =>   error_severity text,
+  =>   sql_state_code text,
+  =>   message text,
+  =>   detail text,
+  =>   hint text,
+  =>   internal_query text,
+  =>   internal_query_pos integer,
+  =>   context text,
+  =>   query text,
+  =>   query_pos integer,
+  =>   location text,
+  =>   application_name text
+  => );
+  CREATE TABLE
+
+.......................................................................
+
+Создаем внешний сервер и по одной внешней таблице на каждый день недели
+
+  => create server pglog foreign data wrapper file_fdw;
+  CREATE SERVER
+
+  => create foreign table pglog_mon 
+  =>    () inherits (pglog) 
+  =>    server pglog options (
+  =>       filename '/usr/local/pgsql/data/pg_log/postgresql-Mon.csv', 
+  => 	  format 'csv'
+  =>    );
+  CREATE FOREIGN TABLE
+
+Внешние таблицы могут участвовать в наследовании.
+Это позволяет настроить доступ ко всем файлам журнала через таблицу pglog
+
+.......................................................................
+
+  => create foreign table pglog_tue 
+  =>    () inherits (pglog) 
+  =>    server pglog options (
+  =>       filename '/usr/local/pgsql/data/pg_log/postgresql-Tue.csv', 
+  => 	  format 'csv'
+  =>    );
+  CREATE FOREIGN TABLE
+
+  => create foreign table pglog_wed 
+  =>    () inherits (pglog) 
+  =>    server pglog options (
+  =>       filename '/usr/local/pgsql/data/pg_log/postgresql-Wed.csv', 
+  => 	  format 'csv'
+  =>    );
+  CREATE FOREIGN TABLE
+
+  => create foreign table pglog_thu 
+  =>    () inherits (pglog) 
+  =>    server pglog options (
+  =>       filename '/usr/local/pgsql/data/pg_log/postgresql-Thu.csv', 
+  => 	  format 'csv'
+  =>    );
+  CREATE FOREIGN TABLE
+
+  => create foreign table pglog_fri 
+  =>    () inherits (pglog) 
+  =>    server pglog options (
+  =>       filename '/usr/local/pgsql/data/pg_log/postgresql-Fri.csv', 
+  => 	  format 'csv'
+  =>    );
+  CREATE FOREIGN TABLE
+
+  => create foreign table pglog_sat 
+  =>    () inherits (pglog) 
+  =>    server pglog options (
+  =>       filename '/usr/local/pgsql/data/pg_log/postgresql-Sat.csv', 
+  => 	  format 'csv'
+  =>    );
+  CREATE FOREIGN TABLE
+
+  => create foreign table pglog_sun 
+  =>    () inherits (pglog) 
+  =>    server pglog options (
+  =>       filename '/usr/local/pgsql/data/pg_log/postgresql-Sun.csv', 
+  => 	  format 'csv'
+  =>    );
+  CREATE FOREIGN TABLE
+
+.......................................................................
+
+Создадим недостающие файлы
+
+touch /usr/local/pgsql/data/pg_log/postgresql-Mon.csv 
+touch /usr/local/pgsql/data/pg_log/postgresql-Tue.csv 
+touch /usr/local/pgsql/data/pg_log/postgresql-Wed.csv 
+touch /usr/local/pgsql/data/pg_log/postgresql-Thu.csv 
+touch /usr/local/pgsql/data/pg_log/postgresql-Fri.csv 
+touch /usr/local/pgsql/data/pg_log/postgresql-Sat.csv 
+touch /usr/local/pgsql/data/pg_log/postgresql-Sun.csv 
+
+.......................................................................
+
+Смотрим в журнал сервера через таблицу pglog
+
+  => select tableoid::regclass, count(*) from pglog
+  =>  group by tableoid order by tableoid;
+   tableoid  | count 
+  -----------+-------
+   pglog_fri |    15
+  (1 row)
+  
+
+.......................................................................
+
+  => \pset expanded on
+  Expanded display is on.
+
+  => select * from pglog where process_id = pg_backend_pid() 
+  =>  order by session_line_num desc limit 1;
+  -[ RECORD 1 ]----------+--------------------------------------------------------------------
+  log_time               | 2016-05-27 21:30:03.675+03
+  user_name              | postgres
+  database_name          | db24
+  process_id             | 15215
+  connection_from        | [local]
+  session_id             | 5748922b.3b6f
+  session_line_num       | 11
+  command_tag            | idle
+  session_start_time     | 2016-05-27 21:30:03+03
+  virtual_transaction_id | 3/12
+  transaction_id         | 0
+  error_severity         | LOG
+  sql_state_code         | 00000
+  message                | statement: select * from pglog where process_id = pg_backend_pid() +
+                         |  order by session_line_num desc limit 1;
+  detail                 | 
+  hint                   | 
+  internal_query         | 
+  internal_query_pos     | 
+  context                | 
+  query                  | 
+  query_pos              | 
+  location               | 
+  application_name       | psql
+  
+
+  => \pset expanded off
+  Expanded display is off.
+
+.......................................................................
+
+ИСПОЛЬЗОВАНИЕ postgres_fdw
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+В качестве удаленной БД будем использовать БД в этом же кластере.
+
+  => create database db24_remote;
+  CREATE DATABASE
+
+  => create role remote_app login;
+  CREATE ROLE
+
+  => alter database db24_remote owner to remote_app;
+  ALTER DATABASE
+
+.......................................................................
+
+В отдельной схеме создадим таблицу people
+
+  => \c db24_remote remote_app
+  You are now connected to database "db24_remote" as user "remote_app".
+
+  => create schema remote_app;
+  CREATE SCHEMA
+
+  => create table remote_app.people(
+  =>   id numeric primary key,
+  =>   name varchar(100) not null,
+  =>   employed boolean,
+  =>   constraint uname unique(name)
+  => );
+  CREATE TABLE
+
+  => insert into remote_app.people values
+  =>    (1, 'Иванов', true),(2, 'Петров', true), (3, 'Сидоров', false);
+  INSERT 0 3
+
+  => create view employee_v as select * from people where employed;
+  CREATE VIEW
+
+.......................................................................
+
+Настроим доступ к БL db24_remote по методу аутентификации MD5
+Внесем необходимые изменения в файл pg_hba.conf
+
+sed "1i local	db24_remote	all	md5" -i /usr/local/pgsql/data/pg_hba.conf 
+
+Мы добавили в файл первой строкой следующую запись:
+
+head -n 1 /usr/local/pgsql/data/pg_hba.conf 
+local	db24_remote	all	md5
+
+Перечитаем конфигурацию и добавим пароль пользователю remote_app
+
+  => \c db24 postgres
+  You are now connected to database "db24" as user "postgres".
+
+  => select pg_reload_conf();
+   pg_reload_conf 
+  ----------------
+   t
+  (1 row)
+  
+
+  => alter role remote_app password 'secret';
+  ALTER ROLE
+
+.......................................................................
+
+Настроим доступ к таблице people из локальной БД db24
+Для этого создадим локального владельца объектов и схему
+
+  => \c db24 postgres
+  You are now connected to database "db24" as user "postgres".
+
+  => create role local_app login;
+  CREATE ROLE
+
+  => create schema local_app authorization local_app;
+  CREATE SCHEMA
+
+.......................................................................
+
+Создадим сторонний сервер и дадим локальному владельцу доступ к нему
+
+  => create server remote_server
+  =>    foreign data wrapper postgres_fdw
+  =>    options (dbname 'db24_remote');
+  CREATE SERVER
+
+  => grant usage on foreign server remote_server to local_app;
+  GRANT
+
+.......................................................................
+
+  => \pset expanded on
+  Expanded display is on.
+
+  => \des+ remote_server
+  List of foreign servers
+  -[ RECORD 1 ]--------+-----------------------
+  Name                 | remote_server
+  Owner                | postgres
+  Foreign-data wrapper | postgres_fdw
+  Access privileges    | postgres=U/postgres   +
+                       | local_app=U/postgres
+  Type                 | 
+  Version              | 
+  FDW Options          | (dbname 'db24_remote')
+  Description          | 
+  
+
+  => \pset expanded off
+  Expanded display is off.
+
+.......................................................................
+
+Настроим сопоставление пользователя для стороннего сервера
+
+  =>  create user mapping for local_app
+  =>    server remote_server
+  =>    options (user 'remote_app', password 'secret');
+  CREATE USER MAPPING
+
+  => \deu+
+                          List of user mappings
+      Server     | User name |               FDW Options                
+  ---------------+-----------+------------------------------------------
+   remote_server | local_app | ("user" 'remote_app', password 'secret')
+  (1 row)
+  
+
+.......................................................................
+
+Стороннюю таблицу можно создать напрямую, используя команду
+CREATE FOREIGN TABLE.
+А можно импортировать:
+
+  => \c db24 local_app
+  You are now connected to database "db24" as user "local_app".
+
+  => import foreign schema remote_app
+  =>    limit to (people, employee_v)
+  =>    from server remote_server
+  =>    into local_app;
+  IMPORT FOREIGN SCHEMA
+
+.......................................................................
+
+  => \d local_app.people
+                       Foreign table "local_app.people"
+    Column  |          Type          | Modifiers |       FDW Options        
+  ----------+------------------------+-----------+--------------------------
+   id       | numeric                | not null  | (column_name 'id')
+   name     | character varying(100) | not null  | (column_name 'name')
+   employed | boolean                |           | (column_name 'employed')
+  Server: remote_server
+  FDW Options: (schema_name 'remote_app', table_name 'people')
+  
+
+  => \d local_app.employee_v
+                     Foreign table "local_app.employee_v"
+    Column  |          Type          | Modifiers |       FDW Options        
+  ----------+------------------------+-----------+--------------------------
+   id       | numeric                |           | (column_name 'id')
+   name     | character varying(100) |           | (column_name 'name')
+   employed | boolean                |           | (column_name 'employed')
+  Server: remote_server
+  FDW Options: (schema_name 'remote_app', table_name 'employee_v')
+  
+
+.......................................................................
+
+Теперь можно выполнять запросы к сторонним таблицам
+
+  => select * from people;
+   id |  name   | employed 
+  ----+---------+----------
+    1 | Иванов  | t
+    2 | Петров  | t
+    3 | Сидоров | f
+  (3 rows)
+  
+
+  => insert into people values (4, 'Кузнецов', true);
+  INSERT 0 1
+
+  => select * from employee_v;
+   id |   name   | employed 
+  ----+----------+----------
+    1 | Иванов   | t
+    2 | Петров   | t
+    4 | Кузнецов | t
+  (3 rows)
+  
+
+.......................................................................
+
+Для выполнения запроса, на удаленном сервере открывается новый сеанс,
+который будет обслуживать все последующие запросы нашего сеанса
+
+  psql 
+
+  => \c db24
+  You are now connected to database "db24" as user "postgres".
+
+  => select pid, usename, application_name, query from pg_stat_activity;
+    pid  |  usename   | application_name |                                query                                
+  -------+------------+------------------+---------------------------------------------------------------------
+   15665 | remote_app | postgres_fdw     | COMMIT TRANSACTION
+   15649 | local_app  | psql             | select * from employee_v;
+   15708 | postgres   | psql             | select pid, usename, application_name, query from pg_stat_activity;
+  (3 rows)
+  
+
+  => select pid as fdw_pid from pg_stat_activity where usename = 'remote_app'\gset
+
+.......................................................................
+
+Посмотрим какие команды выполнялись на удаленном сервере
+
+  => \pset format unaligned
+  Output format is unaligned.
+
+  => select process_id, translate(message, chr(10), ' ') as message from pglog
+  =>  where process_id = :fdw_pid order by session_line_num asc;
+  process_id|message
+  15665|statement: SET search_path = pg_catalog
+  15665|statement: SET timezone = 'UTC'
+  15665|statement: SET datestyle = ISO
+  15665|statement: SET intervalstyle = postgres
+  15665|statement: SET extra_float_digits = 3
+  15665|statement: START TRANSACTION ISOLATION LEVEL REPEATABLE READ
+  15665|statement: SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = 'remote_app'
+  15665|statement: SELECT relname,   attname,   format_type(atttypid, atttypmod),   attnotnull,   pg_get_expr(adbin, adrelid),   collname,   collnsp.nspname FROM pg_class c   JOIN pg_namespace n ON     relnamespace = n.oid   LEFT JOIN pg_attribute a ON     attrelid = c.oid AND attnum > 0       AND NOT attisdropped   LEFT JOIN pg_attrdef ad ON     adrelid = c.oid AND adnum = attnum   LEFT JOIN pg_collation coll ON     coll.oid = attcollation   LEFT JOIN pg_namespace collnsp ON     collnsp.oid = collnamespace WHERE c.relkind IN ('r', 'v', 'f', 'm')   AND n.nspname = 'remote_app' AND c.relname IN ('people', 'employee_v') ORDER BY c.relname, a.attnum
+  15665|statement: COMMIT TRANSACTION
+  15665|statement: START TRANSACTION ISOLATION LEVEL REPEATABLE READ
+  15665|execute <unnamed>: DECLARE c1 CURSOR FOR SELECT id, name, employed FROM remote_app.people
+  15665|statement: FETCH 100 FROM c1
+  15665|statement: CLOSE c1
+  15665|statement: COMMIT TRANSACTION
+  15665|statement: START TRANSACTION ISOLATION LEVEL REPEATABLE READ
+  15665|execute pgsql_fdw_prep_1: INSERT INTO remote_app.people(id, name, employed) VALUES ($1, $2, $3)
+  15665|statement: DEALLOCATE pgsql_fdw_prep_1
+  15665|statement: COMMIT TRANSACTION
+  15665|statement: START TRANSACTION ISOLATION LEVEL REPEATABLE READ
+  15665|execute <unnamed>: DECLARE c1 CURSOR FOR SELECT id, name, employed FROM remote_app.employee_v
+  15665|statement: FETCH 100 FROM c1
+  15665|statement: CLOSE c1
+  15665|statement: COMMIT TRANSACTION
+  (23 rows)
+
+  => \pset format aligned
+  Output format is aligned.
+
+  => \q
+
+.......................................................................
+
+Параметр use_remote_cost_estimate определяет статистику какого сервера
+использовать для оценки доступа к сторонней таблице.
+Устанавливается на уровне стороннего сервера или таблицы.
+По умолчанию используется локальная статистика.
+Для сбора статистики по количеству строк и страниц:
+
+  => analyze people;
+  ANALYZE
+
+  => select relpages, reltuples from pg_class where oid = 'people'::regclass;
+   relpages | reltuples 
+  ----------+-----------
+          1 |         4
+  (1 row)
+  
+
+Статистика по столбцам не собирается
+
+.......................................................................
+
+Постгрес будет пытаться передать условие WHERE для сторонней таблицы
+на удаленный сервер, чтобы минимизировать количество возвращаемых данных.
+EXPLAIN VERBOSE показывает какой именно запрос будет выполнен на удаленном сервере
+
+  => explain verbose select * from people where id = 1;
+                                          QUERY PLAN                                        
+  ------------------------------------------------------------------------------------------
+   Foreign Scan on local_app.people  (cost=100.00..101.07 rows=1 width=20)
+     Output: id, name, employed
+     Remote SQL: SELECT id, name, employed FROM remote_app.people WHERE ((id = 1::numeric))
+  (3 rows)
+  
+
+На стоимость запроса влияют параметры стороннего сервера:
+   fdw_startup_cost - начальная стоимость запроса, по умолчанию 100
+   fdw_tuple_cost - доп. стоимость обработки удаленной строки, по умолчанию 0.01
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+Восстановим настройки.
+
+  => \c db24 postgres
+  You are now connected to database "db24" as user "postgres".
+
+  => alter system reset logging_collector;
+  ALTER SYSTEM
+
+  => alter system reset log_destination;
+  ALTER SYSTEM
+
+  => alter system reset log_directory;
+  ALTER SYSTEM
+
+  => alter system reset log_filename;
+  ALTER SYSTEM
+
+  => alter system reset log_truncate_on_rotation;
+  ALTER SYSTEM
+
+  => alter system reset log_rotation_size;
+  ALTER SYSTEM
+
+  => alter system reset log_rotation_age;
+  ALTER SYSTEM
+
+  => alter system reset log_statement;
+  ALTER SYSTEM
+
+  => alter system reset log_duration;
+  ALTER SYSTEM
+
+  => \q
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started

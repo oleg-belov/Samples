@@ -1,0 +1,600 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF8">
+<style>
+p.c    { }
+h1     { font-size: 160%; font-weight: bold; padding-top: 1ex; padding-bottom: 1ex; }
+div.s1 { margin-left: 20px; padding-left: 10px; font-weight: bold; }
+div.s2 { margin-left: 80px; padding-left: 10px; font-weight: bold; }
+div.s3 { margin-left: 140px; padding-left: 10px; font-weight: bold; }
+div.r1 { margin-left: 20px; padding-left: 10px; }
+div.r2 { margin-left: 80px; padding-left: 10px; }
+div.r3 { margin-left: 140px; padding-left: 10px; }
+div.e  { margin-left: 20px; padding-left: 10px; font-weight: bold; <!--color: darkblue;--> }
+div.r  { margin-left: 20px; padding-left: 10px; <!--color: darkblue;--> }
+</style>
+</head>
+<body>
+<h1>
+Процедурные языки
+</h1>
+<p class="C">
+Список установленных процедурных языков:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dL</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                      List of languages
+  Name   |  Owner   | Trusted |         Description          
+---------+----------+---------+------------------------------
+ plpgsql | postgres | t       | PL/pgSQL procedural language
+(1 row)
+
+</pre></div>
+<p class="C">
+По умолчанию доступен только PL/pgSQL.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+После появления в PostgreSQL механизма расширений, новые языки принято
+устанавливать командой CREATE EXTENSION.  Проверим, какие еще процедурные
+языки доступны для установки.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> name<span style="color:#323232">,</span> installed_version<span style="color:#323232">,</span> <span style="color:#3b6ac8">comment</span>
+     <span style="color:#3b6ac8">FROM</span> pg_available_extensions <span style="color:#3b6ac8">WHERE</span> name <span style="color:#3b6ac8">LIKE</span> <span style="color:#1094a0">'pl%'</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+  name   | installed_version |                comment                 
+---------+-------------------+----------------------------------------
+ plperlu |                   | PL/PerlU untrusted procedural language
+ plpgsql | 1.0               | PL/pgSQL procedural language
+ plperl  |                   | PL/Perl procedural language
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Установим plperl и plperlu, доверенный и недоверенный соответственно:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE EXTENSION</span> plperl<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE EXTENSION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE EXTENSION</span> plperlu<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE EXTENSION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#00a150">\dL</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                           List of languages
+  Name   |  Owner   | Trusted |              Description               
+---------+----------+---------+----------------------------------------
+ plperl  | student  | t       | PL/Perl procedural language
+ plperlu | student  | f       | PL/PerlU untrusted procedural language
+ plpgsql | postgres | t       | PL/pgSQL procedural language
+(3 rows)
+
+</pre></div>
+<p class="C">
+Примечание. Чтобы языки автоматически появлялись во всех новых базах данных,
+расширения нужно предварительно установить в БД template1.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Пример использования доверенного языка plperl:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">num_matches</span><span style="color:#323232">(</span>str <span style="color:#a00050">text</span><span style="color:#323232">,</span> pattern <span style="color:#a00050">text</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">integer</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#c73a69">my</span> <span style="color:#323232">(</span>$str<span style="color:#323232">,</span>$pattern<span style="color:#323232">) =</span> &#64;_<span style="color:#323232">;</span>
+my &#64;matches <span style="color:#323232">=</span> $str <span style="color:#323232">=</span>~ <span style="color:#323232">/</span>$pattern<span style="color:#323232">/</span>g<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">return</span> scalar &#64;matches<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plperl<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">num_matches</span><span style="color:#323232">(</span><span style="color:#1094a0">'Hello, world!'</span><span style="color:#323232">,</span> <span style="color:#1094a0">'l'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ num_matches 
+-------------
+           3
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Недоверенные языки могут использовать только суперпользователи.
+</p>
+<p class="C">
+Пример использования недоверенного языка plperl:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">read_file</span><span style="color:#323232">(</span>fname <span style="color:#a00050">text</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS SETOF</span> <span style="color:#a00050">text</span> <span style="color:#3b6ac8">AS</span> $$
+<span style="color:#c73a69">my</span> <span style="color:#323232">(</span>$fname<span style="color:#323232">) =</span> &#64;_<span style="color:#323232">;</span>
+open FILE<span style="color:#323232">,</span> $fname <span style="color:#3b6ac8">or</span> die <span style="color:#1094a0">&quot;Cannot open file&quot;</span><span style="color:#323232">;</span>
+<span style="color:#c73a69">chomp</span><span style="color:#323232">(</span>my &#64;f <span style="color:#323232">= &lt;</span>FILE<span style="color:#323232">&gt;);</span>
+<span style="color:#3b6ac8">close</span> FILE<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">return</span> \&#64;f<span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plperlu<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#323232">*</span> <span style="color:#3b6ac8">FROM</span> <span style="color:#c73a69">read_file</span><span style="color:#323232">(</span><span style="color:#1094a0">'/etc/passwd'</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">LIMIT</span> <span style="color:#1094a0">3</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+                    read_file                    
+-------------------------------------------------
+ root:x:0:0:root:/root:/bin/bash
+ daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+ bin:x:2:2:bin:/bin:/usr/sbin/nologin
+(3 rows)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Анонимные блоки PL/pgSQL
+</h1>
+<p class="C">
+Минимальный блок PL/pgSQL-кода:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> <span style="color:#1094a0">'BEGIN END;'</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+DO
+</pre></div>
+<p class="C">
+В этом примере:
+</p>
+<ul class="U">
+<li>Отсутствует ключевое слово LANGUAGE - по умолчанию используется plpgsql;</li>
+<li>Отсутствует секция объявлений;</li>
+<li>Отсутствуют операторы.</li>
+</ul>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Вариант программы Hello, World!
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+ <span style="color:#969696">/* После каждого объявления ставится знак ';'</span>
+<span style="color:#969696">    Этот же знак ставится после каждого оператора.</span>
+<span style="color:#969696"> */</span>
+    var1 <span style="color:#a00050">text</span><span style="color:#323232">;</span>
+    var2 <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">'World'</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span> <span style="color:#969696">-- здесь нельзя ставить ;</span>
+    var1 <span style="color:#323232">:=</span> <span style="color:#1094a0">'Hello'</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'%, %!'</span><span style="color:#323232">,</span> var1<span style="color:#323232">,</span> var2<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  Hello, World!
+DO
+</pre></div>
+<p class="C">
+В этом примере:
+</p>
+<ul class="U">
+<li>Два вида комментариев: многострочные и однострочные;</li>
+<li>Каждое объявление и оператор завершаются точкой-с-запятой;</li>
+<li>":=" - оператор присваивания;</li>
+<li>RAISE NOTICE - вывод сообщений;</li>
+</ul>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Вложенные блоки:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#323232">&lt;&lt;</span>outer_block<span style="color:#323232">&gt;&gt;</span>
+<span style="color:#3b6ac8">DECLARE</span>
+    var <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">'Hello'</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#323232">&lt;&lt;</span>inner_block<span style="color:#323232">&gt;&gt;</span>
+    <span style="color:#3b6ac8">DECLARE</span>
+        var <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">'World'</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">BEGIN</span>
+        <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'%, %!'</span><span style="color:#323232">,</span> outer_block.var<span style="color:#323232">,</span> inner_block.var<span style="color:#323232">;</span>
+        <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'Без метки используется внутренняя переменная: %'</span><span style="color:#323232">,</span> var<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END</span> inner_block<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span> outer_block<span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  Hello, World!
+NOTICE:  Без метки используется внутренняя переменная: World
+DO
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Функции PL/pgSQL
+</h1>
+<p class="C">
+Пример функции форматирования номера телефона с входным параметром и условным
+оператором IF. Для возврата значения используется оператор RETURN.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fmt_in</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">IN</span> phone <span style="color:#a00050">text</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">text</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">IF</span> phone ~ <span style="color:#1094a0">'^[0-9]*$'</span> <span style="color:#3b6ac8">AND</span> <span style="color:#c73a69">length</span><span style="color:#323232">(</span>phone<span style="color:#323232">) =</span> <span style="color:#1094a0">10</span> <span style="color:#3b6ac8">THEN</span>
+        <span style="color:#3b6ac8">RETURN</span> <span style="color:#1094a0">'+7('</span> || <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>phone<span style="color:#323232">,</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">)</span> || <span style="color:#1094a0">')'</span> 
+                     || <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>phone<span style="color:#323232">,</span><span style="color:#1094a0">4</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">)</span> || <span style="color:#1094a0">'-'</span>
+                     || <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>phone<span style="color:#323232">,</span><span style="color:#1094a0">7</span><span style="color:#323232">,</span><span style="color:#1094a0">2</span><span style="color:#323232">)</span> || <span style="color:#1094a0">'-'</span>
+                     || <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>phone<span style="color:#323232">,</span><span style="color:#1094a0">9</span><span style="color:#323232">);</span>
+    <span style="color:#3b6ac8">ELSE</span>
+        <span style="color:#3b6ac8">RETURN NULL</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END IF</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql <span style="color:#3b6ac8">IMMUTABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Эта же функция с параметром OUT:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fmt_out</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">IN</span> phone <span style="color:#a00050">text</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">OUT</span> retval <span style="color:#a00050">text</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    retval <span style="color:#323232">:=</span> <span style="color:#c73a69">fmt_in</span><span style="color:#323232">(</span>phone<span style="color:#323232">);</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql <span style="color:#3b6ac8">IMMUTABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Функции fmt_in и fmt_out по сути одинаковы. Отличия:
+</p>
+<ul class="U">
+<li>Вместо RETURNS добавлен второй параметр OUT.</li>
+<li>Оператор RETURN не нужен, просто присваиваем значение параметру OUT.</li>
+</ul>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Эта же функция с параметром INOUT:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fmt_inout</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">INOUT</span> phone <span style="color:#a00050">text</span><span style="color:#323232">)</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    phone <span style="color:#323232">:=</span> <span style="color:#c73a69">fmt_out</span><span style="color:#323232">(</span>phone<span style="color:#323232">);</span> <span style="color:#969696">-- вызов функции с параметром OUT</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql <span style="color:#3b6ac8">IMMUTABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Параметр INOUT с одной стороны заставляет функцию принимать значение,
+с другой стороны определяет возвращаемое значение функции.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Все три варианта функции вызываются одинаково:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">fmt_in</span><span style="color:#323232">(</span><span style="color:#1094a0">'8122128506'</span><span style="color:#323232">),</span> 
+          <span style="color:#c73a69">fmt_out</span><span style="color:#323232">(</span><span style="color:#1094a0">'8122128506'</span><span style="color:#323232">),</span> 
+          <span style="color:#c73a69">fmt_inout</span><span style="color:#323232">(</span><span style="color:#1094a0">'8122128506'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+      fmt_in      |     fmt_out      |    fmt_inout     
+------------------+------------------+------------------
+ +7(812)212-85-06 | +7(812)212-85-06 | +7(812)212-85-06
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Чтобы вернуть несколько значений, используем несколько OUT параметров.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">fmt_out_2</span> <span style="color:#323232">(</span><span style="color:#3b6ac8">IN</span> phone <span style="color:#a00050">text</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">OUT</span> code <span style="color:#a00050">text</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">OUT</span> num <span style="color:#a00050">text</span><span style="color:#323232">)</span>
+<span style="color:#969696">-- RETURNS можно не писать, предполагается RETURNS record</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">IF</span> phone ~ <span style="color:#1094a0">'^[0-9]*$'</span> <span style="color:#3b6ac8">AND</span> <span style="color:#c73a69">length</span><span style="color:#323232">(</span>phone<span style="color:#323232">) =</span> <span style="color:#1094a0">10</span> <span style="color:#3b6ac8">THEN</span>
+        code <span style="color:#323232">:=</span> <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>phone<span style="color:#323232">,</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span><span style="color:#1094a0">3</span><span style="color:#323232">);</span>
+        num  <span style="color:#323232">:=</span> <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>phone<span style="color:#323232">,</span><span style="color:#1094a0">4</span><span style="color:#323232">);</span>
+    <span style="color:#3b6ac8">ELSE</span>
+        code <span style="color:#323232">:=</span> <span style="color:#3b6ac8">NULL</span><span style="color:#323232">;</span>
+        num  <span style="color:#323232">:=</span> <span style="color:#3b6ac8">NULL</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END IF</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql <span style="color:#3b6ac8">IMMUTABLE</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Условный оператор CASE.
+</h1>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    code <span style="color:#a00050">text</span> <span style="color:#323232">:= (</span><span style="color:#c73a69">fmt_out_2</span><span style="color:#323232">(</span><span style="color:#1094a0">'8122128506'</span><span style="color:#323232">))</span>.code<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">CASE</span> code
+    <span style="color:#3b6ac8">WHEN</span> <span style="color:#1094a0">'495'</span><span style="color:#323232">,</span> <span style="color:#1094a0">'499'</span> <span style="color:#3b6ac8">THEN</span>
+        <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'% - Москва'</span><span style="color:#323232">,</span> code<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">WHEN</span> <span style="color:#1094a0">'812'</span> <span style="color:#3b6ac8">THEN</span>
+        <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'% - Санкт-Петербург'</span><span style="color:#323232">,</span> code<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">WHEN</span> <span style="color:#1094a0">'384'</span> <span style="color:#3b6ac8">THEN</span>
+        <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'% - Кемеровская область'</span><span style="color:#323232">,</span> code<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">ELSE</span>
+        <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'% - Прочие'</span><span style="color:#323232">,</span> code<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END CASE</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  812 - Санкт-Петербург
+DO
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Циклы
+</h1>
+<p class="C">
+В PL/pgSQL можно использовать циклы:
+</p>
+<ul class="U">
+<li>FOR</li>
+<li>WHILE</li>
+<li>LOOP</li>
+</ul>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Целочисленный вариант цикла FOR.
+</p>
+<p class="C">
+Цикл повторяется, пока счетчик цикла (i), инициализированный в значение
+нижней границы, не превысит верхнюю границу цикла.  С каждой итерацией
+счетчик увеличивается на 1 (можно изменить в BY).
+</p>
+<p class="C">
+Для этого варианта FOR не требуется явное объявление счетчика цикла.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">reverse_for</span> <span style="color:#323232">(</span>line <span style="color:#a00050">text</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">text</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    line_length CONSTANT <span style="color:#a00050">int</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">length</span><span style="color:#323232">(</span>line<span style="color:#323232">);</span>
+    retval <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">''</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">FOR</span> i <span style="color:#3b6ac8">IN</span> <span style="color:#1094a0">1</span> .. line_length <span style="color:#3b6ac8">LOOP</span>
+        retval <span style="color:#323232">:=</span> <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>line<span style="color:#323232">,</span> i<span style="color:#323232">,</span><span style="color:#1094a0">1</span><span style="color:#323232">)</span> || retval<span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END LOOP</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RETURN</span> retval<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql <span style="color:#3b6ac8">IMMUTABLE STRICT</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Примечание. Указание STRICT говорит, что если не заданы входные параметры,
+то нужно сразу вернуть NULL без выполнения функции.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+При указании REVERSE значение счетчика на каждой итерации уменьшается,
+а нижнюю и верхнюю границы цикла нужно поменять местами.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">reverse_rof</span> <span style="color:#323232">(</span>line <span style="color:#a00050">text</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">text</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    line_length CONSTANT <span style="color:#a00050">int</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">length</span><span style="color:#323232">(</span>line<span style="color:#323232">);</span>
+    retval <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">''</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">FOR</span> i <span style="color:#3b6ac8">IN REVERSE</span> line_length .. <span style="color:#1094a0">1</span> <span style="color:#3b6ac8">LOOP</span>
+        retval <span style="color:#323232">:=</span> retval || <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>line<span style="color:#323232">,</span> i<span style="color:#323232">,</span><span style="color:#1094a0">1</span><span style="color:#323232">);</span>
+    <span style="color:#3b6ac8">END LOOP</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RETURN</span> retval<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql <span style="color:#3b6ac8">IMMUTABLE STRICT</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Цикл WHILE.
+</p>
+<p class="C">
+Выполняется до тех пор, пока истинно условие на входе в цикл.
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">reverse_while</span> <span style="color:#323232">(</span>line <span style="color:#a00050">text</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">text</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    line_length CONSTANT <span style="color:#a00050">int</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">length</span><span style="color:#323232">(</span>line<span style="color:#323232">);</span>
+    i <span style="color:#a00050">int</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span>
+    retval <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">''</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">WHILE</span> i <span style="color:#323232">&lt;=</span> line_length <span style="color:#3b6ac8">LOOP</span>
+        retval <span style="color:#323232">:=</span> <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>line<span style="color:#323232">,</span> i<span style="color:#323232">,</span><span style="color:#1094a0">1</span><span style="color:#323232">)</span> || retval<span style="color:#323232">;</span>
+        i <span style="color:#323232">:=</span> i <span style="color:#323232">+</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END LOOP</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RETURN</span> retval<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql <span style="color:#3b6ac8">IMMUTABLE STRICT</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Цикл LOOP.
+</p>
+<p class="C">
+Для выхода из цикла используется оператор EXIT:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE FUNCTION</span> <span style="color:#c73a69">reverse_loop</span> <span style="color:#323232">(</span>line <span style="color:#a00050">text</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">RETURNS</span> <span style="color:#a00050">text</span>
+<span style="color:#3b6ac8">AS</span> $$
+<span style="color:#3b6ac8">DECLARE</span>
+    line_length CONSTANT <span style="color:#a00050">int</span> <span style="color:#323232">:=</span> <span style="color:#c73a69">length</span><span style="color:#323232">(</span>reverse_loop.line<span style="color:#323232">);</span>
+    i <span style="color:#a00050">int</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span>
+    retval <span style="color:#a00050">text</span> <span style="color:#323232">:=</span> <span style="color:#1094a0">''</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#323232">&lt;&lt;</span>main_loop<span style="color:#323232">&gt;&gt;</span>
+    <span style="color:#3b6ac8">LOOP</span>
+        <span style="color:#3b6ac8">EXIT</span> main_loop <span style="color:#3b6ac8">WHEN</span> i <span style="color:#323232">&gt;</span> line_length<span style="color:#323232">;</span>
+        retval <span style="color:#323232">:=</span> <span style="color:#c73a69">substr</span><span style="color:#323232">(</span>reverse_loop.line<span style="color:#323232">,</span> i<span style="color:#323232">,</span><span style="color:#1094a0">1</span><span style="color:#323232">)</span> || retval<span style="color:#323232">;</span>
+        i <span style="color:#323232">:=</span> i <span style="color:#323232">+</span> <span style="color:#1094a0">1</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">END LOOP</span><span style="color:#323232">;</span>
+    <span style="color:#3b6ac8">RETURN</span> retval<span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$ <span style="color:#3b6ac8">LANGUAGE</span> plpgsql <span style="color:#3b6ac8">IMMUTABLE STRICT</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE FUNCTION
+</pre></div>
+<p class="C">
+Обратите внимание. Тело функции помещается в неявный блок, метка которого
+совпадает с именем функции. Поэтому к параметрам можно обращаться как
+имя_функции.параметр.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Убедимся что функции работают правильно:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">SELECT</span> <span style="color:#c73a69">reverse_for</span><span style="color:#323232">(</span><span style="color:#1094a0">'абырвалГ'</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">as</span> <span style="color:#1094a0">&quot;for&quot;</span><span style="color:#323232">,</span>
+          <span style="color:#c73a69">reverse_rof</span><span style="color:#323232">(</span><span style="color:#1094a0">'Главрыба'</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">as</span> <span style="color:#1094a0">&quot;reverse for&quot;</span><span style="color:#323232">,</span>
+          <span style="color:#c73a69">reverse_while</span><span style="color:#323232">(</span><span style="color:#1094a0">'абырвалГ'</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">as</span> <span style="color:#1094a0">&quot;while&quot;</span><span style="color:#323232">,</span>
+          <span style="color:#c73a69">reverse_loop</span><span style="color:#323232">(</span><span style="color:#1094a0">'Главрыба'</span><span style="color:#323232">)</span> <span style="color:#3b6ac8">as</span> <span style="color:#1094a0">&quot;loop&quot;</span><span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+   for    | reverse for |  while   |   loop   
+----------+-------------+----------+----------
+ Главрыба | абырвалГ    | Главрыба | абырвалГ
+(1 row)
+
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Замечание. В PostgreSQL есть встроенная функция reverse.
+</p>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<h1>
+Выражения
+</h1>
+<p class="C">
+Любые выражения в PL/pgSQL выполняются с помощью запросов к базе данных. Самый
+простой способ убедиться в этом - совершить ошибку и посмотреть на сообщение:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'%'</span><span style="color:#323232">,</span> <span style="color:#1094a0">2</span> <span style="color:#323232">+</span> <span style="color:#1094a0">'a'</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+ERROR:  invalid input syntax for integer: "a"
+LINE 1: SELECT 2 + 'a'
+                   ^
+QUERY:  SELECT 2 + 'a'
+CONTEXT:  PL/pgSQL function inline_code_block line 3 at RAISE
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Таким образом, в PL/pgSQL доступно ровно то, что доступно и в SQL. Например,
+если в SQL можно использовать конструкцию CASE, то точно такая же конструкция
+будет работать и в коде на PL/pgSQL (в качестве выражения; не путайте с
+оператором CASE ... END CASE, который есть только PL/pgSQL):
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'%'</span><span style="color:#323232">,</span> <span style="color:#3b6ac8">CASE</span> <span style="color:#1094a0">2</span><span style="color:#323232">+</span><span style="color:#1094a0">2</span> <span style="color:#3b6ac8">WHEN</span> <span style="color:#1094a0">4</span> <span style="color:#3b6ac8">THEN</span> <span style="color:#1094a0">'Все в порядке'</span> <span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  Все в порядке
+DO
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+В выражениях можно использовать и подзапросы, но только скалярные:
+</p>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">CREATE TABLE</span> <span style="color:#c73a69">t</span><span style="color:#323232">(</span>id <span style="color:#a00050">integer</span><span style="color:#323232">,</span> code <span style="color:#a00050">text</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+CREATE TABLE
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">INSERT INTO</span> t <span style="color:#3b6ac8">VALUES</span> <span style="color:#323232">(</span><span style="color:#1094a0">1</span><span style="color:#323232">,</span> <span style="color:#1094a0">'Раз'</span><span style="color:#323232">), (</span><span style="color:#1094a0">2</span><span style="color:#323232">,</span> <span style="color:#1094a0">'Два'</span><span style="color:#323232">);</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+INSERT 0 2
+</pre></div>
+<div class="S1">
+<pre style="color:#323232; background-color:#ffffff;  "><span style="color:#323232">=&gt;</span> <span style="color:#3b6ac8">DO</span> $$
+<span style="color:#3b6ac8">BEGIN</span>
+    <span style="color:#3b6ac8">RAISE NOTICE</span> <span style="color:#1094a0">'%'</span><span style="color:#323232">, (</span><span style="color:#3b6ac8">SELECT</span> code <span style="color:#3b6ac8">FROM</span> t <span style="color:#3b6ac8">WHERE</span> id<span style="color:#323232">=</span><span style="color:#1094a0">1</span><span style="color:#323232">);</span>
+<span style="color:#3b6ac8">END</span><span style="color:#323232">;</span>
+$$<span style="color:#323232">;</span>
+</pre>
+</div>
+<div class="R1"><pre class="R1">
+NOTICE:  Раз
+DO
+</pre></div>
+<hr size=0 style="border-top: 1px dashed grey; border-bottom: 0;"/>
+<p class="C">
+Конец демонстрации.
+</p>
+</body>
+</html>

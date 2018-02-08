@@ -1,0 +1,494 @@
+
+АВТООЧИСТКА
+~~~~~~~~~~~
+
+Создадим БД и таблицу с 1000 строками:
+
+        => create database db6;
+        CREATE DATABASE
+
+        => \c db6
+        You are now connected to database "db6" as user "postgres".
+
+        => create table tvac(id serial, n numeric);
+        CREATE TABLE
+
+        => insert into tvac(n) select 1 from generate_series(1,1000);
+        INSERT 0 1000
+
+И сразу проанализируем ее.
+
+        => analyze tvac;
+        ANALYZE
+
+.......................................................................
+
+Выставим настройки автоочистки.
+Небольшое время ожидания, чтобы сразу видеть результат:
+
+        => alter system set autovacuum_naptime=1;
+        ALTER SYSTEM
+
+Один процент строк:
+
+        => alter system set autovacuum_vacuum_scale_factor=0.01;
+        ALTER SYSTEM
+
+Нулевой порог:
+
+        => alter system set autovacuum_vacuum_threshold=0;
+        ALTER SYSTEM
+
+.......................................................................
+
+Выставим настройки автоанализа.
+Два процента строк:
+
+        => alter system set autovacuum_analyze_scale_factor=0.02;
+        ALTER SYSTEM
+
+Нулевой порог:
+
+        => alter system set autovacuum_analyze_threshold=0;
+        ALTER SYSTEM
+
+И перезапустим сервер.
+
+        => \q
+
+pg_ctl restart -m fast -w -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+
+.......................................................................
+
+Есть ли сейчас таблицы, ожидающие очистки?
+Создадим представление, показывающее такую информацию.
+
+        psql 
+
+        => \c db6
+        You are now connected to database "db6" as user "postgres".
+
+        => create view vacuum_v as
+        =>   with params as (
+        =>     select (select setting::integer
+        =>             from   pg_settings
+        =>             where  name='autovacuum_vacuum_threshold') as vacuum_threshold,
+        =>            (select setting::float
+        =>             from   pg_settings
+        =>             where  name='autovacuum_vacuum_scale_factor') as vacuum_scale_factor
+        =>   )
+        =>   select st.relname,
+        =>          st.n_dead_tup dead_tup,
+        =>          (p.vacuum_threshold + p.vacuum_scale_factor*c.reltuples)::integer max_dead_tup,
+        =>          st.n_dead_tup > (p.vacuum_threshold + p.vacuum_scale_factor*c.reltuples)::integer need_vacuum,
+        =>          st.last_autovacuum
+        =>   from   pg_stat_all_tables st,
+        =>          pg_class c,
+        =>          params p
+        =>   where  c.oid = st.relid
+        =>   and    c.relname = 'tvac';
+        CREATE VIEW
+
+.......................................................................
+
+Проверим.
+
+        => select * from vacuum_v;
+         relname | dead_tup | max_dead_tup | need_vacuum | last_autovacuum 
+        ---------+----------+--------------+-------------+-----------------
+         tvac    |        0 |           10 | f           | 
+        (1 row)
+        
+
+Таблица не требует очистки (0 ненужных версий) и ни разу не очищалась.
+
+.......................................................................
+
+А что с анализом?
+Можно создать аналогичное представление:
+
+        => create view analyze_v as
+        =>   with params as (
+        =>     select (select setting::integer
+        =>             from   pg_settings
+        =>             where  name='autovacuum_analyze_threshold') as analyze_threshold,
+        =>            (select setting::float
+        =>             from   pg_settings
+        =>             where  name='autovacuum_analyze_scale_factor') as analyze_scale_factor
+        =>   )
+        =>   select st.relname,
+        =>          st.n_mod_since_analyze mod_tup,
+        =>          (p.analyze_threshold + p.analyze_scale_factor*c.reltuples)::integer max_mod_tup,
+        =>          st.n_mod_since_analyze > (p.analyze_threshold + p.analyze_scale_factor*c.reltuples)::integer need_analyze,
+        =>          st.last_autoanalyze
+        =>   from   pg_stat_all_tables st,
+        =>          pg_class c,
+        =>          params p
+        =>   where  c.oid = st.relid
+        =>   and    c.relname = 'tvac';
+        CREATE VIEW
+
+.......................................................................
+
+Проверим.
+
+        => select * from analyze_v;
+         relname | mod_tup | max_mod_tup | need_analyze |       last_autoanalyze       
+        ---------+---------+-------------+--------------+------------------------------
+         tvac    |       0 |          20 | f            | 2016-05-27 21:25:54.37583+03
+        (1 row)
+        
+
+Таблица не требует анализа; он выполнялся вручную сразу после создания.
+
+.......................................................................
+
+Отключим автоочистку на уровне таблицы и изменим 11 строк:
+
+        => alter table tvac set (autovacuum_enabled = off);
+        ALTER TABLE
+
+        => update tvac set n = n + 1 where id <= 11;
+        UPDATE 11
+
+.......................................................................
+
+        => \q
+
+sleep 1 
+        psql 
+
+        => \c db6
+        You are now connected to database "db6" as user "postgres".
+
+        => select * from vacuum_v;
+         relname | dead_tup | max_dead_tup | need_vacuum | last_autovacuum 
+        ---------+----------+--------------+-------------+-----------------
+         tvac    |       11 |           10 | t           | 
+        (1 row)
+        
+
+        => select * from analyze_v;
+         relname | mod_tup | max_mod_tup | need_analyze |       last_autoanalyze       
+        ---------+---------+-------------+--------------+------------------------------
+         tvac    |      11 |          20 | f            | 2016-05-27 21:25:54.37583+03
+        (1 row)
+        
+
+Как видно, таблице требуется автоочистка.
+
+.......................................................................
+
+Включим автоочистку для таблицы и подождем немного...
+
+        => alter table tvac set (autovacuum_enabled = on);
+        ALTER TABLE
+
+sleep 3 
+
+.......................................................................
+
+        => select * from vacuum_v;
+         relname | dead_tup | max_dead_tup | need_vacuum |       last_autovacuum        
+        ---------+----------+--------------+-------------+------------------------------
+         tvac    |        0 |           10 | f           | 2016-05-27 21:25:56.44214+03
+        (1 row)
+        
+
+        => select * from analyze_v;
+         relname | mod_tup | max_mod_tup | need_analyze |       last_autoanalyze       
+        ---------+---------+-------------+--------------+------------------------------
+         tvac    |      11 |          20 | f            | 2016-05-27 21:25:54.37583+03
+        (1 row)
+        
+
+Автоочистка пришла и обработала таблицу. Число ненужных версий снова равно нулю.
+При этом автоанализ не выполнялся.
+
+.......................................................................
+
+Изменим еще 11 строк:
+
+        => alter table tvac set (autovacuum_enabled = off);
+        ALTER TABLE
+
+        => update tvac set n = n + 1 where id <= 11;
+        UPDATE 11
+
+.......................................................................
+
+        => \q
+
+sleep 1 
+        psql 
+
+        => \c db6
+        You are now connected to database "db6" as user "postgres".
+
+        => select * from vacuum_v;
+         relname | dead_tup | max_dead_tup | need_vacuum |       last_autovacuum        
+        ---------+----------+--------------+-------------+------------------------------
+         tvac    |       11 |           10 | t           | 2016-05-27 21:25:56.44214+03
+        (1 row)
+        
+
+        => select * from analyze_v;
+         relname | mod_tup | max_mod_tup | need_analyze |       last_autoanalyze       
+        ---------+---------+-------------+--------------+------------------------------
+         tvac    |      22 |          20 | t            | 2016-05-27 21:25:54.37583+03
+        (1 row)
+        
+
+Теперь должна отработать и автоочистка, и автоанализ.
+
+.......................................................................
+
+Проверим это.
+
+        => alter table tvac set (autovacuum_enabled = on);
+        ALTER TABLE
+
+sleep 3 
+
+        => select * from vacuum_v;
+         relname | dead_tup | max_dead_tup | need_vacuum |        last_autovacuum        
+        ---------+----------+--------------+-------------+-------------------------------
+         tvac    |        0 |           10 | f           | 2016-05-27 21:26:00.690123+03
+        (1 row)
+        
+
+        => select * from analyze_v;
+         relname | mod_tup | max_mod_tup | need_analyze |       last_autoanalyze        
+        ---------+---------+-------------+--------------+-------------------------------
+         tvac    |       0 |          20 | f            | 2016-05-27 21:26:00.691244+03
+        (1 row)
+        
+
+Все правильно, отработали оба процесса.
+
+.......................................................................
+
+ЗАМОРОЗКА
+~~~~~~~~~
+
+Сбросим значения автоочистки:
+
+        => alter system reset all;
+        ALTER SYSTEM
+
+Установим для демонстрации параметры заморозки.
+Небольшой возраст транзакции:
+
+        => alter system set vacuum_freeze_min_age=2;
+        ALTER SYSTEM
+
+Возраст, при котором будет выполняться полное сканирование:
+
+        => alter system set vacuum_freeze_table_age=10;
+        ALTER SYSTEM
+
+        => \q
+
+pg_ctl restart -m fast -w -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+
+.......................................................................
+
+        psql 
+
+Создадим таблицу и выполним ее очистку, чтобы заполнить карту видимости:
+
+        => \c db6
+        You are now connected to database "db6" as user "postgres".
+
+        => create extension pageinspect;
+        CREATE EXTENSION
+
+        => create table tfreeze(id serial, n numeric);
+        CREATE TABLE
+
+        => insert into tfreeze(n) select 1 from generate_series(1,100000);
+        INSERT 0 100000
+
+        => vacuum tfreeze;
+        VACUUM
+
+.......................................................................
+
+Создадим представление для того, чтобы наблюдать за битами-подсказками.
+Нас интересует только xmin и биты, которые относятся к нему,
+поскольку версии строк с ненулевым xmax будут очищены.
+
+        => create view tfreeze_v as
+        =>   select '(0,'||lp||')' as ctid,
+        =>          case lp_flags
+        =>            when 0 then 'unused'
+        =>            when 1 then 'normal'
+        =>            when 2 then 'redirect to '||lp_off
+        =>            when 3 then 'dead'
+        =>          end as state,
+        =>          t_xmin as xmin,
+        =>          age(t_xmin) as xmin_age,
+        =>          case when (t_infomask & 256) > 0 then 't' end as xmin_c,
+        =>          case when (t_infomask & 512) > 0 then 't' end as xmin_a,
+        =>          t_xmax as xmax,
+        =>          t_ctid
+        =>   from heap_page_items(get_raw_page('tfreeze',0))
+        =>   where lp between 1 and 5
+        =>   order by lp;
+        CREATE VIEW
+
+.......................................................................
+
+Каков возраст транзакции, создавшей строки?
+
+        => select * from tfreeze_v;
+         ctid  | state  | xmin | xmin_age | xmin_c | xmin_a | xmax | t_ctid 
+        -------+--------+------+----------+--------+--------+------+--------
+         (0,1) | normal |  763 |        2 | t      |        |    0 | (0,1)
+         (0,2) | normal |  763 |        2 | t      |        |    0 | (0,2)
+         (0,3) | normal |  763 |        2 | t      |        |    0 | (0,3)
+         (0,4) | normal |  763 |        2 | t      |        |    0 | (0,4)
+         (0,5) | normal |  763 |        2 | t      |        |    0 | (0,5)
+        (5 rows)
+        
+
+Возраст равен 2; осталась одна транзакция до заморозки.
+
+.......................................................................
+
+        => update tfreeze set n=n+1 where id=2;
+        UPDATE 1
+
+        => select * from tfreeze_v;
+         ctid  | state  | xmin | xmin_age | xmin_c | xmin_a | xmax |  t_ctid  
+        -------+--------+------+----------+--------+--------+------+----------
+         (0,1) | normal |  763 |        3 | t      |        |    0 | (0,1)
+         (0,2) | normal |  763 |        3 | t      |        |  765 | (490,41)
+         (0,3) | normal |  763 |        3 | t      |        |    0 | (0,3)
+         (0,4) | normal |  763 |        3 | t      |        |    0 | (0,4)
+         (0,5) | normal |  763 |        3 | t      |        |    0 | (0,5)
+        (5 rows)
+        
+
+Сейчас страница уже попадает под условия заморозки: она изменена
+(поэтому очистка ее обработает), а возраст транзакции превышает значение,
+установленное параметром vacuum_freeze_min_age.
+
+.......................................................................
+
+        => vacuum tfreeze;
+        VACUUM
+
+        => select * from tfreeze_v;
+         ctid  | state  | xmin | xmin_age | xmin_c | xmin_a | xmax | t_ctid 
+        -------+--------+------+----------+--------+--------+------+--------
+         (0,1) | normal |  763 |        3 | t      | t      |    0 | (0,1)
+         (0,2) | unused |      |          |        |        |      | 
+         (0,3) | normal |  763 |        3 | t      | t      |    0 | (0,3)
+         (0,4) | normal |  763 |        3 | t      | t      |    0 | (0,4)
+         (0,5) | normal |  763 |        3 | t      | t      |    0 | (0,5)
+        (5 rows)
+        
+
+После очистки установлены оба бита, как будто транзакция и зафиксирована,
+и откачена одновременно. Это признак замороженной версии строки.
+
+.......................................................................
+
+Какой сейчас возраст транзакций для таблицы tfreeze?
+
+        => select relfrozenxid, age(relfrozenxid) from pg_class where relname='tfreeze';
+         relfrozenxid | age 
+        --------------+-----
+                  762 |   4
+        (1 row)
+        
+
+Потому что очистка выполнялась не для всей таблицы, а только для измененных страниц,
+так что нет гарантии, что где-то на других страницах не осталось версий строк
+с более старыми транзакциями.
+
+.......................................................................
+
+Выполним еще несколько транзакций, чтобы возраст транзакций таблицы достиг
+значения параметра vacuum_freeze_table_age.
+
+        => update tfreeze set n=n+1 where id=2;
+        UPDATE 1
+
+        => update tfreeze set n=n+1 where id=2;
+        UPDATE 1
+
+        => update tfreeze set n=n+1 where id=2;
+        UPDATE 1
+
+        => update tfreeze set n=n+1 where id=2;
+        UPDATE 1
+
+        => update tfreeze set n=n+1 where id=2;
+        UPDATE 1
+
+        => update tfreeze set n=n+1 where id=2;
+        UPDATE 1
+
+.......................................................................
+
+        => select relfrozenxid, age(relfrozenxid) from pg_class where relname='tfreeze';
+         relfrozenxid | age 
+        --------------+-----
+                  762 |  10
+        (1 row)
+        
+
+        => vacuum tfreeze;
+        VACUUM
+
+        => select relfrozenxid, age(relfrozenxid) from pg_class where relname='tfreeze';
+         relfrozenxid | age 
+        --------------+-----
+                  770 |   2
+        (1 row)
+        
+
+.......................................................................
+
+Теперь номер последней замороженной транзакции увеличился, поскольку была
+просканирована вся таблица целиком, без учета карты видимости.
+Также есть специальная версия команды очистки - vacuum freeze -
+которая принудительно выполняет полное сканирование и заморозку.
+
+.......................................................................
+
+Номер последней замороженной транзакции есть и на уровне всей БД:
+
+        => select datfrozenxid from pg_database where datname='postgres';
+         datfrozenxid 
+        --------------
+                  656
+        (1 row)
+        
+
+Он устанавливается в минимальное значение из frozenxid всех таблиц этой БД.
+
+.......................................................................
+
+Конец демонстрации.
+
+        => alter system reset all;
+        ALTER SYSTEM
+
+        => \q
+
+pg_ctl restart -m fast -w -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started

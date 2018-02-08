@@ -1,0 +1,425 @@
+
+ЖУРНАЛ УПРЕЖДАЮЩЕЙ ЗАПИСИ
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Посмотрим на содержимое журнала для одних и тех же действий
+при разных уровнях, установленных в параметре wal_level.
+
+Сначала создадим отдельную базу данных:
+
+        => create database db8;
+        CREATE DATABASE
+
+        => \c db8
+        You are now connected to database "db8" as user "postgres".
+
+.......................................................................
+
+Создадим таблицу:
+
+        => create table t(n numeric);
+        CREATE TABLE
+
+.......................................................................
+
+MINIMAL
+~~~~~~~
+
+Установим уровень minimal.
+
+        => alter system set wal_level = minimal;
+        ALTER SYSTEM
+
+А также выключим параметры full_page_writes и wal_log_hints,
+чтобы не загромождать журнал.
+
+        => alter system set full_page_writes = off;
+        ALTER SYSTEM
+
+        => alter system set wal_log_hints = off;
+        ALTER SYSTEM
+
+.......................................................................
+
+Перезапустим сервер.
+
+        => \q
+
+pg_ctl restart -w -m fast -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+        psql 
+
+        => \c db8
+        You are now connected to database "db8" as user "postgres".
+
+.......................................................................
+
+Начинаем транзакцию.
+
+        => begin;
+        BEGIN
+
+        => select txid_current();
+         txid_current 
+        --------------
+                 3809
+        (1 row)
+        
+
+        => select txid_current() as txid \gset
+
+        => \setenv TXID :txid
+
+.......................................................................
+
+Текущая позиция в журнале:
+
+        => select pg_current_xlog_location();
+         pg_current_xlog_location 
+        --------------------------
+         0/2EE270C
+        (1 row)
+        
+
+LSN выводится как два 32-битных числа в шестнадцатиричной системе через косую черту.
+
+        => select pg_current_xlog_location() as start_lsn \gset
+
+        => \setenv START_LSN :start_lsn
+
+Эта позиция соответствует файлу:
+
+        => select pg_xlogfile_name(:'start_lsn');
+             pg_xlogfile_name     
+        --------------------------
+         000000010000000000000002
+        (1 row)
+        
+
+        => select pg_xlogfile_name(:'start_lsn') as start_seg \gset
+
+        => \setenv START_SEG :start_seg
+
+.......................................................................
+
+        => truncate table t;
+        TRUNCATE TABLE
+
+        => copy t from stdin;
+        => 1
+        => 2
+        => \.
+        COPY 2
+
+        => insert into t values (3);
+        INSERT 0 1
+
+        => commit;
+        COMMIT
+
+.......................................................................
+
+Теперь позиция в журнале:
+
+        => select pg_current_xlog_location();
+         pg_current_xlog_location 
+        --------------------------
+         0/2EE2C98
+        (1 row)
+        
+
+        => select pg_current_xlog_location() as end_lsn \gset
+
+        => \setenv END_LSN :end_lsn
+
+.......................................................................
+
+Размер журнальных записей, соответствующих нашей транзакции:
+
+        => select :'end_lsn'::pg_lsn - :'start_lsn'::pg_lsn;
+         ?column? 
+        ----------
+             1420
+        (1 row)
+        
+
+Безусловно, в журнал попадает информация обо всех действиях во всем кластере,
+но в данном случае мы рассчитываем на то, что в системе ничего не происходит.
+
+.......................................................................
+
+Теперь воспользуемся утилитой pg_xlogdump, чтобы посмотреть содержимое журнала.
+Утилита может работать как с диапазоном lsn, так и выбрать записи для транзакции.
+
+        => \! pg_xlogdump -p $PGDATA/pg_xlog -s $START_LSN -e $END_LSN -x $TXID $START_SEG
+        rmgr: XLOG        len (rec/tot):      4/    30, tx:       3809, lsn: 0/02EE270C, prev 0/02EE26A4, desc: NEXTOID 24780
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3809, lsn: 0/02EE272C, prev 0/02EE270C, desc: CREATE base/16581/16588
+        rmgr: Heap        len (rec/tot):     14/   123, tx:       3809, lsn: 0/02EE2758, prev 0/02EE272C, desc: UPDATE off 9 xmax 3809 ; new off 10 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3809, lsn: 0/02EE27D4, prev 0/02EE2758, desc: INSERT_LEAF off 315, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3809, lsn: 0/02EE2810, prev 0/02EE27D4, desc: INSERT_LEAF off 42, blkref #0: rel 1663/16581/2663 blk 2
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3809, lsn: 0/02EE2850, prev 0/02EE2810, desc: INSERT_LEAF off 283, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3809, lsn: 0/02EE2890, prev 0/02EE2850, desc: CREATE base/16581/16589
+        rmgr: Heap        len (rec/tot):     14/   123, tx:       3809, lsn: 0/02EE28BC, prev 0/02EE2890, desc: UPDATE off 7 xmax 3809 ; new off 11 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3809, lsn: 0/02EE2938, prev 0/02EE28BC, desc: INSERT_LEAF off 317, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    76, tx:       3809, lsn: 0/02EE2974, prev 0/02EE2938, desc: INSERT_LEAF off 101, blkref #0: rel 1663/16581/2663 blk 4
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3809, lsn: 0/02EE29C0, prev 0/02EE2974, desc: INSERT_LEAF off 284, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3809, lsn: 0/02EE2A00, prev 0/02EE29C0, desc: CREATE base/16581/16590
+        rmgr: Heap        len (rec/tot):     14/    87, tx:       3809, lsn: 0/02EE2A2C, prev 0/02EE2A00, desc: UPDATE off 8 xmax 3809 ; new off 12 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3809, lsn: 0/02EE2A84, prev 0/02EE2A2C, desc: INSERT_LEAF off 319, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    84, tx:       3809, lsn: 0/02EE2AC0, prev 0/02EE2A84, desc: INSERT_LEAF off 103, blkref #0: rel 1663/16581/2663 blk 4
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3809, lsn: 0/02EE2B14, prev 0/02EE2AC0, desc: INSERT_LEAF off 285, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: Heap        len (rec/tot):      2/   184, tx:       3809, lsn: 0/02EE2B54, prev 0/02EE2B14, desc: INPLACE off 12, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Heap        len (rec/tot):      3/    60, tx:       3809, lsn: 0/02EE2C0C, prev 0/02EE2B54, desc: INSERT off 3, blkref #0: rel 1663/16581/16588 blk 0
+        rmgr: Transaction len (rec/tot):     52/    78, tx:       3809, lsn: 0/02EE2C48, prev 0/02EE2C0C, desc: COMMIT 2016-05-27 21:26:45.504563 MSK; rels: base/16581/16587 base/16581/16585 base/16581/16582
+
+Сначала происходит работа со словарем данных: создается новый файл
+при команде truncate, изменяются данные в pg_class и других таблицах,
+обновляются индексы на системных таблицах.
+Вставка строк 1 и 2 не попадает в журнал. Это оптимизация: сохранность
+данных обеспечивается их записью на диск.
+Вставка строки отражена в журнале, это предпоследняя строка (INSERT).
+Далее идет запись о фиксации изменений.
+
+.......................................................................
+
+ARCHIVE
+~~~~~~~
+
+Теперь посмотрим на ту же транзакцию при уровне журнала archive.
+
+        => alter system set wal_level = archive;
+        ALTER SYSTEM
+
+        => \q
+
+pg_ctl restart -w -m fast -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+        psql 
+
+        => \c db8
+        You are now connected to database "db8" as user "postgres".
+
+.......................................................................
+
+Начинаем транзакцию.
+
+        => begin;
+        BEGIN
+
+        => select txid_current() as txid \gset
+
+        => \setenv TXID :txid
+
+        => select pg_current_xlog_location() as start_lsn \gset
+
+        => \setenv START_LSN :start_lsn
+
+        => select pg_xlogfile_name(:'start_lsn') as start_seg \gset
+
+        => \setenv START_SEG :start_seg
+
+.......................................................................
+
+        => truncate table t;
+        TRUNCATE TABLE
+
+        => copy t from stdin;
+        => 1
+        => 2
+        => \.
+        COPY 2
+
+        => update t set n=n+1 where n=2;
+        UPDATE 1
+
+        => commit;
+        COMMIT
+
+.......................................................................
+
+        => select pg_current_xlog_location();
+         pg_current_xlog_location 
+        --------------------------
+         0/2EE3390
+        (1 row)
+        
+
+        => select pg_current_xlog_location() as end_lsn \gset
+
+        => \setenv END_LSN :end_lsn
+
+Размер журнальных записей:
+
+        => select :'end_lsn'::pg_lsn - :'start_lsn'::pg_lsn;
+         ?column? 
+        ----------
+             1628
+        (1 row)
+        
+
+.......................................................................
+
+Сам журнал:
+
+        => \! pg_xlogdump -p $PGDATA/pg_xlog -s $START_LSN -e $END_LSN -x $TXID $START_SEG
+        rmgr: XLOG        len (rec/tot):      4/    30, tx:       3810, lsn: 0/02EE2D34, prev 0/02EE2D00, desc: NEXTOID 24783
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3810, lsn: 0/02EE2D54, prev 0/02EE2D34, desc: CREATE base/16581/16591
+        rmgr: Heap        len (rec/tot):     14/   123, tx:       3810, lsn: 0/02EE2D80, prev 0/02EE2D54, desc: UPDATE off 10 xmax 3810 ; new off 13 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3810, lsn: 0/02EE2DFC, prev 0/02EE2D80, desc: INSERT_LEAF off 315, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3810, lsn: 0/02EE2E38, prev 0/02EE2DFC, desc: INSERT_LEAF off 42, blkref #0: rel 1663/16581/2663 blk 2
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3810, lsn: 0/02EE2E78, prev 0/02EE2E38, desc: INSERT_LEAF off 286, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3810, lsn: 0/02EE2EB8, prev 0/02EE2E78, desc: CREATE base/16581/16592
+        rmgr: Heap        len (rec/tot):     14/   123, tx:       3810, lsn: 0/02EE2EE4, prev 0/02EE2EB8, desc: UPDATE off 11 xmax 3810 ; new off 14 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3810, lsn: 0/02EE2F60, prev 0/02EE2EE4, desc: INSERT_LEAF off 318, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    76, tx:       3810, lsn: 0/02EE2F9C, prev 0/02EE2F60, desc: INSERT_LEAF off 101, blkref #0: rel 1663/16581/2663 blk 4
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3810, lsn: 0/02EE2FE8, prev 0/02EE2F9C, desc: INSERT_LEAF off 287, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3810, lsn: 0/02EE3028, prev 0/02EE2FE8, desc: CREATE base/16581/16593
+        rmgr: Heap        len (rec/tot):     14/    87, tx:       3810, lsn: 0/02EE3054, prev 0/02EE3028, desc: UPDATE off 12 xmax 3810 ; new off 15 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3810, lsn: 0/02EE30AC, prev 0/02EE3054, desc: INSERT_LEAF off 321, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    84, tx:       3810, lsn: 0/02EE30E8, prev 0/02EE30AC, desc: INSERT_LEAF off 104, blkref #0: rel 1663/16581/2663 blk 4
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3810, lsn: 0/02EE313C, prev 0/02EE30E8, desc: INSERT_LEAF off 288, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: XLOG        len (rec/tot):      0/   113, tx:       3810, lsn: 0/02EE317C, prev 0/02EE313C, desc: FPI , blkref #0: rel 1663/16581/16593 blk 0 FPW
+        rmgr: Heap        len (rec/tot):      2/   184, tx:       3810, lsn: 0/02EE31F0, prev 0/02EE317C, desc: INPLACE off 15, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Heap2       len (rec/tot):      4/    77, tx:       3810, lsn: 0/02EE32A8, prev 0/02EE31F0, desc: MULTI_INSERT+INIT 2 tuples, blkref #0: rel 1663/16581/16591 blk 0
+        rmgr: Heap        len (rec/tot):     14/    70, tx:       3810, lsn: 0/02EE32F8, prev 0/02EE32A8, desc: HOT_UPDATE off 2 xmax 3810 ; new off 3 xmax 0, blkref #0: rel 1663/16581/16591 blk 0
+        rmgr: Transaction len (rec/tot):     52/    78, tx:       3810, lsn: 0/02EE3340, prev 0/02EE32F8, desc: COMMIT 2016-05-27 21:26:47.685794 MSK; rels: base/16581/16590 base/16581/16589 base/16581/16588
+
+Здесь появляется запись MULTI_INSERT+INIT, соответствующая команде
+copy, вставившей две строки. Эти данные необходимы для того, чтобы
+повторить команду при восстановлении из архива.
+
+.......................................................................
+
+HOT_STANDBY
+~~~~~~~~~~~
+
+Та же транзакция при уровне журнала hot_standby.
+
+        => alter system set wal_level = hot_standby;
+        ALTER SYSTEM
+
+        => \q
+
+pg_ctl restart -w -m fast -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started
+        psql 
+
+        => \c db8
+        You are now connected to database "db8" as user "postgres".
+
+.......................................................................
+
+Начинаем транзакцию.
+
+        => begin;
+        BEGIN
+
+        => select txid_current() as txid \gset
+
+        => \setenv TXID :txid
+
+        => select pg_current_xlog_location() as start_lsn \gset
+
+        => \setenv START_LSN :start_lsn
+
+        => select pg_xlogfile_name(:'start_lsn') as start_seg \gset
+
+        => \setenv START_SEG :start_seg
+
+.......................................................................
+
+        => truncate table t;
+        TRUNCATE TABLE
+
+        => copy t from stdin;
+        => 1
+        => 2
+        => \.
+        COPY 2
+
+        => update t set n=n+1 where n=2;
+        UPDATE 1
+
+        => commit;
+        COMMIT
+
+.......................................................................
+
+        => select pg_current_xlog_location();
+         pg_current_xlog_location 
+        --------------------------
+         0/2EE3BEC
+        (1 row)
+        
+
+        => select pg_current_xlog_location() as end_lsn \gset
+
+        => \setenv END_LSN :end_lsn
+
+Размер журнальных записей:
+
+        => select :'end_lsn'::pg_lsn - :'start_lsn'::pg_lsn;
+         ?column? 
+        ----------
+             1984
+        (1 row)
+        
+
+.......................................................................
+
+Сам журнал:
+
+        => \! pg_xlogdump -p $PGDATA/pg_xlog -s $START_LSN -e $END_LSN -x $TXID $START_SEG
+        rmgr: Standby     len (rec/tot):     16/    42, tx:       3811, lsn: 0/02EE342C, prev 0/02EE33F8, desc: LOCK xid 3811 db 16581 rel 16582 
+        rmgr: XLOG        len (rec/tot):      4/    30, tx:       3811, lsn: 0/02EE3458, prev 0/02EE342C, desc: NEXTOID 24786
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3811, lsn: 0/02EE3478, prev 0/02EE3458, desc: CREATE base/16581/16594
+        rmgr: Heap        len (rec/tot):     14/   123, tx:       3811, lsn: 0/02EE34A4, prev 0/02EE3478, desc: UPDATE off 13 xmax 3811 ; new off 16 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3811, lsn: 0/02EE3520, prev 0/02EE34A4, desc: INSERT_LEAF off 315, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3811, lsn: 0/02EE355C, prev 0/02EE3520, desc: INSERT_LEAF off 42, blkref #0: rel 1663/16581/2663 blk 2
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3811, lsn: 0/02EE359C, prev 0/02EE355C, desc: INSERT_LEAF off 289, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: Standby     len (rec/tot):     16/    42, tx:       3811, lsn: 0/02EE35DC, prev 0/02EE359C, desc: LOCK xid 3811 db 16581 rel 16585 
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3811, lsn: 0/02EE3608, prev 0/02EE35DC, desc: CREATE base/16581/16595
+        rmgr: Heap        len (rec/tot):     14/   123, tx:       3811, lsn: 0/02EE3634, prev 0/02EE3608, desc: UPDATE off 14 xmax 3811 ; new off 17 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3811, lsn: 0/02EE36B0, prev 0/02EE3634, desc: INSERT_LEAF off 319, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    76, tx:       3811, lsn: 0/02EE36EC, prev 0/02EE36B0, desc: INSERT_LEAF off 101, blkref #0: rel 1663/16581/2663 blk 4
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3811, lsn: 0/02EE3738, prev 0/02EE36EC, desc: INSERT_LEAF off 290, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: Standby     len (rec/tot):     16/    42, tx:       3811, lsn: 0/02EE3778, prev 0/02EE3738, desc: LOCK xid 3811 db 16581 rel 16587 
+        rmgr: Storage     len (rec/tot):     16/    42, tx:       3811, lsn: 0/02EE37A4, prev 0/02EE3778, desc: CREATE base/16581/16596
+        rmgr: Heap        len (rec/tot):     14/    87, tx:       3811, lsn: 0/02EE37D0, prev 0/02EE37A4, desc: UPDATE off 15 xmax 3811 ; new off 18 xmax 0, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Btree       len (rec/tot):      2/    60, tx:       3811, lsn: 0/02EE3828, prev 0/02EE37D0, desc: INSERT_LEAF off 323, blkref #0: rel 1663/16581/2662 blk 1
+        rmgr: Btree       len (rec/tot):      2/    84, tx:       3811, lsn: 0/02EE3864, prev 0/02EE3828, desc: INSERT_LEAF off 105, blkref #0: rel 1663/16581/2663 blk 4
+        rmgr: Btree       len (rec/tot):      2/    64, tx:       3811, lsn: 0/02EE38B8, prev 0/02EE3864, desc: INSERT_LEAF off 291, blkref #0: rel 1663/16581/3455 blk 1
+        rmgr: XLOG        len (rec/tot):      0/   113, tx:       3811, lsn: 0/02EE38F8, prev 0/02EE38B8, desc: FPI , blkref #0: rel 1663/16581/16596 blk 0 FPW
+        rmgr: Heap        len (rec/tot):      2/   184, tx:       3811, lsn: 0/02EE396C, prev 0/02EE38F8, desc: INPLACE off 18, blkref #0: rel 1663/16581/1259 blk 0
+        rmgr: Heap2       len (rec/tot):      4/    77, tx:       3811, lsn: 0/02EE3A24, prev 0/02EE396C, desc: MULTI_INSERT+INIT 2 tuples, blkref #0: rel 1663/16581/16594 blk 0
+        rmgr: Heap        len (rec/tot):     14/    70, tx:       3811, lsn: 0/02EE3A74, prev 0/02EE3A24, desc: HOT_UPDATE off 2 xmax 3811 ; new off 3 xmax 0, blkref #0: rel 1663/16581/16594 blk 0
+        rmgr: Transaction len (rec/tot):    272/   301, tx:       3811, lsn: 0/02EE3ABC, prev 0/02EE3A74, desc: COMMIT 2016-05-27 21:26:49.830119 MSK; rels: base/16581/16593 base/16581/16592 base/16581/16591; inval msgs: catcache 45 catcache 44 catcache 45 catcache 44 catcache 45 catcache 44 catcache 45 catcache 44 relcache 16585 relcache 16587 relcache 16587 relcache 16585 relcache 16582
+
+Здесь появляются записи LOCK для отражения эксклюзивных блокировок.
+Эта информация нужна для выполнения запросов на горячей резервной копии.
+
+.......................................................................
+
+Конец демонстрации.
+
+.......................................................................
+
+        => alter system reset all;
+        ALTER SYSTEM
+
+        => \q
+
+pg_ctl restart -w -m fast -l /home/postgres/logfile 
+waiting for server to shut down.... done
+server stopped
+waiting for server to start.... done
+server started

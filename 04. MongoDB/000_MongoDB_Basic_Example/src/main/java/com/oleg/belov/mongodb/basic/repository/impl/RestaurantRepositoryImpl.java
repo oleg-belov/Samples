@@ -17,21 +17,21 @@ import com.oleg.belov.mongodb.basic.repository.RestaurantRepository;
 
 @Repository
 public class RestaurantRepositoryImpl implements RestaurantRepository {
-private MongoCollection<Document> collection;
+	private MongoCollection<Document> restaurantCollection;
 	
 	@Autowired
-	public void setCollection(MongoDBCollection dataBaseCollection) throws IOException {
-		this.collection = dataBaseCollection.getCollection();
+	public void setCollection(MongoDBCollection restaurantCollection) throws IOException {
+		this.restaurantCollection = restaurantCollection.getCollection();
 	}
 
 	@Override
 	public void insertRestaurantDBObject(Document doc) {
-		collection.insertOne(doc);
+		restaurantCollection.insertOne(doc);
 	}
 
 	@Override
 	public List<Document> findFirstRestaurants(int count) {
-		MongoCursor<Document>  cursor = collection.find().limit(count).iterator();
+		MongoCursor<Document>  cursor = restaurantCollection.find().limit(count).iterator();
 		List<Document> docs = new ArrayList<>();
 		
 		while(cursor.hasNext()) {
@@ -44,7 +44,7 @@ private MongoCollection<Document> collection;
 	@Override
 	public List<Document> findByName(String name) {
 		Document query = new Document("name", name);
-		MongoCursor<Document> cursor = collection.find(query).iterator();
+		MongoCursor<Document> cursor = restaurantCollection.find(query).iterator();
 		List<Document> docs = new ArrayList<>();
 		
 		while(cursor.hasNext()) {
@@ -60,7 +60,7 @@ private MongoCollection<Document> collection;
 		newDocument.put("$set", new Document( "name", newRestaurantName));
 		
 		Document searchQuery = new Document().append("restaurant_id", restaurantId);
-		collection.updateOne(searchQuery, newDocument);
+		restaurantCollection.updateOne(searchQuery, newDocument);
 	}
 
 	@Override
@@ -69,7 +69,7 @@ private MongoCollection<Document> collection;
 		newDocument.put("$set", doc);
 		
 		Document searchQuery = new Document().append("restaurant_id", restaurantId);
-		collection.updateOne(searchQuery, newDocument);
+		restaurantCollection.updateOne(searchQuery, newDocument);
 	}
 
 	@Override
@@ -77,13 +77,13 @@ private MongoCollection<Document> collection;
 		Document doc = new Document();
 		doc.put("restaurant_id", restaurantId);
 		
-		collection.deleteOne(doc);
+		restaurantCollection.deleteOne(doc);
 	}
 
 	@Override
 	public Restaurant findbyRestaurantId(Long restaurantId) {
 		Gson gson = new Gson();
-		Document doc = collection.find(new Document("restaurant_id", restaurantId)).first();
+		Document doc = restaurantCollection.find(new Document("restaurant_id", restaurantId)).first();
 		Restaurant restaurant = gson.fromJson(doc.toJson(), Restaurant.class);
 		
 		return restaurant;
@@ -93,7 +93,7 @@ private MongoCollection<Document> collection;
 	public void insertRestaurant(Restaurant restauranr) {
 		Gson gson = new Gson();
 		Document doc =  Document.parse(gson.toJson(restauranr));
-		collection.insertOne(doc);
+		restaurantCollection.insertOne(doc);
 	}
 
 	@Override
@@ -105,6 +105,6 @@ private MongoCollection<Document> collection;
 			docs.add(doc);
 		}
 			
-		collection.insertMany(docs);
+		restaurantCollection.insertMany(docs);
 	}
 }
