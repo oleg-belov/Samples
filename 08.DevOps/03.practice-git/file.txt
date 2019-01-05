@@ -1,5 +1,8 @@
-My first line in project
-London is the capital of GB
-Moscow is the capital of Russia
+my first line in project
 Paris is the capical of France
+
+
+
+
+
 
