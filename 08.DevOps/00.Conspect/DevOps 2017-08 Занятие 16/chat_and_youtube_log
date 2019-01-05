@@ -1,0 +1,203 @@
+Dmitry Valkov : ахой<br>
+
+Igor&#x27; Leont&#x27;ev : Привет всем!<br>
+
+Anton Kvashenkin : привет<br>
+
+Anton Kvashenkin : всем привет<br>
+
+Artem Starostenko : привет!<br>
+
+Vladimir Baranov : Привет!<br>
+
+Anton Kvashenkin : а как над чатом окошко с видео поместить? первый раз с мака на хроме смотрю<br>
+
+Anton Kvashenkin : а то оно снизу<br>
+
+Artem Starostenko : там на видео стрелочки есть&nbsp;<br>
+
+Artem Starostenko : если вправо нажать, оно над чатом поместиться<br>
+
+Anton Kvashenkin : вниз уходит)<br>
+
+Anton Kvashenkin : ладно норм так<br>
+
+Igor&#x27; Leont&#x27;ev : Виталий, если можно, когда будите включать голосовалку, например, с какими продуктами знакомы, можно включать пункт "ни с одним не знаком"?<br>
+
+Igor&#x27; Leont&#x27;ev : нет<br>
+
+Igor&#x27; Leont&#x27;ev : F5<br>
+
+Igor&#x27; Leont&#x27;ev : Спасибо.<br>
+
+Vladimir Brednikov : с F5 немного знаком<br>
+
+Vladimir Brednikov : всем привет!<br>
+
+Anton Kvashenkin : привет<br>
+
+Vladimir Baranov : погнали! медленно, но верно! :-)<br>
+
+Vladimir Baranov : я где-то читал, что количество слоев ограничено... потому есть смысл через &amp;&amp;&nbsp;<br>
+
+Andrey Murav&#x27;ev : так и есть
+
+Andrey Murav&#x27;ev : 127 слоев<br>
+
+Vladimir Baranov : про volum - то есть если мы туда ничего передали - там будет пусто?<br>
+
+Vladimir Baranov : понятно<br>
+
+Andrey Murav&#x27;ev : но при запуске докер же замаунтит их в /var/lib/docker?<br>
+
+Vladimir Baranov : если в CMD " ; script.sh"&nbsp;<br>
+
+Vladimir Baranov : если в CMD " ; script.sh" ENTRYPOINT как отработает?<br>
+
+Vladimir Baranov : через точку с запятой<br>
+
+Vladimir Baranov : нет<br>
+
+Dmitry Valkov : Духовный тестировщик))<br>
+
+Vladimir Baranov : не... :) я хочу программистом стать :-)<br>
+
+Vladimir Baranov : чет квакает<br>
+
+Dmitry Valkov : пропадаешь что-о<br>
+
+Dmitrij Gornostajpol&#x27;skij : звук пропадает (<br>
+
+Andrej Sedov : +
+
+Andrey Murav&#x27;ev : +
+
+Anton Kvashenkin : залагал сильно<br>
+
+Evgenij P&#x27;jankov : пропадает<br>
+
+Alexey Vitsenko : +
+
+Artur Dunaev : &nbsp;+<br>
+
+Dmitry Valkov : лчше<br>
+
+Anton Kvashenkin : норм<br>
+
+Dmitry Valkov : ты говори, как проверить-то<br>
+
+Artem Starostenko : сейчас, кажется, все норм<br>
+
+Artem Starostenko : хорошо<br>
+
+Anton Kvashenkin : опять<br>
+
+Dmitry Valkov : опять<br>
+
+Dmitrij Gornostajpol&#x27;skij : +
+
+Artur Dunaev : kfub<br>
+
+Artem Starostenko : Виталий, повтори предыдущий слайд<br>
+
+Dmitry Valkov : Тырнэт протекает, админа нетуть :с<br>
+
+Artem Starostenko : ребят, сейчас виталий переключится на другой канал, прошу немного подождать<br>
+
+Dmitry Valkov : +
+
+Anton Kvashenkin : да<br>
+
+Nikita Kuz&#x27;min : да<br>
+
+Igor&#x27; Leont&#x27;ev : да<br>
+
+Evgenij P&#x27;jankov : да<br>
+
+Vladimir Baranov : слышно<br>
+
+Anton Kvashenkin : только темно<br>
+
+Andrey Murav&#x27;ev : +
+
+Dmitrij Gornostajpol&#x27;skij : слышно<br>
+
+Artem Starostenko : все норм<br>
+
+Anton Kvashenkin : норм<br>
+
+Vladimir Baranov : если мы используем образ из 127 слоев... заливаем его в репозиторий, а новый образ начинаем с этого нового залитого... у нас еще будет 126? или он не даст ничего делать?<br>
+
+Andrey Murav&#x27;ev : будет<br>
+
+Andrey Murav&#x27;ev : я не уверен =(<br>
+
+Vladimir Baranov : если два COPY, первый фаил поменялся.... второй кеш сбрасывается?<br>
+
+Vladimir Baranov : ссылка на фаил будут COPY отрабатывать? или скопирует только ссылку?<br>
+
+Andrey Murav&#x27;ev : директории тоже попадают в контекст? То есть если дамп бд на 2 гига лежит в папке db_data в тоже директории что и Dockerfile от будет передал демону?<br>
+
+Andrey Murav&#x27;ev : я думаю Владимир про симлинк<br>
+
+Vladimir Baranov : а можно пример разных контейнеров для сборки и запуска - я не понял что это....<br>
+
+Vladimir Baranov : да про симлинк<br>
+
+Dmitry Valkov : Попадет всё, до чего доберётся<br>
+
+Dmitry Valkov : Поэтому ignore - musthave<br>
+
+Vladimir Baranov : это слои имеются в виду?<br>
+
+Andrey Murav&#x27;ev : alpine rulez<br>
+
+Dmitry Valkov : Прекрасная статистика хд<br>
+
+Dmitry Valkov : Да ,видно всё<br>
+
+Nikita Kuz&#x27;min : lf<br>
+
+Artur Dunaev : да<br>
+
+Andrey Murav&#x27;ev : <a href="https://www.dropbox.com/s/vfr72puwq52y9tr/Screenshot%202017-10-05%2013.43.59.png?dl=0" target="_blank">https://www.dropbox.com/s/vfr72puwq52y9tr/Screenshot%202017-10-05%2013.43.59.png?dl=0</a>
+
+Dmitry Valkov : Судя по списку, докер учит хорошему тону разработки))<br>
+
+Vladimir Baranov : мы из будем изучать? логирование<br>
+
+Andrey Murav&#x27;ev : в программе было<br>
+
+Dmitry Valkov : в описании курса было<br>
+
+Dmitry Valkov : О! Я только вчера хотел кинуть ссылку на 12 факторов :с<br>
+
+Evgenij P&#x27;jankov : а кубернетес будет сильно позже или в теме докера?<br>
+
+Andrey Murav&#x27;ev : вроде&nbsp; оркестрация после CI логов и тд<br>
+
+Vladimir Baranov : Я остановил docker-host машину (из ДЗ). Занова запустил... пишет про проблемы с сертификатом... руками можно как-то это поправить или надо пересоздавать машину?... в случае если ip динамически выделяется<br>
+
+Artem Starostenko : Виталий, напомни, про лекцию в следующий четверг, пожалуйста<br>
+
+Artem Starostenko : в следующую среду, вернее<br>
+
+Vladimir Brednikov : нужно из ~/.ssh/known_hosts удалить строчки с выделенным ip<br>
+
+Vladimir Baranov : нет... там другие сертификаты<br>
+
+Dmitry Valkov : Про бд - это глубокий философский вопрос))<br>
+
+Nikita Kuz&#x27;min : да смотря для чего<br>
+
+Vladimir Baranov : монтировать сетевые volume хорошая практика?<br>
+
+Dmitry Valkov : всё ок<br>
+
+Andrej Sedov : Спасибо!<br>
+
+Vladimir Baranov : да не... нормально :-) вопрос разве что по скорости... айскази или нфс<br>
+
+Vladimir Baranov : спасибо!<br>
+
+No chat or YouTube history.

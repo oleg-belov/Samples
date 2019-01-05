@@ -1,0 +1,342 @@
+Vladimir Baranov : всем привет!<br>
+
+Igor&#x27; Leont&#x27;ev : Всем привет!<br>
+
+Igor&#x27; Leont&#x27;ev : да
+
+Ksenia Vasileva : ага)<br>
+
+Anton Kvashenkin : Привет всем<br>
+
+Igor&#x27; Leont&#x27;ev : В понедельник будет занятие?<br>
+
+Igor&#x27; Leont&#x27;ev : +
+
+Ksenia Vasileva : да!<br>
+
+Anton Kvashenkin : если не в понедельник то когда<br>
+
+Vladimir Baranov : +
+
+Sergej Nikiforov : какой был вопрос?)<br>
+
+Konstantin Malyhin : +
+
+Alexey Vitsenko : +
+
+Sergej Nikiforov : я только подключился<br>
+
+Vsevolod Romashov : +
+
+Anton Kvashenkin : +
+
+Igor&#x27; Leont&#x27;ev : Конференцию переносить не хорошо<br>
+
+Artem Starostenko : <a href="https://otus.ru/about/loyalty/ " target="_blank">https://otus.ru/about/loyalty/&nbsp;</a>
+
+Vladimir Baranov : 404<br>
+
+Aleksandr Tregub : слэш убрать надо, последний<br>
+
+Anton Kvashenkin : <a href="https://otus.ru/about/loyalty/" target="_blank">https://otus.ru/about/loyalty/</a>
+
+Artem Starostenko : <a href="https://otus.ru/about/loyalty/" target="_blank">https://otus.ru/about/loyalty/</a>
+
+Anton Kvashenkin : правильная<br>
+
+Vladimir Baranov : пробел лишний был в ссылке<br>
+
+Andrey Murav&#x27;ev : првиет<br>
+
+Andrey Murav&#x27;ev : =)<br>
+
+Anton Kvashenkin : post-mortem делать))<br>
+
+Andrey Murav&#x27;ev : я до сих пор с такими работаю =)))<br>
+
+Anton Kvashenkin : для дебага это первое<br>
+
+Vladimir Baranov : у них это в крови... вот из нас наверняка не каждый знает свою группу крови :)<br>
+
+Andrey Murav&#x27;ev : мониторинг безопасности<br>
+
+Alexey Vitsenko : процесс исполнения<br>
+
+Artur Dunaev : последовательность операций<br>
+
+Anton Kvashenkin : приложение как работает<br>
+
+Anton Kvashenkin : смотреть<br>
+
+Vladimir Baranov : дебаг<br>
+
+Anton Kvashenkin : observability<br>
+
+Anton Kvashenkin : как грится<br>
+
+Andrey Murav&#x27;ev : отлаживать код еще они нужны<br>
+
+Andrey Murav&#x27;ev : вот кстати, можно заменить логироваие метриками? Если заморочиться?<br>
+
+Anton Kvashenkin : я думаю нет. нет именно полного контекста<br>
+
+Anton Kvashenkin : и элартинг в теории тоже можно делать<br>
+
+Andrey Murav&#x27;ev : docker logs<br>
+
+Anton Kvashenkin : docker-compose logs ui<br>
+
+Andrey Murav&#x27;ev : но docker logs выводит только stdout, еще надо сконфигурить пуму чтобы она не в файл писала а в stdout<br>
+
+Anton Kvashenkin : в слепую считай работать<br>
+
+Anton Kvashenkin : это я про отсутсвие логов<br>
+
+Anton Kvashenkin : я бы запитую поставил <img src="/assets/emoji/smile.png" class="chat-emoji"> &nbsp;<br>
+
+Anton Kvashenkin : )
+
+Andrey Murav&#x27;ev : в хранилище логов
+
+Anton Kvashenkin : /var/log/<br>
+
+Anton Kvashenkin : да
+
+Andrey Murav&#x27;ev : вар лог в хосте или в контейнере?<br>
+
+Kirill JAlovik : Вне контейнера<br>
+
+Anton Kvashenkin : я впринципе говорю) а так по сети<br>
+
+Ivan Gavrilov : syslog server<br>
+
+Anton Kvashenkin : в elk<br>
+
+Kirill JAlovik : Желательно вообще иметь отдельный хост куда пушить логи<br>
+
+Anton Kvashenkin : ))<br>
+
+Kirill JAlovik : Чтобы все логи централизовано хранить в одном месте<br>
+
+Sergej Nikiforov : для удобства<br>
+
+Andrey Murav&#x27;ev : чтобы их удобно было парсить<br>
+
+Anton Kvashenkin : так же как и монитоинг<br>
+
+Artur Dunaev : для других систем и корреляции<br>
+
+Anton Kvashenkin : сек<br>
+
+Sergej Nikiforov : с одного места можно смотреть логи со всех виртулок&nbsp;<br>
+
+Kirill JAlovik : Унификация обработки и информирования<br>
+
+Anton Kvashenkin : логи смотреть через удобный UI<br>
+
+Artur Dunaev : логи могут использоваться в соответствующих системах<br>
+
+Anton Kvashenkin : а также делать поиск чере QL<br>
+
+Artur Dunaev : чтоб контекст собирать в одном месте<br>
+
+Anton Kvashenkin : как прометей короче)<br>
+
+Andrey Murav&#x27;ev : splunk =)<br>
+
+Alexey Vitsenko : fluentd
+
+Andrey Murav&#x27;ev : ну зачем, это неудобно, централиованная систепма лучше<br>
+
+Anton Kvashenkin : зачем?<br>
+
+Anton Kvashenkin : вопрос в этом?<br>
+
+Anton Kvashenkin : не скэйлится это все короче при локальном хранении<br>
+
+Anton Kvashenkin : это как с cfg mgmt<br>
+
+Anton Kvashenkin : тем более после того как хост скопромитировали например и потерли логи<br>
+
+Anton Kvashenkin : вот еще<br>
+
+Vladimir Brednikov : Насущный пример: микросервисное веб-приложение получает запрос и через rabbitmq пересылает его бэкендам, которые тоже шлют его друг другу, помечая хэшем куки. Без централизованного хранилища крайне сложно найти, какие сервера участвовали в обработке конкретного запроса.<br>
+
+Anton Kvashenkin : f&nbsp;<br>
+
+Sergej Nikiforov : Антон а&nbsp; с чего ты взял что нужно слать напрямую и в этом есть преимущество?)<br>
+
+Anton Kvashenkin : Сергей это к вопросу о либах<br>
+
+Anton Kvashenkin : @guest-1052554 &nbsp;сергей ты о метриках?<br>
+
+Sergej Nikiforov : не я о логах<br>
+
+Sergej Nikiforov : я бы не рисковал логи напрямую слать<br>
+
+Anton Kvashenkin : я об это и спрашивал) вчем профит<br>
+
+Anton Kvashenkin : одно другому не мешает<br>
+
+Anton Kvashenkin : вот любопытная статья про graylog2&nbsp;<a href="https://habrahabr.ru/company/pixonic/blog/340168/" target="_blank">https://habrahabr.ru/company/pixonic/blog/340168/</a>
+
+Anton Kvashenkin : недавняя<br>
+
+Anton Kvashenkin : тем более логи ведь тоже feedback loop ускоряют?<br>
+
+Anton Kvashenkin : loghouse из недавнего )<br>
+
+Andrey Murav&#x27;ev : так splunk же можно selfhost-ить<br>
+
+Sergej Nikiforov : глупый вопрос но)) можно использовать со стеком эластик не биты а другой шипер?<br>
+
+Sergej Nikiforov : есть ли в этом хоть какой-то здравый смысл?)<br>
+
+Sergej Nikiforov :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;ясно спасибо<br>
+
+Anton Kvashenkin : а вот у logstash же насколько я помню фундаментальная парадигма input-output/ который приводит к единому стандарту логи. об этом не будет в лекции?<br>
+
+Anton Kvashenkin : это тоже киллер-фоча<br>
+
+Vladimir Brednikov : еще полезно логировать моменты ветвления, сделанный выбор и почему именно он<br>
+
+Artur Dunaev : про бизнес события не очень пнятно - это же версионирование а не логирование уже<br>
+
+Anton Kvashenkin : я помню jordan sessil выступление, там много интересного было про логи. найду сек<br>
+
+Artur Dunaev : пользователя создали - это данные системы<br>
+
+Anton Kvashenkin : <a href="https://www.youtube.com/watch?v=RuUFnog29M4" target="_blank">https://www.youtube.com/watch?v=RuUFnog29M4</a>
+
+Artur Dunaev : это в контексте на внешнего заказчика при выкатывании функционала?<br>
+
+Artur Dunaev : а зачем логировать данные платежа?<br>
+
+Artur Dunaev : или имеется ввиду факт?<br>
+
+Artur Dunaev : статистика<br>
+
+Anton Kvashenkin : safety net как артём сказал<br>
+
+Anton Kvashenkin : была стаья мэйл ру про логи интересная<br>
+
+Anton Kvashenkin : найду попробую<br>
+
+Anton Kvashenkin : там как раз об этом<br>
+
+Vladimir Brednikov : ага, приходят федеральные органы и заявляют: клиент такой-то под расследованием, давайте все логи про него за последние N месяцев<br>
+
+Artur Dunaev : это к Яровой<br>
+
+Anton Kvashenkin : к прошлой лекции есть) задать можно<br>
+
+Anton Kvashenkin : сек<br>
+
+Artur Dunaev : эта система отношение к еластиксерч имеет?<br>
+
+Artur Dunaev : да
+
+Artur Dunaev : понял<br>
+
+Sergej Nikiforov : я думал на эластик уйдет хотя бы 2 недели а тут всего одно занятие =)<br>
+
+Artur Dunaev : будет )<br>
+
+Sergej Nikiforov : согласен<br>
+
+Artur Dunaev : это тоже гуд иначе все не охватим<br>
+
+Anton Kvashenkin : задал в qa<br>
+
+Nikita Kuz&#x27;min : пока проект маленький можно и в моно репо<br>
+
+Anton Kvashenkin : а как мне тогда сделать CI<br>
+
+Anton Kvashenkin : например хочу запушить на докерхаб<br>
+
+Anton Kvashenkin : ага<br>
+
+Nikita Kuz&#x27;min : не читали по этому поводу статью про линукс(ядро) что они в одной репе задыхаются, но несколько реп - это куча других проблем<br>
+
+Anton Kvashenkin : и к тому же еще в монорере))<br>
+
+Andrey Murav&#x27;ev : Меня кстати тоже мучает вопрос насчет git-flow и построения CI/CD. Но я наверное в слаке спрошу.
+
+Anton Kvashenkin : я хочу бейджик и layerimages в репе микросервиса)<br>
+
+Anton Kvashenkin : у гугла bazel используется, для монорепы<br>
+
+Anton Kvashenkin : читал сегодня<br>
+
+Anton Kvashenkin : на shippable вроде можно<br>
+
+Anton Kvashenkin : chalenge accepted<br>
+
+Nikita Kuz&#x27;min : тревисом можно деплоить артефакты, а потом их можно дергать<br>
+
+Anton Kvashenkin : мы логирование будет в какой репе делать?<br>
+
+Anton Kvashenkin : microservices?<br>
+
+Anton Kvashenkin : разрослась она как то<br>
+
+Anton Kvashenkin : )
+
+Anton Kvashenkin : это да согдасен<br>
+
+Vladimir Baranov : мне пока не понятно как в гитлабе например сбилдить контенейр и отправить его в прод... будем это ещ епроходить?<br>
+
+Vladimir Baranov : не... я подожду.... мне не горит...<br>
+
+Anton Kvashenkin : владимир лучше задай, пингани юру<br>
+
+Vladimir Baranov : я подумаю :-)<br>
+
+Andrey Murav&#x27;ev : лучше&nbsp; больше обсуждений
+
+Anton Kvashenkin : да!<br>
+
+Andrey Murav&#x27;ev : все же читают, всем интересно<br>
+
+Anton Kvashenkin : главное не в приват<br>
+
+Andrey Murav&#x27;ev : а то курс&nbsp; кончится и юра уже будет недоступен<br>
+
+Anton Kvashenkin : по логированию нужно попрактиковаться<br>
+
+Anton Kvashenkin : а stackdriver гугловский может апи вызовы по типу cloudwatch логировать?<br>
+
+Anton Kvashenkin : вроде пока нет вопросов у меня<br>
+
+Anton Kvashenkin :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Anton Kvashenkin : а что за трейсинг?<br>
+
+Anton Kvashenkin : sysdig<br>
+
+Anton Kvashenkin : ?
+
+Vladimir Brednikov : так в пн занятие будет? а то я опоздал к началу<br>
+
+Andrey Murav&#x27;ev : я так думаю трейсинг стака приложения
+
+Andrey Murav&#x27;ev : я вообще не в курсе?<br>
+
+Andrey Murav&#x27;ev : из-за праздника чтоли?<br>
+
+Anton Kvashenkin : ссылки нет в лк?<br>
+
+Andrey Murav&#x27;ev : я бы перенес ибо в 20-00 буду в поезде =)<br>
+
+Anton Kvashenkin : вайфай вроде скоро должны сделать ржд))<br>
+
+Vladimir Baranov : пока!<br>
+
+Andrey Murav&#x27;ev : пока!<br>
+
+Vladimir Brednikov : пока!<br>
+
+Andrej Sedov : Спасибо!<br>
+
+Anton Kvashenkin : пока<br>
+

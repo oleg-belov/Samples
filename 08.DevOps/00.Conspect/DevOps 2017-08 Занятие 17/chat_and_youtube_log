@@ -1,0 +1,149 @@
+Andrey Murav&#x27;ev : Привет всем<br>
+
+Artem Starostenko : Привет!<br>
+
+Anton Kvashenkin : Привет<br>
+
+Evgenij P&#x27;jankov : Привет!<br>
+
+Anton Kvashenkin : привет<br>
+
+Vladimir Baranov : всем привет!<br>
+
+Artem Starostenko : Привет!&nbsp;<br>
+
+Andrey Murav&#x27;ev : Работает в сафари теперь нормально бигмаркер<br>
+
+Igor&#x27; Leont&#x27;ev : Всем привет!<br>
+
+Maksim Anfilatov : +
+
+Artem Starostenko : +
+
+Evgenij P&#x27;jankov : +
+
+Andrey Murav&#x27;ev : +
+
+Anton Kvashenkin : да<br>
+
+Dmitry Valkov : На 5 минут опоздал, 10 слайдов пропустил<br>
+
+Andrey Murav&#x27;ev : да щас походу за полчасика закончим опять<br>
+
+Vladimir Baranov : чет не должно так работать<br>
+
+Andrey Murav&#x27;ev : почему?<br>
+
+Anton Kvashenkin : обычный L2-домен<br>
+
+Vladimir Baranov : ну маска судя по всему у всех если дефолтная до будет 255.255.0.0 - значит при обращении к соседнему контенейру не должно идти на 172,16,0,1 - или что там было<br>
+
+Andrey Murav&#x27;ev : тут да<br>
+
+Eduard Ptitcyn : А сколько вообще нетворк-алиасов возможно на одном сервере, я же правильно понимаю что для каждой сети выделяется свое адресное пространство? Или идет просто привязка тегов к адресам?<br>
+
+Andrey Murav&#x27;ev : &nbsp;А чем это плохо? docker-proxy. Оверхэдом?&nbsp;<br>
+
+Vladimir Baranov : во тором run ошибка или допускается две записи? - стр 20<br>
+
+Eduard Ptitcyn : спасибо за ответ на вопрос из чата )<br>
+
+Vladimir Baranov : --network<br>
+
+Eduard Ptitcyn : сколько network позволительно?<br>
+
+Vladimir Baranov : не... там = не стоит<br>
+
+Andrey Murav&#x27;ev : &nbsp;думаю дозволяется такая вольность<br>
+
+Anton Kvashenkin : Дмитрий, а посмотри Q&amp;A пжста<br>
+
+Anton Kvashenkin : да<br>
+
+Vladimir Baranov : мики разные в локалку показывает или разные?<br>
+
+Vladimir Baranov : мАки<br>
+
+Eduard Ptitcyn : а вот маквлан - прекрасно, для меня открытие<br>
+
+Vladimir Baranov : маки разные в локалку показывает или разные?<br>
+
+Anton Kvashenkin : я думаю разные<br>
+
+Vladimir Baranov : маки разные в локалку показывает или один на всех?<br>
+
+Andrey Murav&#x27;ev : ^^^<br>
+
+Anton Kvashenkin : openvswitch используется в таком случае?<br>
+
+Dmitrij SHishmakov : когда появилась возможность объединять Докер-контейнеры в общую сеть?<br>
+
+Andrey Murav&#x27;ev : все отвалились?<br>
+
+Anton Kvashenkin : норм<br>
+
+Eduard Ptitcyn : а через docker exec можно хэлсчек запустить?<br>
+
+Eduard Ptitcyn : а через docker exec можно хэлсчек запустить?
+
+Vladimir Baranov : 12 стр. почему трафик идет через хост 0.1, а не напрямую?&nbsp;<br>
+
+Eduard Ptitcyn : 12 стр. почему трафик идет через хост 0.1, а не напрямую?&nbsp;
+
+Anton Kvashenkin : это бридж<br>
+
+Anton Kvashenkin : это L2 а не L3<br>
+
+Dmitrij SHishmakov : Когда в Docker появилась возможность настраивать сетевое взаимодействие?<br>
+
+Dmitrij SHishmakov : история развития Docker<br>
+
+Dmitrij SHishmakov : какие проблемы были<br>
+
+Anton Kvashenkin : в QA есть вопрос у меня<br>
+
+Vladimir Baranov : при macvlan - в сети видно один мак на кучу контейнеров или для контейнера свой мак?<br>
+
+Eduard Ptitcyn : т.е. на порту свича железного я увижу много маков?<br>
+
+Anton Kvashenkin : Я упустил какими тулзами интеграционные тесты делать?
+
+Anton Kvashenkin : слайд про интеграционные тесты<br>
+
+Anton Kvashenkin : а-ля test-kitchen<br>
+
+Anton Kvashenkin : я про это<br>
+
+Anton Kvashenkin : я грубо<br>
+
+Dmitrij SHishmakov : что такое тест-китчен?<br>
+
+Anton Kvashenkin : а слайд разве не про это<br>
+
+Anton Kvashenkin : нет<br>
+
+Anton Kvashenkin : картинку выше каким образом тестировать, башом и госс? тогда печально<br>
+
+Anton Kvashenkin : я про слайд<br>
+
+Anton Kvashenkin : я inspec использую<br>
+
+Anton Kvashenkin : я про это и говорю. нет такого фреймворка значит<br>
+
+Anton Kvashenkin : гркбо говоря в docker-compose добавить verify: inspec<br>
+
+Anton Kvashenkin : ок<br>
+
+Artem Starostenko : Ребят, напоминаю, что лекции в четверг этот не будет&nbsp;<br>
+
+Artem Starostenko : лекция переносится на среду<br>
+
+Artem Starostenko : 11-е октября<br>
+
+Eduard Ptitcyn : спасибо<br>
+
+Anton Kvashenkin : спасибо<br>
+
+Dmitrij SHishmakov : спасибо!<br>
+
+No chat or YouTube history.

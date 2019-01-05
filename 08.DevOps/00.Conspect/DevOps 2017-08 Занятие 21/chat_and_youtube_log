@@ -1,0 +1,127 @@
+Ivan Gavrilov : привет. да<br>
+
+Igor&#x27; Leont&#x27;ev : Привет!<br>
+
+Vladimir Baranov : всем примет! :-)<br>
+
+Anton Kvashenkin : Приветствую коллеги<br>
+
+Anton Kvashenkin : привет<br>
+
+Evgenij P&#x27;jankov : Всем привет!<br>
+
+Anton Kvashenkin : привет<br>
+
+Anton Kvashenkin : Значит у нас сегодня стартует 4-й трэк Fast feedback loop<br>
+
+Anton Kvashenkin :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Anton Kvashenkin : дз 20 ещё не было<br>
+
+Anton Kvashenkin : да
+
+Vladimir Baranov : пока не получилось... nginx не могу скрестить с докер-хостом...<br>
+
+Anton Kvashenkin : ну пока оч лайтово получилось. я думаю в дз20 будет экшен<br>
+
+Vladimir Baranov : нет... это я на своем домене пытаюсь поднять<br>
+
+Anton Kvashenkin : ci/cd надо непрерывно совершенствовать на мой взгляд, это требует практики<br>
+
+Anton Kvashenkin : артём, а можешь пжста ссылку кинуть на подкаст потом<br>
+
+Artem Starostenko : cloud enginerring&nbsp;<br>
+
+Anton Kvashenkin : спасибо я найду<br>
+
+Vladimir Brednikov : спойлеры!<br>
+
+Vladimir Daniljuk : фидбек надо<br>
+
+Anton Kvashenkin : feedback loop )<br>
+
+Anton Kvashenkin : тот смый<br>
+
+Maksim Anfilatov : не падать бы еще )<br>
+
+Anton Kvashenkin : метрики например<br>
+
+Artur Dunaev : а мониторинг поведения пользователей будет на курсе?<br>
+
+Vladimir Brednikov : Анализ поведения пользователей -- это же чистый маркетинг: google analytics и прочий онлайн. Что мы, в общих чертах, тут будем мерить?<br>
+
+Artur Dunaev : тут много чего мерить и у меня например не только на клиентов но и анализ внутреннего пользователя на предмет например оптимизации БП<br>
+
+Vladimir Brednikov : zabbix + logic monitor<br>
+
+Artur Dunaev : для реп систем сво решения на их же платформе<br>
+
+Artur Dunaev : ерп<br>
+
+Anton Kvashenkin : не использую тоже под другое попадает<br>
+
+Ksenia Vasileva : не было варианта ответа никакое)))<br>
+
+Vladimir Daniljuk : prtg был когда то<br>
+
+Nikita Kuz&#x27;min : логи<br>
+
+Vladimir Daniljuk : сейчас&nbsp;&nbsp;Hyperic HQ
+
+Igor&#x27; Leont&#x27;ev : Другое - никакое<br>
+
+Ivan Gavrilov : zennos, monit<br>
+
+Vladimir Baranov : какая должна быть производительность дисковой подсистемы? в сравнении с заббикс мне вообще не реально заббикс из-за этого поднять<br>
+
+Anton Kvashenkin : наверное имелось в виду требования к IO для проиетеуса<br>
+
+Vladimir Baranov : да
+
+Anton Kvashenkin : Я имею ввиду простенькие те самые http, icmp<br>
+
+Anton Kvashenkin : инфраструктуру им же мониторить&nbsp;<br>
+
+Anton Kvashenkin : ?
+
+Anton Kvashenkin : норм все<br>
+
+Vladimir Baranov : в .yml файлах в ансибл нужно было (как правило хорошего тона быть может) ставить "---" в начале файла... здесь такого уже не требуется? в последних ДЗ в примерах не встречал...<br>
+
+Anton Kvashenkin : так же как и в docker-compose<br>
+
+Vladimir Baranov : отличная лекция :-)<br>
+
+Anton Kvashenkin : практика теперь нужна<br>
+
+Vladimir Brednikov : а третий путь какой?<br>
+
+Anton Kvashenkin : <a href="https://itrevolution.com/the-three-ways-principles-underpinning-devops/" target="_blank">https://itrevolution.com/the-three-ways-principles-underpinning-devops/</a>
+
+Anton Kvashenkin : Про on-call будет? )<br>
+
+Anton Kvashenkin : мониторинг получаестся с кодом должен эвуалиционировать<br>
+
+Vladimir Brednikov : ага, об этом на первых лекциях говорилось<br>
+
+Anton Kvashenkin : ага<br>
+
+Anton Kvashenkin :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Andrej Sedov : Спасибо!!!!!!!!!!!!!<br>
+
+Nikita Kuz&#x27;min :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Igor&#x27; Leont&#x27;ev : Спасибо!<br>
+
+Vladimir Brednikov : спасибо!<br>
+
+Evgenij P&#x27;jankov : Спасибо!<br>
+
+Anton Kvashenkin : пока<br>
+
+Artur Dunaev : спасибо!<br>
+
+Vladimir Baranov : пока<br>
+
+No chat or YouTube history.

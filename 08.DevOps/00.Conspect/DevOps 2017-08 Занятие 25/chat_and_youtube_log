@@ -1,0 +1,187 @@
+Maksim Anfilatov : Привет. Негусто сегодня )<br>
+
+Anton Kvashenkin : Приветствую коллеги<br>
+
+Anton Kvashenkin : фигасе отдыхают, я дз полдня делал<br>
+
+Anton Kvashenkin : ))<br>
+
+Anton Kvashenkin : 23
+
+Anton Kvashenkin : ну не полдня, так не спешно скажем так<br>
+
+Anton Kvashenkin : )
+
+Vladimir Baranov : всем привет!<br>
+
+Anton Kvashenkin : Артём а вот как быть с уонфигом прометея при&nbsp; (например) разворачивание продакшене? при изменение билдить новый контенер, то есть как код воспринимать<br>
+
+Anton Kvashenkin : я это понимаю<br>
+
+Anton Kvashenkin : это боль<br>
+
+Anton Kvashenkin : я сколоняюсь что не вижу смысла инфраструктурные сервисы в контенер совать<br>
+
+Anton Kvashenkin : я ансиблом могу или шефом развернуть, а фибэклуп мне не нужен<br>
+
+Anton Kvashenkin : да я знаю<br>
+
+Anton Kvashenkin : профита гитлаб в докере не вижу<br>
+
+Anton Kvashenkin : ну я в общем думаю на эту тему еще)<br>
+
+Vladimir Baranov : на ютубе начинается день открытых дверей для новой группы - кто его ведет? еще вроде не видел этого человека<br>
+
+Anton Kvashenkin : для быстрого протопа огонь<br>
+
+Anton Kvashenkin : !
+
+Anton Kvashenkin : прототипа<br>
+
+Vladimir Baranov : прикольно.... слышал его в подкасте :-)<br>
+
+Anton Kvashenkin : посмотрю в записи потом)<br>
+
+Vladimir Baranov : ух как нас мало<br>
+
+Nikita Kuz&#x27;min : все отдыхают =)<br>
+
+Vladimir Brednikov : это глобальный конфиг для всех контейнеров -- /etc/docker/daemon.json?<br>
+
+Anton Kvashenkin : можно docker logs -f dockerpuma_ui_1<br>
+
+Anton Kvashenkin : ну да<br>
+
+Anton Kvashenkin : понятно здесь для json<br>
+
+Vladimir Baranov : это логи которые генерит контейнер или приложение внутри контейнера?<br>
+
+Anton Kvashenkin : контенер же сам по себе не пишет логи<br>
+
+Anton Kvashenkin : о да))<br>
+
+Anton Kvashenkin : а в ELK можно писать?<br>
+
+Anton Kvashenkin : а как они взаимодействуют?&nbsp; по сети или через bind mount<br>
+
+Vladimir Baranov : если связь рвется<br>
+
+Vladimir Brednikov : например, приложение не умеет нормально писать логи даже в stdout<br>
+
+Vladimir Brednikov : у нас есть священные контейнеры, которые больше года живут<br>
+
+Vladimir Brednikov : это не вопрос :)<br>
+
+Anton Kvashenkin : snowflake container :)<br>
+
+Vladimir Brednikov : tracing -- это только про таймстэмпы или еще и про поиск логов для конкретного запроса?<br>
+
+Vladimir Brednikov : потому что важно не только посмотреть тайминги, но и посмотреть, что и почему сломалось где-то<br>
+
+Vladimir Baranov : как добиться супер-пупер инхронизации по времени... ведь за пару часов рассинхрон может дикий быть... как часто время синхронизировать?<br>
+
+Vladimir Baranov : как добиться супер-пупер синхронизации по времени... ведь за пару часов рассинхрон может дикий быть... как часто время синхронизировать?<br>
+
+Vladimir Brednikov : один конкретный запрос в системе трейсинга можно отследить? или там обобщенная статистика по всем запросам сразу?<br>
+
+Anton Kvashenkin : зипкин не только с микросервисами может использоваться?&nbsp;<br>
+
+Andrej Sedov : понятно<br>
+
+Vladimir Baranov : разберемся :-)<br>
+
+Vladimir Baranov : чет слишком большая обработка только для ui...&nbsp;<br>
+
+Vladimir Baranov : нижние span входят в верхние?<br>
+
+Vladimir Brednikov : ui ждет, пока пост отработает<br>
+
+Anton Kvashenkin : без трейсеров никак получается? приложение должно поддерживать? есть экспортеры как в прометеи? )<br>
+
+Vladimir Baranov : ну только от ui до post получается 62мс<br>
+
+Andrej Sedov : А trace не обязательно соответствует первому span-у?<br>
+
+Anton Kvashenkin : как в прометей<br>
+
+Anton Kvashenkin : я имел ввиду<br>
+
+Anton Kvashenkin : )
+
+Anton Kvashenkin : не надо в прометей)<br>
+
+Vladimir Brednikov : получается такой firebug, но на серверной стороне<br>
+
+Andrej Sedov : Я имел виду длину.<br>
+
+Andrej Sedov : ввиду
+
+Andrej Sedov : Спасибо... ОК.<br>
+
+Anton Kvashenkin : мопед не мой, коллега&nbsp; в чате спрашивал)<br>
+
+Nikita Kuz&#x27;min : why not?<br>
+
+Anton Kvashenkin : Я не совсем понял обязательным ли условием является поддержка приложением зипкина? И в этом мой вопрос был в чате)
+
+Artem Starostenko : <a href="http://zipkin.io/pages/existing_instrumentations.html" target="_blank">http://zipkin.io/pages/existing_instrumentations.html</a>
+
+Anton Kvashenkin : а если приложение не поддерживает, то зипкин нельзя использовать? мы будет reddit патчить?<br>
+
+Anton Kvashenkin : понятно<br>
+
+Anton Kvashenkin : вот sysdig cloud крутую вещь ребята пилят<br>
+
+Vladimir Brednikov : видно<br>
+
+Nikita Kuz&#x27;min : да<br>
+
+Anton Kvashenkin : да<br>
+
+Vladimir Baranov : +
+
+Igor&#x27; Leont&#x27;ev : +
+
+Vsevolod Romashov : +
+
+Andrej Sedov : yes
+
+Anton Kvashenkin : да<br>
+
+Igor&#x27; Leont&#x27;ev : да
+
+Anton Kvashenkin : кстати dc неплохой алиас для docker-compose)<br>
+
+Vladimir Brednikov : dc это калькулятор же<br>
+
+Anton Kvashenkin : да кстати<br>
+
+Vladimir Brednikov : зипкин -- это не имя, а фамилия!<br>
+
+Vladimir Baranov : а где генерируется span-id для request header?<br>
+
+Anton Kvashenkin :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Vladimir Brednikov : похоже, зипкин надо внедрять в приложение на этапе проектирования его архитектуры<br>
+
+Andrej Sedov : Надо потрогать! :-)<br>
+
+Vladimir Baranov : мне понравилось :-) надо будет переписать пару десятков отчетов :-)<br>
+
+Andrej Sedov : Спасибо!
+
+Vladimir Baranov : ну наверняка можно его запрограммировать в конфиге включить, выключить :-)<br>
+
+Anton Kvashenkin : 24-25 дз в одном будет получается<br>
+
+Vladimir Brednikov : отлично прошло!<br>
+
+Vladimir Baranov : спасибо! :-)<br>
+
+Anton Kvashenkin : @guest-1055810 &nbsp;или контенер сбилдить заново<br>
+
+Anton Kvashenkin : пока<br>
+
+Vladimir Baranov : можно<br>
+
+No chat or YouTube history.

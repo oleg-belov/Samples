@@ -1,0 +1,67 @@
+Artem Starostenko : всем привет!<br>
+
+Evgenij P&#x27;jankov : Привет<br>
+
+Sergej Nikiforov : привет<br>
+
+Anton Kvashenkin : Привет всем<br>
+
+Igor&#x27; Leont&#x27;ev : Всем привет!<br>
+
+Anton Kvashenkin : привет. а всех нет видео и грузится слайд?<br>
+
+Igor&#x27; Leont&#x27;ev : видео пока нет<br>
+
+Igor&#x27; Leont&#x27;ev : звука нет<br>
+
+Evgenij P&#x27;jankov : все еще нет<br>
+
+Igor&#x27; Leont&#x27;ev : +
+
+Evgenij P&#x27;jankov : да!<br>
+
+Anton Kvashenkin : Этап Review в CD это QA?<br>
+
+Andrey Murav&#x27;ev : а code review?<br>
+
+Andrej Sedov : То есть "бизнес" заходит в GitLab CI и разворачивает приложение в production?<br>
+
+Andrej Sedov : А как это бывает обычно?<br>
+
+Anton Kvashenkin : CD фаза обычно проходит после мёрджа в мастер?<br>
+
+Anton Kvashenkin : Или в feature бранче?<br>
+
+Andrej Sedov : Спасибо!
+
+Andrey Murav&#x27;ev : что называют функциональными тестами и где из место на слайде с пайплайном?<br>
+
+Anton Kvashenkin : Чтобы из слака деплоить в Гитлабе надо чат-бота?<br>
+
+Anton Kvashenkin : а какие например облачные сервисы есть для этого?<br>
+
+Anton Kvashenkin : для бота<br>
+
+Anton Kvashenkin : в других CI системах принцип такой же как и в Гитлабе? Построение пайплайна.<br>
+
+Andrey Murav&#x27;ev : дженкинс<br>
+
+Anton Kvashenkin : Вопрос: для тестирования в windows среде где лучше gitlab-runner запускать. Был ли опыт запуска в докере вмртуалбокса?<br>
+
+Anton Kvashenkin : У меня задача CI для шеф-кукбуков для windows настроить. Где раннер запускать<br>
+
+Anton Kvashenkin : вот такой вопрос у меня<br>
+
+Anton Kvashenkin : а изоляция по типу docker<br>
+
+Anton Kvashenkin : да test-kithen<br>
+
+Vladimir Daniljuk : пока!<br>
+
+Anton Kvashenkin : спасибо<br>
+
+Dmitry Bulanov : спасибо&nbsp;<br>
+
+Evgenij P&#x27;jankov : спасибо<br>
+
+No chat or YouTube history.

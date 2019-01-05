@@ -1,0 +1,127 @@
+Igor&#x27; Leont&#x27;ev : привет, еще раз!<br>
+
+Artem Starostenko : меня не слышно?<br>
+
+Igor&#x27; Leont&#x27;ev : было да<br>
+
+Igor&#x27; Leont&#x27;ev : рано еще<br>
+
+Igor&#x27; Leont&#x27;ev : еле-еле
+
+Igor&#x27; Leont&#x27;ev : не мешает<br>
+
+Andrey Murav&#x27;ev : привет<br>
+
+Igor&#x27; Leont&#x27;ev : нет
+
+Igor&#x27; Leont&#x27;ev : ошибку выдает<br>
+
+Igor&#x27; Leont&#x27;ev : добавил и все запустилось<br>
+
+Igor&#x27; Leont&#x27;ev : ок
+
+Igor&#x27; Leont&#x27;ev : может я где чего упустил<br>
+
+Andrey Murav&#x27;ev : + за питон
+
+Andrey Murav&#x27;ev : а зря<br>
+
+Maksim Anfilatov : Это они зря ...<br>
+
+Vladimir Brednikov : я еще rrd помню, с mrtg<br>
+
+Vladimir Brednikov : rrdb<br>
+
+Vladimir Brednikov : в 2000х была такая rrdb<br>
+
+Vladimir Brednikov : для хранения статистики mrtg<br>
+
+Vladimir Baranov : ууупппсссс<br>
+
+Dmitrij Gornostajpol&#x27;skij : freeze<br>
+
+Dmitry Valkov : Место кончилось<br>
+
+Dmitry Valkov : Мониторинга не хавехли<br>
+
+Vladimir Baranov : пространство файловое<br>
+
+Sergej Nikiforov : да<br>
+
+Andrey Murav&#x27;ev : +
+
+Dmitrij Gornostajpol&#x27;skij : +
+
+Andrej Sedov : +
+
+Vladimir Daniljuk : наверное, это будет задание со звездочкой )<br>
+
+Andrey Murav&#x27;ev : datadog из коробки неплохо это умеет<br>
+
+Vladimir Baranov : cAdvisor - это что?<br>
+
+Sergej Nikiforov : если гуглом разработан, то странно что не gAdvisor =)<br>
+
+Andrey Murav&#x27;ev : хипстер для хипстеров<br>
+
+Andrey Murav&#x27;ev : gcs<br>
+
+Andrey Murav&#x27;ev : что значит метрики описываются в коде приложения?<br>
+
+Andrey Murav&#x27;ev : то есть разработчики пишут метрики в коде?&nbsp;<br>
+
+Andrey Murav&#x27;ev : я такого еще не встречал =)))<br>
+
+Sergej Nikiforov : да ну, в начале запроса снимается timestamp и в конце выполнения запроса берем timestamp, вот и готовая метрика<br>
+
+Igor&#x27; Leont&#x27;ev : да
+
+Evgenij P&#x27;jankov : да<br>
+
+Vladimir Brednikov : не надо ли три health-check'а тут?<br>
+
+Vladimir Brednikov : для каждого сервиса<br>
+
+Vladimir Brednikov : пост-сервис может быть доступен, но плохо работать, в отличие от комментов<br>
+
+Vladimir Brednikov : т.е. с ui получаем ок, если все работает, и fail, если хотя бы один сломался?<br>
+
+Vladimir Brednikov : 0 ок, остальное ошибки<br>
+
+Vladimir Brednikov : как в баше<br>
+
+Vladimir Brednikov : ок, понял<br>
+
+Andrey Murav&#x27;ev : да<br>
+
+Andrej Sedov : да<br>
+
+Ivan Gavrilov : да
+
+Vladimir Brednikov : зачем мы каждый раз commit-hash передаем?<br>
+
+Vladimir Baranov : почему set а не add? мы же собирать должны...<br>
+
+Vladimir Brednikov : документация и тесты!<br>
+
+Andrey Murav&#x27;ev : &nbsp;с количеством&nbsp; регистраций у пегого дудочника было весело =)))<br>
+
+Vladimir Brednikov : насколько добавление метрик на каждый чих замедляет работу приложения?<br>
+
+Andrey Murav&#x27;ev : я думаю если использовать как в примере&nbsp; &nbsp;со статд<br>
+
+Andrey Murav&#x27;ev : но не сильно, там же враппер просто<br>
+
+Andrey Murav&#x27;ev : польза должна превышать оверхед<br>
+
+Andrey Murav&#x27;ev : спасибо артем<br>
+
+Andrey Murav&#x27;ev : хорошо что ты к нам вернулся =)<br>
+
+Andrej Sedov : Спасбо, очень интересно!<br>
+
+Vladimir Daniljuk : пока!<br>
+
+Vladimir Baranov : пока<br>
+
+No chat or YouTube history.

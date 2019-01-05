@@ -1,0 +1,107 @@
+Vladimir Baranov : всем привет!<br>
+
+Dmitrii Mishchenko : Привет!<br>
+
+Ivan Gavrilov : Привет всем<br>
+
+Igor&#x27; Leont&#x27;ev : Всем привет!<br>
+
+Anton Kvashenkin : привет<br>
+
+Vladimir Baranov : еще нет<br>
+
+Igor&#x27; Leont&#x27;ev : старается пройти<br>
+
+Vladimir Brednikov : но при этом все делят одни и те же ресурсы, хотя бы и кастер-мастера<br>
+
+Anton Kvashenkin : то есть получается типа как кластер в кластере?<br>
+
+Anton Kvashenkin : в minikube поддерживается namespace?<br>
+
+Vladimir Baranov : radius?<br>
+
+Vladimir Baranov : сертификаты чем генерят обычно? кубернетис сам умеет генерить?<br>
+
+Vladimir Baranov : каждый запрос или сессия поднимается?<br>
+
+Anton Kvashenkin : а вот я делаю в minikube<br>
+
+Anton Kvashenkin : я правильно понимаю что юзеры и тд имеют смысл когда например отделу dev-1 создать отдельный namespace и пусть там что хотят делают. типа своего внутреннего PaaS. при стандартной эксплуатации это не нужно<br>
+
+Anton Kvashenkin : reddit-app развернуть на kebernetes это стандартно?<br>
+
+Anton Kvashenkin : зачем пользователей создавать<br>
+
+Anton Kvashenkin : ?
+
+Anton Kvashenkin : в minikube я делаю kebectl run --image=nginx, где здесь авторизация<br>
+
+Anton Kvashenkin : или все под капотом уже сделано minikube<br>
+
+Anton Kvashenkin : пока тяжеловато идёт, особенно после docker swarm init ))<br>
+
+Andrey Murav&#x27;ev : это прям aws iam<br>
+
+Andrey Murav&#x27;ev : он остался в амазоне =) и никуда не денется<br>
+
+Anton Kvashenkin : это получается по типу как в облаке GCE создаются service account'ы<br>
+
+Vladimir Baranov : что должен уметь, или на что имеет право?<br>
+
+Anton Kvashenkin : мы с сервис аккаунтом прометеуса заморачиваемся лишь потому что нам нужно обращаться к апи кубернетесе для service discovery?<br>
+
+Anton Kvashenkin : для ui не нужен ведь?<br>
+
+Anton Kvashenkin : в minikube я делаю kebectl run --image=nginx, где здесь авторизация
+
+Anton Kvashenkin : или для ui<br>
+
+Anton Kvashenkin : то есть это по сути модкль<br>
+
+Anton Kvashenkin : ок понятно<br>
+
+Anton Kvashenkin : Дим в продакшене с какого размера кластером кубернетес работал или встречал?<br>
+
+Andrey Murav&#x27;ev : да не только российский<br>
+
+Anton Kvashenkin : с pod конролерами норм зашло, с AAA требует переварить серьёёзно)<br>
+
+Vladimir Brednikov : сколько еще будет лекций про к?<br>
+
+Nikita Kuz&#x27;min : огонь<br>
+
+Andrey Murav&#x27;ev : да все в шоке<br>
+
+Anton Kvashenkin :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Vladimir Brednikov : спасибо :)<br>
+
+Andrej Sedov : Спасибо! Мозг взорван!!!<br>
+
+Ivan Gavrilov : Спасибо<br>
+
+Igor&#x27; Leont&#x27;ev : спасибо!<br>
+
+Andrey Murav&#x27;ev : рассказал хорошо<br>
+
+Dmitrij Gornostajpol&#x27;skij : спасибо!<br>
+
+Anton Kvashenkin : Дим ревью сделаешь по дз?<br>
+
+Vladimir Baranov : если не спешить, то пару ДЗ вам придется пропустить :)<br>
+
+Anton Kvashenkin : че там с Артемом? выздоравливает?<br>
+
+Vladimir Baranov : не... я в смысле они не будут хаданы в принципе<br>
+
+Vladimir Baranov : не... я в смысле они не будут заданы в принципе<br>
+
+Andrey Murav&#x27;ev : пока<br>
+
+Anton Kvashenkin : пока<br>
+
+Vladimir Baranov : пока!<br>
+
+Igor&#x27; Leont&#x27;ev : удачи
+
+No chat or YouTube history.

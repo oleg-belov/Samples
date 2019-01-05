@@ -1,0 +1,171 @@
+Vladimir Baranov : всем привет!<br>
+
+Igor&#x27; Leont&#x27;ev : Привет!<br>
+
+Dmitrii Mishchenko : Привет!<br>
+
+Vladimir Baranov : уффф.... 94 слайда :-)<br>
+
+Dmitrii Mishchenko : Не переживайте - это анимашки так растянулись)<br>
+
+Igor&#x27; Leont&#x27;ev : Сегодня у нас последнее занятие или будут еще?<br>
+
+Dmitrii Mishchenko : Будет еще<br>
+
+Igor&#x27; Leont&#x27;ev : Просто программа вроде закончилась<br>
+
+Vladimir Baranov : что означает огонек возле темы лекции 27 и 28?<br>
+
+Dmitrii Mishchenko : Лекцию просто не назначили<br>
+
+Anton Kvashenkin : Привет<br>
+
+Dmitrii Mishchenko : насчет огонька не знаю. Лучше в Global чате спросить<br>
+
+Igor&#x27; Leont&#x27;ev : +<br>
+
+Vladimir Baranov : громко :-)<br>
+
+Igor&#x27; Leont&#x27;ev : норм
+
+Vladimir Baranov : нет шума<br>
+
+Anton Kvashenkin : как-то движухи у нас не в слаке по кубернетесу<br>
+
+Anton Kvashenkin : нет<br>
+
+Vladimir Baranov : звук лучше чем на предыдущей лекции... поделись с колегами как ты это делаешь :-)<br>
+
+Anton Kvashenkin : тихо все и спокойно)<br>
+
+Anton Kvashenkin : кстати Дмитрий сделаешь ревью)<br>
+
+Igor&#x27; Leont&#x27;ev : и мне! :-)<br>
+
+Vladimir Baranov : везет вам московским :-)<br>
+
+Anton Kvashenkin : а у тебя сколько?<br>
+
+Vladimir Baranov : 23
+
+Anton Kvashenkin : в json говорят короче выходит но не пробовал<br>
+
+Vladimir Baranov : yaml или yml принципиально?&nbsp;<br>
+
+Dmitrii Mishchenko : yaml<br>
+
+Anton Kvashenkin : Template files should have the extension&nbsp;.yaml&nbsp;if they produce YAML output. The extension&nbsp;.tpl&nbsp;may be used for template files that produce no formatted content.
+
+Anton Kvashenkin : из доки<br>
+
+Vladimir Baranov : какова вероятность, что хук зависнет и ничего не вернет... там-аут ожидания есть какой-то?<br>
+
+Anton Kvashenkin : это уже на усмотрение кубернетеса) это же под<br>
+
+Anton Kvashenkin : джоб это под&nbsp;<br>
+
+Vladimir Baranov : это я понял :-)<br>
+
+Vladimir Baranov : на терраформ похоже.... в том плане, что потерял состояние и начинай разгребать :-)<br>
+
+Anton Kvashenkin : так бекап же есть terraform.state.backup<br>
+
+Anton Kvashenkin : )
+
+Vladimir Baranov : есть... :-) только не всегда спасал... учитывая, что можно все менять в самом gcp (в нашем случае)<br>
+
+Vladimir Baranov : кто первый встал тому и тапки :-)<br>
+
+Vladimir Baranov : helm как-то сообщает - эй чувак - обновись!<br>
+
+Vladimir Baranov : ?
+
+Anton Kvashenkin : ага и скрепка такая вылазиет))<br>
+
+Anton Kvashenkin : lock-файлы по типу Gemfile.lock там еще есть я смотрю&nbsp; репу щас<br>
+
+Vladimir Baranov : все понятно :-)<br>
+
+Vladimir Baranov : helm install это руками? или job-ами?<br>
+
+Vladimir Baranov : или.... ?<br>
+
+Anton Kvashenkin : я думаю можно и по кнопке и автоматом<br>
+
+Vladimir Baranov : понятно<br>
+
+Vladimir Baranov : это гуд<br>
+
+Anton Kvashenkin : обычный пайпоайн гитлаба на самом деле<br>
+
+Anton Kvashenkin : это как раз уже CD )<br>
+
+Anton Kvashenkin : деплой соббсно<br>
+
+Vladimir Baranov : дз будет с гитлабом+хельм?<br>
+
+Vladimir Baranov :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Anton Kvashenkin : для чего Istio нужен)<br>
+
+Anton Kvashenkin : envoy вроде<br>
+
+Anton Kvashenkin : у них<br>
+
+Anton Kvashenkin : как там дела у Артёма?<br>
+
+Anton Kvashenkin : еще будут занятия же<br>
+
+Anton Kvashenkin : по кубернетесу<br>
+
+Anton Kvashenkin : а сколько?<br>
+
+Vladimir Brednikov : диплом?<br>
+
+Anton Kvashenkin : +
+
+Vladimir Brednikov : диплом и есть :)<br>
+
+Vladimir Brednikov : а проверять-то будут?<br>
+
+Vladimir Baranov : у меня на реализации ДЗ 28... до какого принимается выпускная работа?<br>
+
+Vladimir Baranov : гуд<br>
+
+Anton Kvashenkin : Мне понятно в принципе<br>
+
+Anton Kvashenkin : Вопрос по кубернетесу<br>
+
+Vladimir Baranov : нет.. все проще, мне кажется, чем сам кубернетис<br>
+
+Anton Kvashenkin : А его установка считается сложной по сути из-за PKI?<br>
+
+Vladimir Brednikov : из-за необходимости въехать в его концепты<br>
+
+Anton Kvashenkin : вроде как бытует мнение что сложно устанавливать<br>
+
+Anton Kvashenkin : там на самом деле 5 плюс минус бинарей<br>
+
+Anton Kvashenkin : kubeadm норм же вещь<br>
+
+Anton Kvashenkin : почти как сварм становится<br>
+
+Vladimir Brednikov : helm в продакшене видел?<br>
+
+Anton Kvashenkin : я про установку<br>
+
+Vladimir Brednikov : потому что по описанию сыроват<br>
+
+Vladimir Brednikov : спасибо!<br>
+
+Anton Kvashenkin : спасибо<br>
+
+Igor&#x27; Leont&#x27;ev : Спасибо!
+
+Anton Kvashenkin : да пришла<br>
+
+Vladimir Baranov : спасибо! пока!<br>
+
+Andrej Sedov : спасибо<br>
+
+No chat or YouTube history.

@@ -1,0 +1,191 @@
+Vladimir Baranov : всем привет!<br>
+
+Dmitrii Mishchenko : Привет!<br>
+
+Igor&#x27; Leont&#x27;ev : Всем привет!<br>
+
+Anton Kvashenkin : привет коллеги<br>
+
+Dmitry Valkov : Так вот она какая - большая видео-картинка!<br>
+
+Andrey Murav&#x27;ev : Ох привет! Давно меня небыло =)<br>
+
+Anton Kvashenkin : привет<br>
+
+Dmitry Valkov : Да, слайды вернулись<br>
+
+Dmitrij Gornostajpol&#x27;skij : Привет<br>
+
+Anton Kvashenkin : 8 букв<br>
+
+Anton Kvashenkin : это распрастранненая практика<br>
+
+Vladimir Brednikov : i18n i(18 букв)n<br>
+
+Anton Kvashenkin : ага<br>
+
+Vladimir Brednikov : l10n l(10 букв n) localization<br>
+
+Vladimir Brednikov : и т.д.<br>
+
+Vladimir Baranov : платная?<br>
+
+Dmitry Valkov : Deis нет, вроде<br>
+
+Anton Kvashenkin : это типа как node в swarme<br>
+
+Anton Kvashenkin : ?
+
+Vladimir Baranov : 10,10,10,1 - это докер-хост?<br>
+
+Andrey Murav&#x27;ev : а почему не service?<br>
+
+Anton Kvashenkin : типа как группа сервисов?<br>
+
+Vladimir Baranov : мне пока не понятно, как volume расшариваются между контейнерами... особенно, если она на разных хостах<br>
+
+Anton Kvashenkin : через драйвера наверное<br>
+
+Vladimir Baranov : pod получает ip, контейнер получает ip, у хоста есть ip... ip--шники как-то согласуются?<br>
+
+Anton Kvashenkin : в общем группа контенеров с общими namespace<br>
+
+Vladimir Brednikov : потому что это разные приложения<br>
+
+Anton Kvashenkin : скедулить сложнее<br>
+
+Vladimir Baranov : что-то может упасть, будет перезапукаться весь контейнер<br>
+
+Sergej Nikiforov : частью сервисов можно управлять&nbsp;<br>
+
+Andrey Murav&#x27;ev : изоляция зависимостей<br>
+
+Dmitry Valkov : Упал контейнер - упали ВСЕ приложения))<br>
+
+Vladimir Baranov : обновление<br>
+
+Anton Kvashenkin : хотя да<br>
+
+Vladimir Brednikov : т.е. можно отдельно скачать контейнер для апача с вордпрессом и контейнер для базы и не нужно тратить усилий по их мерджу<br>
+
+Andrey Murav&#x27;ev : то есть по сути под = stack но с разшаренными неймспейсами?<br>
+
+Nikita Kuz&#x27;min : уух, еще один слой добавляем, с помощью синхронизации<br>
+
+Dmitry Valkov : Всё - это Pod, но что там внутри пода - сами придумайте<br>
+
+Vladimir Baranov : сервер соединяется с кубилет или кубелет с сервером?<br>
+
+Vladimir Baranov : настройки подтягиваются или сверху накладываются<br>
+
+Vladimir Baranov : у кубилета тоже есть рест?<br>
+
+Andrey Murav&#x27;ev : на чем написан кубер? Ява?<br>
+
+Anton Kvashenkin : голанг же<br>
+
+Dmitry Valkov : Ощущения от информации<br>
+
+Dmitry Valkov : Ощущения&nbsp;<br>
+
+Vladimir Baranov : не... это уже ответили<br>
+
+Dmitry Valkov : Развернуть приложение с Kubernetes легко!1) Откройте терминал...50716) Готов!&nbsp;
+
+Mikhail Egorov : там своя парадигма )<br>
+
+Andrey Murav&#x27;ev : функциональщина?<br>
+
+Mikhail Egorov : интерфейсщина<br>
+
+Mikhail Egorov : Как второй язык после питона для админов, рекомендую :-)<br>
+
+Anton Kvashenkin : плюсую<br>
+
+Andrey Murav&#x27;ev : второй после&nbsp; питона bash, Go&nbsp; уже третий =)<br>
+
+Anton Kvashenkin : )
+
+Mikhail Egorov : баш первый, я его даже не считаю<br>
+
+Andrey Murav&#x27;ev : к сожалению + d семье не без урода =(<br>
+
+Dmitry Valkov : Я уже запутался по всех представленных сущностях и это явно не конец :с<br>
+
+Anton Kvashenkin :  <img src="/assets/emoji/smile.png" class="chat-emoji"> &nbsp;
+
+Vladimir Brednikov : +100500<br>
+
+Andrey Murav&#x27;ev : да жутики, сколько конфигов чтобы развернуть один простенький сервис<br>
+
+Anton Kvashenkin : это всё в одном yaml-е?<br>
+
+Andrey Murav&#x27;ev : так ingress&nbsp; для NLB а кто балансер?<br>
+
+Anton Kvashenkin : будет сегодня лайф-демо? )<br>
+
+Andrey Murav&#x27;ev : уже нет я думаю<br>
+
+Sergej Nikiforov : не надо сегодня добивать =)<br>
+
+Anton Kvashenkin : типа docker-compose что-то получается?<br>
+
+Anton Kvashenkin : мы как будем разворачивать в дз?<br>
+
+Anton Kvashenkin : чтобы заранее почитать<br>
+
+Anton Kvashenkin : а helm это что за зверь?<br>
+
+Vladimir Brednikov : но лучше, наверно, все же самому развернуть кубернетес с нуля, чтобы понимать, что там к чему<br>
+
+Vladimir Baranov : ok
+
+Anton Kvashenkin : да
+
+Andrey Murav&#x27;ev : +
+
+Ivan Gavrilov : Сегодня попался еще способ развернуть k8s&nbsp;<a href="https://conjure-up.io/" target="_blank">https://conjure-up.io/</a>
+
+Anton Kvashenkin : evangelist<br>
+
+Anton Kvashenkin : Дим а по времени сколько hard way пройти?<br>
+
+Anton Kvashenkin : так как мы будет разворачивать в дз? )<br>
+
+Anton Kvashenkin : в GCK<br>
+
+Anton Kvashenkin : типа docker stack deploy<br>
+
+Anton Kvashenkin : а как сам ямл файлик разворачивать? через kubectl?<br>
+
+Andrey Murav&#x27;ev : есть веб морда для кубера?<br>
+
+Andrey Murav&#x27;ev : ты говорил что ранчер как веб интерфейс можно использовать, а есть ли еще аналоги?<br>
+
+Anton Kvashenkin : для оверлея тоже vxlan используется?<br>
+
+Anton Kvashenkin : про сторадж мало было. и staefull, понимаю пока вводная<br>
+
+Dmitrii Mishchenko : Weave<br>
+
+Anton Kvashenkin : ок наслышан<br>
+
+Anton Kvashenkin : ок
+
+Andrey Murav&#x27;ev : Спасибо за лекцию<br>
+
+Anton Kvashenkin :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Andrey Murav&#x27;ev : Лекция огонь<br>
+
+Dmitrij Gornostajpol&#x27;skij : спасибо<br>
+
+Andrej Sedov : Спасибо!!!<br>
+
+Vladimir Baranov : пока! :)<br>
+
+Igor&#x27; Leont&#x27;ev : Спасибо!<br>
+
+Anton Kvashenkin : сколько там осталось лекций<br>
+
+No chat or YouTube history.

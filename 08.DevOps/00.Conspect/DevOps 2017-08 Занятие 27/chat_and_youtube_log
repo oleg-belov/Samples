@@ -1,0 +1,260 @@
+Vladimir Baranov : всем привет!<br>
+
+Igor&#x27; Leont&#x27;ev : Привет!<br>
+
+Artem Starostenko : привет!&nbsp;<br>
+
+Vladimir Daniljuk : добрый вечер!<br>
+
+Dmitrii Mishchenko : Привет!<br>
+
+Vladimir Baranov : <span class="chat-at">@Artem Starostenko</span>  &nbsp; тоже обучаешься или контролируешь? <img src="/assets/emoji/smile.png" class="chat-emoji"> &nbsp;
+
+Artem Starostenko : всегда есть чему у коллег поучиться :)&nbsp;<br>
+
+Artem Starostenko : совмещаю)<br>
+
+Vladimir Brednikov : привет! какие планы по дз?<br>
+
+Vladimir Baranov :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Vladimir Brednikov : я один не слышу?<br>
+
+Vladimir Baranov : один<br>
+
+Artem Starostenko : Владимир, ДЗ будет завтра. Скорее всего, даже 2. Так что будет, чем заняться<br>
+
+Igor&#x27; Leont&#x27;ev : слышно
+
+Vladimir Baranov : все ок<br>
+
+Anton Kvashenkin : всем привет<br>
+
+Anton Kvashenkin : столкнулся с этим<br>
+
+Vladimir Baranov : костыль :-)<br>
+
+Anton Kvashenkin : по мне изящно<br>
+
+Anton Kvashenkin : )
+
+Vladimir Baranov : очень :-) не спорю<br>
+
+Anton Kvashenkin : еще можно role == manager для бд<br>
+
+Anton Kvashenkin : и так забиндить дату<br>
+
+Anton Kvashenkin : если таск запуститься на воркере то дата не будет доступна<br>
+
+Vladimir Brednikov : nfs?<br>
+
+Anton Kvashenkin : или всякими flocker, infiny<br>
+
+Anton Kvashenkin : volume драйверами<br>
+
+Anton Kvashenkin : но там все в основном alpha ))<br>
+
+Vladimir Brednikov : nfs всех нас старше<br>
+
+Vladimir Brednikov : ну, не всех -- первая версия в 1984 г<br>
+
+Vladimir Baranov : iscsi поддерживается так или иначе?<br>
+
+Anton Kvashenkin : есть еще от vmware драйвер<br>
+
+Anton Kvashenkin : vm чего -то там<br>
+
+Vladimir Baranov : два сервиса он точно разместит на разных хостах или может на один запихать?<br>
+
+Vladimir Baranov : в смысле два контейнера одного сервиса<br>
+
+Anton Kvashenkin : если надо точно то global используем<br>
+
+Anton Kvashenkin : docker create -d overlay back_net<br>
+
+Anton Kvashenkin : в prerouting получается<br>
+
+Anton Kvashenkin : а он в ядре получается? ipvs?<br>
+
+Maksim Anfilatov : С версии 2.4<br>
+
+Vladimir Baranov : а если снаружи запрос к ui? там уже nginx... направлять его на мастер?<br>
+
+Anton Kvashenkin : можно отмотать назад<br>
+
+Anton Kvashenkin : на один слайд<br>
+
+Anton Kvashenkin : да&nbsp;<br>
+
+Anton Kvashenkin : пять сек прям<br>
+
+Anton Kvashenkin : ок<br>
+
+Anton Kvashenkin : через публикацию портов)<br>
+
+Vladimir Baranov : по хорошему получается nginx надо тоже в контейнер завернуть<br>
+
+Anton Kvashenkin : получается для этого как раз используется ingress дефолтная оверлей сеть<br>
+
+Anton Kvashenkin : для routing mesh<br>
+
+Anton Kvashenkin : lf
+
+Anton Kvashenkin : патчить опять придется ui)<br>
+
+Vladimir Baranov : не... не понятно пока... кто слушает 9292 порт и внешний ip?<br>
+
+Anton Kvashenkin : а здесь три внешних ип и каждый ответит<br>
+
+Anton Kvashenkin : как раз за счет того самого routing mesh<br>
+
+Vladimir Baranov : новый image он сам отслеживает?<br>
+
+Vladimir Brednikov : failure определяется по health у контейнера?<br>
+
+Anton Kvashenkin : скорее всего по состояниютаска<br>
+
+Vladimir Brednikov : а что делать, когда, например, томкат запускается, сервлет в нем ломается по какой-то причине и томкат продолжает работать и ничего не возвращает<br>
+
+Vladimir Baranov : конфиг часто перечитывается? ну или как увеличивать ресурсы?<br>
+
+Vladimir Baranov : docker swarm<br>
+
+Anton Kvashenkin : а что у нас с датой монги? она в локальном volume?<br>
+
+Anton Kvashenkin : healthcheck подогнать под этот кейс<br>
+
+Anton Kvashenkin : а как в прдакшене всем этим рулить?<br>
+
+Anton Kvashenkin : из cli?<br>
+
+Dmitrii Mishchenko : portainer<br>
+
+Vladimir Baranov : мне все же не понятно... есть nginx... он слушает порт 9292 (если брать наш пример).... куда дальше прокидывать запрос - на какой докер-хост? или все указать? или только мастер?<br>
+
+Vladimir Baranov : в конфиге nginx<br>
+
+Anton Kvashenkin : а конкретней про CI/CD в этом случае. то есть по кнопке в gitlab docker stack deploy?<br>
+
+Nikita Kuz&#x27;min : yes<br>
+
+Vladimir Baranov : да
+
+Vladimir Brednikov : консоль не видно, видно экран bigmarker<br>
+
+Anton Kvashenkin : не видно<br>
+
+Nikita Kuz&#x27;min : и подвисло чет<br>
+
+Nikita Kuz&#x27;min : браузер<br>
+
+Vladimir Baranov : чат
+
+Dmitrij Gornostajpol&#x27;skij : серый экран<br>
+
+Vladimir Brednikov : bigmarker в bigmarker<br>
+
+Anton Kvashenkin : да<br>
+
+Andrej Sedov : да<br>
+
+Anton Kvashenkin : да<br>
+
+Vladimir Baranov : висит экран.. динамики не видно... обновляется плохо<br>
+
+Anton Kvashenkin : норм<br>
+
+Anton Kvashenkin : видно<br>
+
+Vladimir Baranov : если image мы обновили с тегом latest, апдейт не прошел... он точно запустит предыдущий контейнер правильно?<br>
+
+Anton Kvashenkin : наш docker-compose файл станет не работоспособен<br>
+
+Anton Kvashenkin : для docker-compose<br>
+
+Vladimir Baranov : docker-compose - обязан называться&nbsp;docker-compose.yml или можно что-то_свое.yml?<br>
+
+Anton Kvashenkin : а вот как все таки statefull приложения запускать? есть опыт с общим хранилищем или этими volume драйверами<br>
+
+Anton Kvashenkin : или быть сможет и нет смысла бд запускать вовсе<br>
+
+Anton Kvashenkin : про докер компоуз выше вопрос<br>
+
+Anton Kvashenkin : да ответил&nbsp;<br>
+
+Anton Kvashenkin : спасибо<br>
+
+Anton Kvashenkin : я смогу сделать docker-compose up<br>
+
+Anton Kvashenkin : после всех этих правок<br>
+
+Dmitrii Mishchenko : --compose-file<br>
+
+Anton Kvashenkin : я вот о чем<br>
+
+Anton Kvashenkin : со всеми этими deploy и тд<br>
+
+Anton Kvashenkin : ага понятно<br>
+
+Vladimir Brednikov : почему плохо томкат в докер?<br>
+
+Vladimir Brednikov : сервлеты для томката написаны<br>
+
+Nikita Kuz&#x27;min : а веб приложения?<br>
+
+Vladimir Brednikov : позапрошлогодние :)<br>
+
+Anton Kvashenkin : swarm в продакшене используют?<br>
+
+Nikita Kuz&#x27;min : java web<br>
+
+Nikita Kuz&#x27;min : ага<br>
+
+Anton Kvashenkin : используется сварм на реальных проектах?<br>
+
+Anton Kvashenkin : kubernetes также подробно будет разобран? )<br>
+
+Anton Kvashenkin : в общем на кубернетес делать акцент?<br>
+
+Anton Kvashenkin : ну там сворма не было в чате))<br>
+
+Anton Kvashenkin : ну воркер я могу без продблем ребутнуть)<br>
+
+Anton Kvashenkin : raft и тд?<br>
+
+Anton Kvashenkin : а консул как сюда вписывается? или он не нужен здесь?<br>
+
+Anton Kvashenkin : а что по номаду скажешь? кто ниюудь использует вообще<br>
+
+Anton Kvashenkin : короче кубернетес надо учить в первую очередь?<br>
+
+Anton Kvashenkin : я о выборе ркестратора<br>
+
+Anton Kvashenkin : на следующе лекции уже будет кубернетес?<br>
+
+Anton Kvashenkin : для двух-трех хостов нужен сварм?<br>
+
+Vladimir Baranov : есть<br>
+
+Anton Kvashenkin : последний<br>
+
+Vladimir Baranov : связка гитлаб + кубернетис будем рассматривать?<br>
+
+Vladimir Baranov :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Anton Kvashenkin : понятно<br>
+
+Andrej Sedov : +
+
+Anton Kvashenkin : спасибо за лекцию!<br>
+
+Vladimir Brednikov : спасибо!<br>
+
+Igor&#x27; Leont&#x27;ev : Спасибо!<br>
+
+Ivan Gavrilov : Спасибо<br>
+
+Vladimir Baranov : спасибо! пока!<br>
+
+Nikita Kuz&#x27;min : спасибо<br>
+

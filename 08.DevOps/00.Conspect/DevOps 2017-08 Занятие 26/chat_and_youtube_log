@@ -1,0 +1,131 @@
+Vladimir Baranov : всем привет!<br>
+
+Artem Starostenko : привет!<br>
+
+Dmitrii Mishchenko : Привет!<br>
+
+Sergej Nikiforov : Привет!<br>
+
+Anton Kvashenkin : привет коллеги<br>
+
+Vladimir Baranov : привет Дима! :-)<br>
+
+Igor&#x27; Leont&#x27;ev : Привет!
+
+Artem Starostenko : сегодня начинаем новый интересный модуль :)&nbsp;<br>
+
+Anton Kvashenkin :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Vladimir Baranov : помним<br>
+
+Anton Kvashenkin : А можно на примере нашего reddit-app показать зачем нам может понадобится оркестратор/планировщик? Прям на пальцах<br>
+
+Anton Kvashenkin : теория это круто но я пока нить не могу уловить<br>
+
+Vladimir Baranov : уппссс<br>
+
+Nikita Kuz&#x27;min : у всех умерло?<br>
+
+Sergej Nikiforov : да
+
+Igor&#x27; Leont&#x27;ev : +
+
+Artem Starostenko : +&nbsp;<br>
+
+Sergej Nikiforov : да норм<br>
+
+Vladimir Baranov : jenkins будем рассматривать?<br>
+
+Anton Kvashenkin : azure тоже недавно запустили&nbsp;<br>
+
+Dmitry Valkov : Rancher 2.0 переехал на кубики официально же<br>
+
+Anton Kvashenkin : Дмитрий, можешь отвлечься немного, у меня тупой вопрос: зачем нам оркестратор нужен на примере reddit-app? я хочу проследить эволюцию. именно зачем<br>
+
+Sergej Nikiforov : кубики это что?) кубернетис?<br>
+
+Dmitry Valkov : +
+
+Dmitry Valkov : Вот да<br>
+
+Vladimir Daniljuk : split brain?<br>
+
+Vladimir Baranov : имена swarm-master можно менять?<br>
+
+Vladimir Baranov : или он берет hostname?<br>
+
+Anton Kvashenkin : я задал раньше<br>
+
+Anton Kvashenkin : Дмитрий, можешь отвлечься немного, у меня тупой вопрос: зачем нам оркестратор нужен на примере reddit-app? я хочу проследить эволюцию. именно зачем
+
+Anton Kvashenkin : зачем нам сварм нужен<br>
+
+Andrej Sedov : А как в нашем случае будут порты 8080 распределены на двух нодах?<br>
+
+Artem Starostenko : Антон, представь, что тебе нужно запустить не приложение не на одном хосте, а на 50 виртуалках при этом поддерживать эти сервисы в рабочем состоянии - нужен один контрольный пункт для этого всего&nbsp;<br>
+
+Anton Kvashenkin : <span class="chat-at">@Artem Starostenko</span>  &nbsp;то есть получается если мы добавляем ноды, то нам бы хотелось бы автоматизировать управление контенерами<br>
+
+Anton Kvashenkin : а не руками делать или ансиблом<br>
+
+Anton Kvashenkin : праильно?<br>
+
+Artem Starostenko : в том числе автоматизировать&nbsp;<br>
+
+Andrej Sedov : Спасибо
+
+Andrej Sedov : +
+
+Artem Starostenko : у нас есть 50 машин, и нам нужно запустить больше сервисов, мы не ходим на каждую машину и не смотрим сколько там свободно ресурсов, а оставляем эту задачу оркестратору<br>
+
+Anton Kvashenkin : ага понятно<br>
+
+Artem Starostenko : т.е. мы смотрим теперь на наше приложение в масштабе&nbsp;<br>
+
+Anton Kvashenkin : надо руками все это пощупать<br>
+
+Nikita Kuz&#x27;min : хм, у нас будет организация билда каждой ветки в отдельном контейнере, и какой то удобной реализации веб доступа к каждому из них?<br>
+
+Vladimir Daniljuk : то есть брать отпуск? )<br>
+
+Sergej Nikiforov : Если приложение умерло внутри, он создаст новый и так до бесконечности он старые удалять будет? контейнеры я имею ввиду<br>
+
+Artem Starostenko : Никита, мы рассмотрим CI/CD в рамках кубернетис&nbsp;<br>
+
+Nikita Kuz&#x27;min : огонь!<br>
+
+Vladimir Baranov : ждемс :-)<br>
+
+Vladimir Baranov : кубернетис<br>
+
+Nikita Kuz&#x27;min : а если это на 1 ip но после / имя ветки?<br>
+
+Anton Kvashenkin : а я могу гитлаб в сворме запустить и что это даст в плане менеджменат? что делать с бд в таком случае?<br>
+
+Anton Kvashenkin : или прометей<br>
+
+Nikita Kuz&#x27;min : спасибо<br>
+
+Anton Kvashenkin : получается в контенерах stateless приложения в основном<br>
+
+Anton Kvashenkin : а гитхаб кубернетес использует<br>
+
+Anton Kvashenkin : базу они как запускают<br>
+
+Anton Kvashenkin : ?
+
+Vladimir Baranov : пока!<br>
+
+Anton Kvashenkin : спасибо/ ест о чем подумать еще<br>
+
+Igor&#x27; Leont&#x27;ev : Спасибо!
+
+Sergej Nikiforov :  <img src="/assets/emoji/+1.png" class="chat-emoji"> &nbsp;
+
+Nikita Kuz&#x27;min : thx!<br>
+
+Vladimir Daniljuk : пока!<br>
+
+Vladimir Daniljuk : такие дела<br>
+
+No chat or YouTube history.
