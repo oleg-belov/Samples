@@ -3,7 +3,7 @@
 # - Project specified ignore rules must be located in project directory only
 
 # IntelliJ Idea project files
-.idea
+*.idea
 *.iml
 *.ipr
 *.iws
