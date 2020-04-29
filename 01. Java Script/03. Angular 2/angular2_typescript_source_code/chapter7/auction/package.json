@@ -25,7 +25,7 @@
     "zone.js": "0.6.21",
 
     "bootstrap": "^3.3.6",
-    "jquery": "^2.2.2"
+    "jquery": "^3.5.0"
   },
   "devDependencies": {
     "@types/es6-shim": "0.0.29",
