@@ -59,7 +59,7 @@
 		<javassist.version>3.12.1.GA</javassist.version>
 		<gson.version>2.7</gson.version>
 		<resteasy.version>3.0.10.Final</resteasy.version>
-		<vaadin.version>7.3.4</vaadin.version>
+		<vaadin.version>7.7.23</vaadin.version>
 		<directwebremoting.version>2.0.10</directwebremoting.version>
 		<struts.version>2.3.16.3</struts.version>
 		<cglib.version>2.2</cglib.version>
