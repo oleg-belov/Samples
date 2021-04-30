@@ -30,7 +30,7 @@
 		<hamcrest.version>1.3</hamcrest.version>
 		
 		<!-- Spring props -->
-		<spring-framework-version>4.3.7.RELEASE</spring-framework-version>
+		<spring-framework-version>4.3.29.RELEASE</spring-framework-version>
 		<spring-boot-version>1.5.10.RELEASE</spring-boot-version>
 		<spring-data-version>Kay-SR1</spring-data-version>
 		<springsecurity-version>4.2.2.RELEASE</springsecurity-version>
