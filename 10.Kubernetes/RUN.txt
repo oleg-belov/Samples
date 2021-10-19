@@ -1,0 +1,24 @@
+VirtualBox Host-Only Ethernet Adapter
+New-VMSwitch –Name "minikube" –AllowManagement $True –NetAdapterName "VirtualBox Host-Only Ethernet Adapter"
+
+
+minikube start -p learning --vm-driver=virtualbox
+
+minikube start --vm-driver hyperv
+
+minikube profile handson-spring-boot-cloud
+
+minikube start \
+ --memory=10240 \
+ --cpus=4 \
+ --disk-size=30g \
+ --kubernetes-version=v1.15.0 \
+ --vm-driver=virtualbox
+
+minikube addons enable Ingress
+minikube addons enable metrics-server
+
+kubectl config get-contexts
+kubectl get pods --namespace=kube-system
+
+kubectl config set-context $(kubectl config current-context) --namespace=hands-on

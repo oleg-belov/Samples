@@ -1,0 +1,5 @@
+# In order to copy a file from a container to the host, you can use the command
+docker cp <containerId>:/file/path/within/container /host/path/target
+
+# In order to copy a file from a host to the container, you can use the command
+docker cp /host/path/target <containerId>:/file/path/within/container
