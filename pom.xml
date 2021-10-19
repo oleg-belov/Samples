@@ -34,7 +34,7 @@
 		<spring-boot-version>1.5.10.RELEASE</spring-boot-version>
 		<spring-data-version>Kay-SR1</spring-data-version>
 		<springsecurity-version>4.2.2.RELEASE</springsecurity-version>
-		<spring-integration.version>4.1.0.RELEASE</spring-integration.version>
+		<spring-integration.version>4.3.20.RELEASE</spring-integration.version>
 		
 		<!-- Logging props -->
 		<slf4j-version>1.7.25</slf4j-version>
